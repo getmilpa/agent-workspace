@@ -78,6 +78,8 @@ MILPA_APP_DIR=/path/to/my-app npm start
 
 - `GET /desktop` — the Milpa Desktop dashboard, served over HTTP. Point an Electron `loadURL` (or a
   browser) at it. Built-in panels: the consent gate, the activity stream, and the passkey doors.
+- `GET /desktop?embed=1` — the same page in **embed mode**: the chrome folds and the shell fits one region
+  of a host page (the admin's Agent section, below). Same route, same door.
 - `GET /desktop/events` — the shell's live event feed (SSE), the transport when no hub is wired.
 
 Every one of those routes — and the data, export, live and write endpoints — stands behind the door below.
@@ -121,6 +123,75 @@ Now the default is loopback-only, so a house that serves the Desktop on the LAN 
 a passkey gate as above, its own PSR-15 stack, or `[]` to keep it open on purpose. Naming the passkey gate without
 `PasskeyPlugin` declared and an `rpId` set is a fail-closed `500` at the first gated request, as it is for the
 admin: the router refuses to skip a middleware it cannot resolve.
+
+## The Agent inside the admin
+
+With [`milpa/admin`](https://github.com/getmilpa/admin) installed, the Desktop becomes the admin's **guest**
+(greenhouse `decisions/0209` put both behind one door; `decisions/0210` puts the Desktop inside the panel): the
+admin's sidebar lists an **Agent** section, and opening it shows the Desktop shell — the conversation, the
+composer, the consent gate — as **one region inside the admin's main**, behind the same door. Nothing to
+configure: the admin discovers the section by `instanceof` over the booted plugins, and the Desktop names no
+dependency on the admin.
+
+How it holds together:
+
+- **Embed mode.** `GET /desktop?embed=1` serves the *same* shell page with `data-embed="1"` on the root element
+  and the chrome folded by CSS — the window strip, the sidebar, the topbar and the status bar are not visible;
+  the DOM is kept, so the shell script's contract does not change. The sessions stay reachable through a compact
+  **session strip** above the conversation — a Milpa Component like every shell surface (`desktop-session-strip`,
+  signed, with `desktop.session_strip.before_render` / `after_render`): the current goal, a `<select>` of every
+  session, «New session» wired to the same handler as the sidebar's button; links that would open a chrome
+  screen inside the host (Settings, Decisions, Capabilities, Skills, Preview) are not rendered. A gate that
+  sends the browser to sign in carries `next=/desktop?embed=1` — the request target — so the round trip lands
+  back in embed mode.
+- **The section.** `DesktopAppPlugin` implements the admin's `AdminSectionProvider` and declares one
+  `AdminSection`: id `agent`, title «Agent» (`Agente` under `desktop.locale: es`), order 10, group `agent`, with
+  its own Milpa Component (`desktop-agent`: `Milpa\DesktopApp\Admin\AgentGuestComponent`) and renderer
+  (`AgentGuestRenderer`). The renderer emits the region only — the host puts the header (and, the day it paints
+  it, the attribution; see below): a same-origin `<iframe src="/desktop?embed=1">` filling the main's available
+  height (computed from the admin's own tokens — topbar height and main padding — with fallbacks), plus a guest
+  bar with the `gate: <label>` chip and «Open the Desktop» (a new tab). When the Desktop stands behind the
+  **passkey** gate and the admin authenticated nobody, no frame is mounted: the region says «Sign in to open the
+  Agent» and links the sign-in door with `next` pointing back at `/milpa/admin/s/agent` (the admin's mount point,
+  read from the component context; a `?lang=` the page carried travels with it). Whatever the Desktop *answers*
+  — a 403, a 500, its sign-in door — loads inside the frame and stays there, the admin whole around it; only
+  when the frame gets **no document** from the Desktop (the app is down or unreachable, so the browser paints its
+  own error page) does an inline `onload` probe swap in «The Agent did not answer» inside the region — nothing
+  outside it moves. (`onerror` is kept too, but browsers report a failed frame navigation as a load of their
+  error page, never as an error.)
+- **No hard dependency.** The plugin class carries the admin's interface through
+  `Milpa\DesktopApp\Admin\AdminGuest`, an interface declared in one of two shapes when it is first loaded: it
+  *extends* `Milpa\Admin\Section\AdminSectionProvider` when that interface exists (milpa/admin installed), and
+  stands alone with the same one method otherwise. A fresh app **without** milpa/admin boots and serves
+  `/desktop?embed=1` — measured in a process where every `Milpa\Admin\*` name is unloadable
+  (`tests/Admin/AdminAbsentBootTest.php`). `milpa/admin` is a *dev* dependency here only so the suite boots the
+  real panel next to the Desktop (`tests/Admin/AdminGuestTest.php`); it stays a suggestion for an app.
+
+**What the host does for a guest** — milpa/admin **0.11.0** closed the three gaps the first version of this
+guest measured against 0.10.1 (greenhouse `decisions/0210`), and the integration test now asserts them
+(`tests/Admin/AdminGuestTest.php`):
+
+- **The context carries the principal.** The `ComponentContext` every section receives names who signed in
+  (`passkey:<id>`) or `null`; the region and the topbar agree, and behind the passkey gate a signed-in human sees
+  the frame, not the door.
+- **The host paints the attribution and the groups.** The section header says «declared by DesktopAppPlugin»;
+  the sidebar lists the Agent under the **AGENT** group heading, with its glyph `◈`; the Desktop's order (60) sits
+  after the admin's own sections, so the panel opens on Plugins, never on the guest.
+- **The rule reads the principal the host hands over.** With the runtime's identity chain in place
+  (`milpa/app-runtime` ≥ 0.120 and the skeleton of `milpa/framework` ≥ 0.41), the passkey session is a principal on
+  every route of the house — the admin's included, whatever its own gate — so an admin on the default loopback gate
+  still hands a signed-in principal to the region. Without that chain, put both behind the same gate.
+- **The title is resolved once, in the declared locale.** The admin resolves a guest's `title` only through its
+  own catalog keys, which a guest cannot extend, so the sidebar item reads «Agent» (or «Agente» under
+  `desktop.locale: es`) whatever `?lang=` says — the region itself follows `?lang=`.
+
+**Upgrading.** New in this version: embed mode (`?embed=1`, the same route and door — a `desktop.middleware`
+you declared applies to it unchanged), the `chrome` prop on the `desktop-sidebar` component (default `true`;
+`false` renders no link to a chrome screen), the `desktop-session-strip` component (rendered in embed mode only;
+`Milpa\DesktopApp\Live\SessionStrip` is registered in the container like the other shell surfaces), the Agent
+section the admin discovers the moment `milpa/admin` is installed (nothing to declare; remove the admin to
+remove the section), and `milpa/admin` as an optional peer — suggested, never required. Nothing you configured
+for `0.47` changes meaning.
 
 ## Add a dashboard panel (the DX)
 
