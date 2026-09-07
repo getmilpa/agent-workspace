@@ -3,6 +3,14 @@
 All notable changes to milpa/desktop-app are documented here. This project adheres to
 [Semantic Versioning](https://semver.org/) and [Keep a Changelog](https://keepachangelog.com/).
 
+## [0.55.1](https://github.com/getmilpa/agent-workspace/compare/v0.55.0...v0.55.1) (2026-09-07)
+
+
+### Bug Fixes
+
+* seed the release manifest at 0.55.0, the version this package actually has ([#6](https://github.com/getmilpa/agent-workspace/issues/6)) ([63c5d99](https://github.com/getmilpa/agent-workspace/commit/63c5d997e7f22b98dd21fa708d2d7a3a7aef73e7))
+* the suggest still spoke the old name, and said the relationship backwards ([#3](https://github.com/getmilpa/agent-workspace/issues/3)) ([ebdcabb](https://github.com/getmilpa/agent-workspace/commit/ebdcabbfc792b650fe665b8de4a97725853e2c36))
+
 ## [0.1.0](https://github.com/getmilpa/agent-workspace/compare/v0.54.0...v0.1.0) (2026-09-07)
 
 
