@@ -28,7 +28,7 @@
     "phpunit/phpunit": "^11.5"
   },
   "suggest": {
-    "milpa/admin": "The Desktop becomes the admin's guest (greenhouse decisions/0211): DesktopAppPlugin declares an Agent section whose whole VIEW is the Desktop's own components \u2014 the conversation, the composer and the consent gate composed inline in the panel's own document, behind the same door, with one runtime for the page. Nothing is required for the Desktop itself.",
+    "milpa/admin": "The panel this is a section of. milpa/admin provides the Milpa Desktop \u2014 chrome, sections, the gate, settings and i18n \u2014 and AgentWorkspacePlugin declares one section named Agent inside it, composed inline in the panel's own document, behind the same door, with one runtime for the page. Without it this package still serves its own routes; with it, the agent lives where the human already is (greenhouse decisions/0211, decisions/0220).",
     "milpa/orchestrator": "Declare agent graphs and answer their decisions from the Desktop inbox (>=0.8)"
   },
   "autoload": {
