@@ -28,3 +28,11 @@
 .decision-card--graph[data-answered] .decision-card__options { display: none; }
 .decision-card--graph[data-answered] { opacity: .6; }
 
+
+/* The sequences this app declared, run from here (greenhouse decisions/0223, F4). */
+.milpa-decisions__heading { margin: var(--space-6) 0 var(--space-2); font-size: var(--text-sm); font-weight: 600; color: var(--text); }
+#milpa-sequences-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--space-4); max-width: 72ch; }
+#milpa-sequences-list:has(.sequence-card) + #milpa-sequences-empty { display: none; }
+.sequence-card[data-sequence-paused] { border-color: var(--warning-border, var(--border)); }
+.decision-card__options [hidden] { display: none; }
+.decision-card[data-answered] .decision-card__options { display: none; }

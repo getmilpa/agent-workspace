@@ -27,8 +27,9 @@ use Milpa\Live\ValueObjects\StateSnapshot;
  * The cross-session backlog of questions agents parked (greenhouse decisions/0195): durable questions, not
  * modals. Its state is how many are waiting, so a re-render says what is actually pending.
  *
- * It declares no action: a decision is answered in the conversation of ITS session, with a passkey, in
- * this origin — the inbox links there and decides nothing itself.
+ * It declares no live action: an answer goes through the operations surface (`agent:answer`,
+ * `sequence:run`) with the passkey session as principal — the same doors a terminal takes — not
+ * through the component wire. The state counts what is waiting and what can be run.
  */
 final class DecisionsInboxComponent implements ComponentDefinitionInterface
 {
@@ -40,8 +41,8 @@ final class DecisionsInboxComponent implements ComponentDefinitionInterface
             contractVersion: '1',
             summary: 'The cross-session inbox of questions agents parked.',
             designContract: '@milpa/design:components/milpa-decisions.contract.json',
-            propsSchema: ['pending' => ['type' => 'array', 'default' => []]],
-            stateSchema: ['pending' => ['type' => 'integer']],
+            propsSchema: ['pending' => ['type' => 'array', 'default' => []], 'sequences' => ['type' => 'array', 'default' => []]],
+            stateSchema: ['pending' => ['type' => 'integer'], 'sequences' => ['type' => 'integer']],
             actions: [],
         );
     }
@@ -53,7 +54,10 @@ final class DecisionsInboxComponent implements ComponentDefinitionInterface
             $context->componentId,
             'desktop-decisions',
             '1',
-            ['pending' => \count(\is_array($props['pending'] ?? null) ? $props['pending'] : [])],
+            [
+                'pending' => \count(\is_array($props['pending'] ?? null) ? $props['pending'] : []),
+                'sequences' => \count(\is_array($props['sequences'] ?? null) ? $props['sequences'] : []),
+            ],
             [],
         );
     }
