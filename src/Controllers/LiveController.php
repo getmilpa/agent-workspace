@@ -12,9 +12,9 @@
 
 declare(strict_types=1);
 
-namespace Milpa\DesktopApp\Controllers;
+namespace Milpa\AgentWorkspace\Controllers;
 
-use Milpa\DesktopApp\Http\RequestPrincipal;
+use Milpa\AgentWorkspace\Http\RequestPrincipal;
 use Milpa\Live\Http\LiveEndpoint;
 use Milpa\Live\Http\LiveHttpRequest;
 use Milpa\Live\ValueObjects\SecurityPrincipal;

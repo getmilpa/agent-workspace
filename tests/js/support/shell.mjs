@@ -10,7 +10,7 @@
  * two different ideas of what the shell renders.
  *
  * IT IS STILL A SECOND IDEA of the renderers' markup, and green here is not evidence about the served
- * page. What holds the two together is `Milpa\DesktopApp\Tests\DomContractTest`, which reads every `#id`
+ * page. What holds the two together is `Milpa\AgentWorkspace\Tests\DomContractTest`, which reads every `#id`
  * and `[data-…]` literal the shipped modules reach for out of the modules themselves and asserts the
  * SERVER prints each one — so a renamed hook in a renderer fails there even while this file is stale.
  */

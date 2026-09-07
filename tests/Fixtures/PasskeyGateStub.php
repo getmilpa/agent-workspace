@@ -12,9 +12,9 @@
 
 declare(strict_types=1);
 
-namespace Milpa\DesktopApp\Tests\Fixtures;
+namespace Milpa\AgentWorkspace\Tests\Fixtures;
 
-use Milpa\DesktopApp\Http\RequestPrincipal;
+use Milpa\AgentWorkspace\Http\RequestPrincipal;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Server\MiddlewareInterface;

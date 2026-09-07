@@ -12,7 +12,7 @@
 
 declare(strict_types=1);
 
-namespace Milpa\DesktopApp\Data;
+namespace Milpa\AgentWorkspace\Data;
 
 /**
  * The Desktop's write side — persistence on disk (greenhouse decisions/0483).

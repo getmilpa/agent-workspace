@@ -12,13 +12,13 @@
 
 declare(strict_types=1);
 
-namespace Milpa\DesktopApp\Tests;
+namespace Milpa\AgentWorkspace\Tests;
 
 use Milpa\Container\DIContainer;
-use Milpa\DesktopApp\Data\DesktopData;
-use Milpa\DesktopApp\I18n\Catalog;
-use Milpa\DesktopApp\Live\SessionStrip;
-use Milpa\DesktopApp\Live\SessionStripComponent;
+use Milpa\AgentWorkspace\Data\DesktopData;
+use Milpa\AgentWorkspace\I18n\Catalog;
+use Milpa\AgentWorkspace\Live\SessionStrip;
+use Milpa\AgentWorkspace\Live\SessionStripComponent;
 use Milpa\Eventing\EventDispatcher;
 use Milpa\Live\Contracts\Component\ComponentDefinitionInterface;
 use Milpa\Live\ValueObjects\ComponentContext;

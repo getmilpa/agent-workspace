@@ -12,7 +12,7 @@
 
 declare(strict_types=1);
 
-namespace Milpa\DesktopApp\Live;
+namespace Milpa\AgentWorkspace\Live;
 
 /**
  * Renders the specialist agent roles the app declares (greenhouse decisions/0197): each a named authority with

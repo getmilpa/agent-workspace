@@ -12,13 +12,13 @@
 
 declare(strict_types=1);
 
-namespace Milpa\DesktopApp\Live;
+namespace Milpa\AgentWorkspace\Live;
 
 /**
  * Renders the agent's skills — each one's name, description, and WHO may invoke it (greenhouse decisions/0197).
  *
  * A skill guides judgment; it is not a tool that runs. The human sees the same list the agent reaches for
- * ({@see \Milpa\DesktopApp\Data\DesktopData::skills()}). Pure, so it is tested directly with fixtures.
+ * ({@see \Milpa\AgentWorkspace\Data\DesktopData::skills()}). Pure, so it is tested directly with fixtures.
  */
 final class SkillsView
 {

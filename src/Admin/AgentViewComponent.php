@@ -12,9 +12,9 @@
 
 declare(strict_types=1);
 
-namespace Milpa\DesktopApp\Admin;
+namespace Milpa\AgentWorkspace\Admin;
 
-use Milpa\DesktopApp\DesktopSettings;
+use Milpa\AgentWorkspace\DesktopSettings;
 use Milpa\Live\Contracts\Component\ComponentDefinitionInterface;
 use Milpa\Live\ValueObjects\ComponentContext;
 use Milpa\Live\ValueObjects\ComponentContract;

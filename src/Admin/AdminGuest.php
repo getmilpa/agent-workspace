@@ -12,7 +12,7 @@
 
 declare(strict_types=1);
 
-namespace Milpa\DesktopApp\Admin;
+namespace Milpa\AgentWorkspace\Admin;
 
 /*
  * The Desktop honors milpa/admin's `AdminSectionProvider` WITHOUT depending on milpa/admin (greenhouse
@@ -25,10 +25,10 @@ namespace Milpa\DesktopApp\Admin;
  * interface which does not exist is a fatal at load time, and a fresh app WITHOUT milpa/admin must boot.
  *
  * So this file declares ONE interface, `AdminGuest`, in one of two shapes chosen the moment the autoloader
- * runs it — which PSR-4 does the first time `DesktopAppPlugin` (the class that implements it) is compiled:
+ * runs it — which PSR-4 does the first time `AgentWorkspacePlugin` (the class that implements it) is compiled:
  *
  *   - milpa/admin installed: `interface_exists()` autoloads the real `AdminSectionProvider`, and `AdminGuest`
- *     EXTENDS it. `DesktopAppPlugin instanceof AdminSectionProvider` is then true and the admin finds the
+ *     EXTENDS it. `AgentWorkspacePlugin instanceof AdminSectionProvider` is then true and the admin finds the
  *     Desktop with no registration step, exactly as it finds any plugin that imports the interface outright.
  *   - milpa/admin absent: `AdminGuest` is declared standalone with the same one method. The `instanceof` the
  *     admin would run is simply false — nothing fatals, and nothing in the admin's namespace is squatted (a
@@ -42,7 +42,7 @@ if (interface_exists(\Milpa\Admin\Section\AdminSectionProvider::class)) {
      * The Desktop as the admin's guest — milpa/admin's own contract, which the admin is installed to honor.
      *
      * Declared only when milpa/admin is present: `interface_exists()` autoloaded the real interface, so
-     * `DesktopAppPlugin` is an `AdminSectionProvider` and the admin's `instanceof` discovery finds it.
+     * `AgentWorkspacePlugin` is an `AdminSectionProvider` and the admin's `instanceof` discovery finds it.
      */
     interface AdminGuest extends \Milpa\Admin\Section\AdminSectionProvider
     {

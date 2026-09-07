@@ -12,10 +12,10 @@
 
 declare(strict_types=1);
 
-namespace Milpa\DesktopApp\Tests;
+namespace Milpa\AgentWorkspace\Tests;
 
-use Milpa\DesktopApp\DesktopAppPlugin;
-use Milpa\DesktopApp\Tests\Fixtures\DemoSectionPlugin;
+use Milpa\AgentWorkspace\AgentWorkspacePlugin;
+use Milpa\AgentWorkspace\Tests\Fixtures\DemoSectionPlugin;
 use Milpa\Runtime\Http\RequestHandler;
 use Milpa\Runtime\Kernel;
 use Nyholm\Psr7\Factory\Psr17Factory;
@@ -36,7 +36,7 @@ final class ShellExtensionTest extends TestCase
         $psr17 = new Psr17Factory();
         $kernel = Kernel::boot([
             'root' => sys_get_temp_dir(),
-            'plugins' => [DesktopAppPlugin::class, DemoSectionPlugin::class],
+            'plugins' => [AgentWorkspacePlugin::class, DemoSectionPlugin::class],
         ]);
 
         $body = (string) (new RequestHandler($kernel, $psr17))
@@ -54,7 +54,7 @@ final class ShellExtensionTest extends TestCase
         $psr17 = new Psr17Factory();
         $kernel = Kernel::boot([
             'root' => sys_get_temp_dir(),
-            'plugins' => [DesktopAppPlugin::class],
+            'plugins' => [AgentWorkspacePlugin::class],
         ]);
 
         $body = (string) (new RequestHandler($kernel, $psr17))

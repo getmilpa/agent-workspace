@@ -12,13 +12,13 @@
 
 declare(strict_types=1);
 
-namespace Milpa\DesktopApp\Tests\Data;
+namespace Milpa\AgentWorkspace\Tests\Data;
 
 use Milpa\Container\DIContainer;
-use Milpa\DesktopApp\Data\DesktopData;
-use Milpa\DesktopApp\DesktopAppPlugin;
-use Milpa\DesktopApp\Live\ShellEvent;
-use Milpa\DesktopApp\Live\ShellEventLog;
+use Milpa\AgentWorkspace\Data\DesktopData;
+use Milpa\AgentWorkspace\AgentWorkspacePlugin;
+use Milpa\AgentWorkspace\Live\ShellEvent;
+use Milpa\AgentWorkspace\Live\ShellEventLog;
 use Milpa\Runtime\Kernel;
 use PHPUnit\Framework\TestCase;
 
@@ -30,15 +30,15 @@ final class DesktopDataTest extends TestCase
 {
     public function testCapabilitiesAreTheBootedPluginsMetadata(): void
     {
-        $kernel = Kernel::boot(['root' => sys_get_temp_dir(), 'plugins' => [DesktopAppPlugin::class]]);
+        $kernel = Kernel::boot(['root' => sys_get_temp_dir(), 'plugins' => [AgentWorkspacePlugin::class]]);
         // Apps register the kernel in their container (the skeleton front controller does); the data reads it.
         $kernel->container()->registerService(Kernel::class, $kernel);
 
         $caps = (new DesktopData($kernel->container()))->capabilities();
 
         $names = array_column($caps, 'name');
-        self::assertContains('DesktopApp', $names);
-        $desktop = $caps[array_search('DesktopApp', $names, true)];
+        self::assertContains('AgentWorkspace', $names);
+        $desktop = $caps[array_search('AgentWorkspace', $names, true)];
         self::assertSame('Web', $desktop['type']);
         self::assertSame('Rodrigo Vicente - TeamX Agency', $desktop['author']);
     }

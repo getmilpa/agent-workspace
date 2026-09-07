@@ -12,10 +12,10 @@
 
 declare(strict_types=1);
 
-namespace Milpa\DesktopApp\Tests;
+namespace Milpa\AgentWorkspace\Tests;
 
-use Milpa\DesktopApp\Controllers\LiveController;
-use Milpa\DesktopApp\Live\ComposerField;
+use Milpa\AgentWorkspace\Controllers\LiveController;
+use Milpa\AgentWorkspace\Live\ComposerField;
 use Milpa\Live\Http\LiveEndpoint;
 use Nyholm\Psr7\ServerRequest;
 use PHPUnit\Framework\TestCase;

@@ -12,10 +12,10 @@
 
 declare(strict_types=1);
 
-namespace Milpa\DesktopApp\Tests\Live;
+namespace Milpa\AgentWorkspace\Tests\Live;
 
-use Milpa\DesktopApp\Live\MercurePublisher;
-use Milpa\DesktopApp\Live\ShellEvent;
+use Milpa\AgentWorkspace\Live\MercurePublisher;
+use Milpa\AgentWorkspace\Live\ShellEvent;
 use Milpa\Mercure\MercureService;
 use PHPUnit\Framework\TestCase;
 

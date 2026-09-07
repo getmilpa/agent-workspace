@@ -12,10 +12,10 @@
 
 declare(strict_types=1);
 
-namespace Milpa\DesktopApp;
+namespace Milpa\AgentWorkspace;
 
-use Milpa\DesktopApp\Http\LoopbackOnlyMiddleware;
-use Milpa\DesktopApp\I18n\Catalog;
+use Milpa\AgentWorkspace\Http\LoopbackOnlyMiddleware;
+use Milpa\AgentWorkspace\I18n\Catalog;
 use Milpa\Runtime\Config;
 use Psr\Http\Server\MiddlewareInterface;
 

@@ -12,12 +12,12 @@
 
 declare(strict_types=1);
 
-namespace Milpa\DesktopApp\Live;
+namespace Milpa\AgentWorkspace\Live;
 
 /**
  * A change to the desktop shell that a plugin wants pushed to connected clients (greenhouse decisions/0188).
  *
- * A plugin dispatches {@see \Milpa\DesktopApp\DesktopAppPlugin::CHANGED_EVENT} carrying one of these; the
+ * A plugin dispatches {@see \Milpa\AgentWorkspace\AgentWorkspacePlugin::CHANGED_EVENT} carrying one of these; the
  * desktop-app appends it to the {@see ShellEventLog}, and the SSE feed streams it out. `type` is the
  * SSE event name a browser's `EventSource` listens for; `data` is the JSON payload it receives.
  */

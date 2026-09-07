@@ -12,11 +12,11 @@
 
 declare(strict_types=1);
 
-namespace Milpa\DesktopApp\Tests\Live;
+namespace Milpa\AgentWorkspace\Tests\Live;
 
 use Milpa\Command\Effect\Mutation;
-use Milpa\DesktopApp\DesktopAppPlugin;
-use Milpa\DesktopApp\Live\SettingsScreenComponent;
+use Milpa\AgentWorkspace\AgentWorkspacePlugin;
+use Milpa\AgentWorkspace\Live\SettingsScreenComponent;
 use Milpa\Live\ValueObjects\ActionContract;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
@@ -57,7 +57,7 @@ final class DeclaredActionIntentTest extends TestCase
         // The additive promise: the 41 actions that did not migrate say nothing, and nothing is answered
         // on their behalf. If this ever reads `true`, silence has started meaning «safe».
         $undeclared = 0;
-        foreach (DesktopAppPlugin::COMPONENTS as $class) {
+        foreach (AgentWorkspacePlugin::COMPONENTS as $class) {
             foreach (array_keys($class::contract()->actions) as $name) {
                 $action = $class::contract()->action((string) $name);
                 if ($action === null || $action->declaresEffects()) {

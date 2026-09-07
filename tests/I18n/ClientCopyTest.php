@@ -12,10 +12,10 @@
 
 declare(strict_types=1);
 
-namespace Milpa\DesktopApp\Tests\I18n;
+namespace Milpa\AgentWorkspace\Tests\I18n;
 
-use Milpa\DesktopApp\Controllers\ShellController;
-use Milpa\DesktopApp\I18n\Catalog;
+use Milpa\AgentWorkspace\Controllers\ShellController;
+use Milpa\AgentWorkspace\I18n\Catalog;
 use Milpa\Eventing\EventDispatcher;
 use Nyholm\Psr7\ServerRequest;
 use PHPUnit\Framework\TestCase;

@@ -12,11 +12,11 @@
 
 declare(strict_types=1);
 
-namespace Milpa\DesktopApp\Live;
+namespace Milpa\AgentWorkspace\Live;
 
-use Milpa\DesktopApp\Data\DesktopData;
-use Milpa\DesktopApp\DesktopSettings;
-use Milpa\DesktopApp\I18n\Catalog;
+use Milpa\AgentWorkspace\Data\DesktopData;
+use Milpa\AgentWorkspace\DesktopSettings;
+use Milpa\AgentWorkspace\I18n\Catalog;
 use Milpa\Interfaces\Event\MilpaEventDispatcherInterface;
 use Milpa\Live\Security\HmacStateSigner;
 use Milpa\Live\Security\SignedXhtmlStateTransferCodec;

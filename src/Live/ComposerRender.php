@@ -12,7 +12,7 @@
 
 declare(strict_types=1);
 
-namespace Milpa\DesktopApp\Live;
+namespace Milpa\AgentWorkspace\Live;
 
 /**
  * The mutable subject a component's render events carry, so other plugins can extend it (greenhouse

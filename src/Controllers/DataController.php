@@ -12,9 +12,9 @@
 
 declare(strict_types=1);
 
-namespace Milpa\DesktopApp\Controllers;
+namespace Milpa\AgentWorkspace\Controllers;
 
-use Milpa\DesktopApp\Data\DesktopData;
+use Milpa\AgentWorkspace\Data\DesktopData;
 use Nyholm\Psr7\Response;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;

@@ -12,7 +12,7 @@
 
 declare(strict_types=1);
 
-namespace Milpa\DesktopApp\Live;
+namespace Milpa\AgentWorkspace\Live;
 
 /**
  * Renders the decisions inbox — the questions agents parked, across all sessions (greenhouse decisions/0195).

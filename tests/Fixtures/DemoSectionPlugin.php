@@ -12,11 +12,11 @@
 
 declare(strict_types=1);
 
-namespace Milpa\DesktopApp\Tests\Fixtures;
+namespace Milpa\AgentWorkspace\Tests\Fixtures;
 
 use Milpa\Attributes\PluginMetadata;
-use Milpa\DesktopApp\Controllers\ShellController;
-use Milpa\DesktopApp\ShellComposition;
+use Milpa\AgentWorkspace\Controllers\ShellController;
+use Milpa\AgentWorkspace\ShellComposition;
 use Milpa\Interfaces\Di\DIContainerInterface;
 use Milpa\Interfaces\Event\MilpaEventDispatcherInterface;
 use Milpa\Interfaces\Plugin\PluginInterface;
@@ -24,7 +24,7 @@ use Milpa\Interfaces\Plugin\PluginInterface;
 /**
  * A second plugin that contributes UI into the desktop shell — the witness for the 0188 seam.
  *
- * It knows nothing about `DesktopAppPlugin`; the two meet only at the event name
+ * It knows nothing about `AgentWorkspacePlugin`; the two meet only at the event name
  * {@see ShellController::COMPOSE_EVENT}. In its own `boot()` it subscribes to that event and, when the
  * shell renders, appends a section carrying {@see MARKER}. If the marker shows up in the served page,
  * a foreign plugin modified the same UI through the seam — and if it does not show up when this plugin

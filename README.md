@@ -7,24 +7,32 @@
   </a>
 </p>
 
-# milpa/desktop-app
+# milpa/agent-workspace
 
-**A Milpa app hosts itself as a desktop app.**
+**The room where a human meets the agent — a section of the Milpa panel, not the panel.**
 
-The Milpa Desktop is not an Electron app that *drives* a separate Milpa — it is a Milpa that gains
-desktop hands by installing this plugin. The backend lives in the **same** app. Installing the plugin
-mounts a shell route; an Electron (or plain browser) host then loads that URL at a **real origin**
-(`http://localhost:<port>/desktop`) instead of a `file://` renderer.
+The panel a human opens is the **Milpa Desktop**, and it comes from [`milpa/admin`](https://github.com/getmilpa/admin):
+chrome, sections, the gate, settings, i18n. This package is a **tenant of it**. It brings the agent's workspace —
+the conversation, the composer, the gate that parks a decision, the work board, the activity stream and the
+decisions inbox — declared as one section named *Agent*.
 
-That single move dissolves the constraint that blocked the passkey ceremony: WebAuthn refuses a
-`file://` origin and an IP is not a valid relying-party id — but the served shell shares its origin
-with the app's own `/webauthn/*` doors, its live components and its consent gates. **One channel, one
-origin** (greenhouse `decisions/0188`).
+**It is opt-in, and that is the point.** An app installs the panel and has **no agent** until it declares this.
+The framework does not impose an agent on someone who only wants to administer their app.
+
+> **Why the rename.** This package used to be called `milpa/agent-workspace`, and the name lied: it said *desktop*
+> and delivered *agent*. Its own capability declaration claimed to provide `desktop-shell`, while the shell has
+> always come from `milpa/admin` — which is six weeks older and holds the section contract, the gate and the
+> i18n. See greenhouse `decisions/0220`.
+
+## The routes are still `/desktop/*`, and that is not the old lie
+
+`Desktop` is the **product**; `agent-workspace` is the **package**. The URLs name what a human opens, the package
+names what it provides. Both are now true, which is the whole difference.
 
 ## Install
 
 ```bash
-composer require milpa/desktop-app
+composer require milpa/agent-workspace
 ```
 
 Then declare it in `config/plugins.php`. Installing the plugin *is* the activation; a Milpa without it
@@ -38,8 +46,8 @@ From a fresh Milpa app to the shell in a browser — the whole path, proven on a
 ```bash
 composer create-project milpa/framework my-app   # 1. a Milpa app
 cd my-app
-composer require milpa/desktop-app                # 2. add the plugin
-# 3. declare Milpa\DesktopApp\DesktopAppPlugin::class in config/plugins.php
+composer require milpa/agent-workspace                # 2. add the plugin
+# 3. declare Milpa\AgentWorkspace\AgentWorkspacePlugin::class in config/plugins.php
 php -S 127.0.0.1:8080 -t public public/router.php  # 4. serve over HTTP
 # 5. open http://localhost:8080/desktop
 ```
@@ -90,7 +98,7 @@ Only the assets under `/desktop/assets/*` are public.
 
 The Desktop stands behind the same door as the admin (greenhouse `decisions/0209`). The plugin attaches the
 PSR-15 middleware the app declares under **`desktop.middleware`** to every shell route; **since this version the
-default answers only to loopback** (`Milpa\DesktopApp\Http\LoopbackOnlyMiddleware`): a request from the LAN gets
+default answers only to loopback** (`Milpa\AgentWorkspace\Http\LoopbackOnlyMiddleware`): a request from the LAN gets
 `403` — a small page for a browser, `{"ok":false,"error":"loopback_only"}` for the shell's own calls. Only a
 literally empty list `[]` opens the Desktop. Anything misdeclared — a non-string entry, an associative map, a
 value that is not a list, a class that does not exist or is not a PSR-15 middleware — makes the **whole** stack
@@ -137,12 +145,12 @@ the admin's own document**, behind the same door. Nothing to configure: the admi
 **There is no iframe.** The section declares a whole **view** and the host mounts it — the plugin declares, the
 runtime reconciles:
 
-- **The view.** `DesktopAppPlugin::adminSections()` returns one `AdminSection::ofView(...)`: id `agent`, title
+- **The view.** `AgentWorkspacePlugin::adminSections()` returns one `AdminSection::ofView(...)`: id `agent`, title
   «Agent» (`Agente` under `desktop.locale: es`), order 60, group `agent`, glyph `◈`, and a
-  `Milpa\Admin\Section\DeclaredView` built by `Milpa\DesktopApp\Admin\AgentView`. The view carries the markup
+  `Milpa\Admin\Section\DeclaredView` built by `Milpa\AgentWorkspace\Admin\AgentView`. The view carries the markup
   to compile (one root, `<milpa:desktop-agent id="milpa-agent"/>`), **every `desktop-*` definition and renderer
   of the Desktop's one registry** — the SAME instances `/desktop` composes with, never copies — the props the
-  region mounts with, and the **signals** the page must seed (`Milpa\DesktopApp\Live\ShellSignals`, the one
+  region mounts with, and the **signals** the page must seed (`Milpa\AgentWorkspace\Live\ShellSignals`, the one
   authority both pages read, so the panel seeds exactly what `/desktop` seeds).
 - **The region.** `desktop-agent` (`Admin\AgentViewComponent` + `Admin\AgentViewRenderer`) is the root the
   admin compiles. It emits the guest bar (the `gate: <label>` chip and «Open the Desktop», a new tab), then
@@ -180,7 +188,7 @@ runtime reconciles:
   (`desk-admin-<hash>`). The same human returning to the panel returns to the same governed session; two humans
   behind the same door do not share one.
 - **No hard dependency.** The plugin class carries the admin's interface through
-  `Milpa\DesktopApp\Admin\AdminGuest`, an interface declared in one of two shapes when it is first loaded: it
+  `Milpa\AgentWorkspace\Admin\AdminGuest`, an interface declared in one of two shapes when it is first loaded: it
   *extends* `Milpa\Admin\Section\AdminSectionProvider` when that interface exists (milpa/admin installed), and
   stands alone with the same one method otherwise. A fresh app **without** milpa/admin boots and serves
   `/desktop` — measured in a process where every `Milpa\Admin\*` name is unloadable
@@ -252,7 +260,7 @@ integration test asserts them (`tests/Admin/AdminGuestTest.php`):
 - **`ComponentContext::meta` carries the host's facts.** The gate label, the active section id and the
   request's query params reach every node. The region reads `meta['query']` for `?lang=` — a view's props are
   its own per component, so the narrow shape's `props['query']` never arrives.
-- **The host paints the attribution and the groups.** The section header says «declared by DesktopAppPlugin»;
+- **The host paints the attribution and the groups.** The section header says «declared by AgentWorkspacePlugin»;
   the sidebar lists the Agent under the **AGENT** group heading, with its glyph `◈`; the Desktop's order (60)
   sits after the admin's own sections, so the panel opens on Plugins, never on the guest.
 - **The rule reads the principal the host hands over.** With the runtime's identity chain in place
@@ -295,7 +303,7 @@ Every shell surface is a **declared view** (greenhouse `decisions/0211`): a `des
 markup comes from a renderer, whose CSS lives in its own file and whose behaviour lives in its own client
 module. The page **composes** them and emits **one** runtime.
 
-- **One registry.** `Milpa\DesktopApp\Live\DesktopComponents` holds every component definition *and* its
+- **One registry.** `Milpa\AgentWorkspace\Live\DesktopComponents` holds every component definition *and* its
   renderer (`ComponentRendererRegistry::registerFor`), plus the composer's two form primitives. The shell
   composes the page through an `XhtmlComponentCompiler` over that registry — `<milpa-desktop-sidebar/>`
   resolves to the definition and the renderer — and `POST /desktop/live` is built over the **same** registry
@@ -473,7 +481,7 @@ poll. Without a hub, the app runs on the shared-log feed. One more key, `desktop
 OPTIONAL and declaration-only — read only by the service declaration below, not by the wiring: the origin(s)
 the hub lets subscribe, space-separated when there are several.
 
-The plugin also DECLARES the hub it needs: `DesktopAppPlugin` implements the runtime's
+The plugin also DECLARES the hub it needs: `AgentWorkspacePlugin` implements the runtime's
 `StackProviderInterface` (`Milpa\Runtime\Stack`, greenhouse decisions/0201) and returns one
 `ServiceDeclaration` — `dunglas/mercure`, container port 80 published on the port of the URL the browser
 reaches (`public_url`, else `hub_url`, and only when that URL's host is loopback — an in-network

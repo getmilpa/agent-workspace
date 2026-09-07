@@ -12,10 +12,10 @@
 
 declare(strict_types=1);
 
-namespace Milpa\DesktopApp\Tests;
+namespace Milpa\AgentWorkspace\Tests;
 
-use Milpa\DesktopApp\Live\Gate;
-use Milpa\DesktopApp\Live\GateComponent;
+use Milpa\AgentWorkspace\Live\Gate;
+use Milpa\AgentWorkspace\Live\GateComponent;
 use Milpa\Eventing\EventDispatcher;
 use Milpa\Live\ValueObjects\ComponentContext;
 use Milpa\Live\ValueObjects\InteractionRequest;

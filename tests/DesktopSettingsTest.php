@@ -12,11 +12,11 @@
 
 declare(strict_types=1);
 
-namespace Milpa\DesktopApp\Tests;
+namespace Milpa\AgentWorkspace\Tests;
 
-use Milpa\DesktopApp\DesktopSettings;
-use Milpa\DesktopApp\Http\LoopbackOnlyMiddleware;
-use Milpa\DesktopApp\Tests\Fixtures\AllowAllMiddleware;
+use Milpa\AgentWorkspace\DesktopSettings;
+use Milpa\AgentWorkspace\Http\LoopbackOnlyMiddleware;
+use Milpa\AgentWorkspace\Tests\Fixtures\AllowAllMiddleware;
 use Milpa\Runtime\Config;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;

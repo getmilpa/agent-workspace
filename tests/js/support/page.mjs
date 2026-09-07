@@ -45,7 +45,7 @@ export const SIGNALS = {
  *
  * It is a copy because this harness runs without PHP, and a copy is a place two truths can drift: this
  * one had already drifted («The call failed (%s)» for the shipped «The request failed (HTTP %s)»), which
- * would let a test assert a sentence no user ever sees. `Milpa\DesktopApp\Tests\I18n\ClientCopyTest`
+ * would let a test assert a sentence no user ever sees. `Milpa\AgentWorkspace\Tests\I18n\ClientCopyTest`
  * closes it from the PHP side — it fails if any entry here disagrees with the catalog, and if any
  * `tr('…')` key the shipped modules use is missing from it.
  */

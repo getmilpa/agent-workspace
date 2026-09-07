@@ -12,9 +12,9 @@
 
 declare(strict_types=1);
 
-namespace Milpa\DesktopApp\Live;
+namespace Milpa\AgentWorkspace\Live;
 
-use Milpa\DesktopApp\I18n\Catalog;
+use Milpa\AgentWorkspace\I18n\Catalog;
 use Milpa\Interfaces\Event\MilpaEventDispatcherInterface;
 use Milpa\Live\Components\Form\InputComponent;
 use Milpa\Live\Http\LiveEndpoint;

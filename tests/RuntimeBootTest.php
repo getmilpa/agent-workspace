@@ -12,13 +12,13 @@
 
 declare(strict_types=1);
 
-namespace Milpa\DesktopApp\Tests;
+namespace Milpa\AgentWorkspace\Tests;
 
 use Milpa\Container\DIContainer;
-use Milpa\DesktopApp\DesktopAppPlugin;
-use Milpa\DesktopApp\Live\DesktopAssets;
-use Milpa\DesktopApp\Tests\Fixtures\PasskeyGateStub;
-use Milpa\DesktopApp\Tests\Fixtures\RedirectingGateStub;
+use Milpa\AgentWorkspace\AgentWorkspacePlugin;
+use Milpa\AgentWorkspace\Live\DesktopAssets;
+use Milpa\AgentWorkspace\Tests\Fixtures\PasskeyGateStub;
+use Milpa\AgentWorkspace\Tests\Fixtures\RedirectingGateStub;
 use Milpa\Runtime\Http\RequestHandler;
 use Milpa\Runtime\Kernel;
 use Nyholm\Psr7\Factory\Psr17Factory;
@@ -27,7 +27,7 @@ use PHPUnit\Framework\TestCase;
 use Psr\Http\Message\ResponseInterface;
 
 /**
- * Execution, not text (greenhouse D³): the unit tests call {@see DesktopAppPlugin::routes()} directly,
+ * Execution, not text (greenhouse D³): the unit tests call {@see AgentWorkspacePlugin::routes()} directly,
  * which proves the shape but NOT that the real runtime can boot the plugin and serve it. A Milpa app
  * boots plugins by class-string through {@see Kernel::boot()}, which requires `#[PluginMetadata]` and
  * mounts every booted `RouteProviderInterface`'s routes into the router the front controller dispatches
@@ -41,11 +41,11 @@ final class RuntimeBootTest extends TestCase
     {
         $kernel = Kernel::boot([
             'root' => sys_get_temp_dir(),
-            'plugins' => [DesktopAppPlugin::class],
+            'plugins' => [AgentWorkspacePlugin::class],
         ]);
 
         // The plugin was actually booted by the runtime (not merely instantiated by the test).
-        self::assertContains('DesktopApp', $kernel->bootedPluginNames());
+        self::assertContains('AgentWorkspace', $kernel->bootedPluginNames());
 
         $response = self::dispatch($kernel, 'GET', '/desktop', '127.0.0.1');
 
@@ -84,7 +84,7 @@ final class RuntimeBootTest extends TestCase
     {
         // The door, through the real pipeline (greenhouse decisions/0209): the router resolves the gate the
         // plugin registered, and a LAN address is refused — a page for a browser, JSON for the shell's calls.
-        $kernel = Kernel::boot(['root' => sys_get_temp_dir(), 'plugins' => [DesktopAppPlugin::class]]);
+        $kernel = Kernel::boot(['root' => sys_get_temp_dir(), 'plugins' => [AgentWorkspacePlugin::class]]);
 
         $page = self::dispatch($kernel, 'GET', '/desktop', '203.0.113.9', ['Accept' => 'text/html']);
         self::assertSame(403, $page->getStatusCode());
@@ -121,7 +121,7 @@ final class RuntimeBootTest extends TestCase
         // The positive control of the refusal above: the same LAN address, the door declared open.
         $kernel = Kernel::boot([
             'root' => sys_get_temp_dir(),
-            'plugins' => [DesktopAppPlugin::class],
+            'plugins' => [AgentWorkspacePlugin::class],
             'config' => ['desktop' => ['middleware' => []]],
         ]);
 
@@ -135,7 +135,7 @@ final class RuntimeBootTest extends TestCase
     {
         $kernel = Kernel::boot([
             'root' => sys_get_temp_dir(),
-            'plugins' => [DesktopAppPlugin::class],
+            'plugins' => [AgentWorkspacePlugin::class],
             'config' => ['desktop' => ['middleware' => ['Acme\\Nope']]],
         ]);
 
@@ -156,7 +156,7 @@ final class RuntimeBootTest extends TestCase
         $kernel = Kernel::boot([
             'root' => sys_get_temp_dir(),
             'container' => $container,
-            'plugins' => [DesktopAppPlugin::class],
+            'plugins' => [AgentWorkspacePlugin::class],
             'config' => ['desktop' => ['middleware' => [PasskeyGateStub::class]]],
         ]);
 
@@ -175,7 +175,7 @@ final class RuntimeBootTest extends TestCase
         // query is read from the URI, since the runtime hands the handler a bare PSR-7 request — and, when a
         // gate with no session sends the browser to sign in, `next` carries the path AND the query, so the
         // round trip lands back in embed mode. The gate uses the request target: nothing here adds the flag.
-        $kernel = Kernel::boot(['root' => sys_get_temp_dir(), 'plugins' => [DesktopAppPlugin::class]]);
+        $kernel = Kernel::boot(['root' => sys_get_temp_dir(), 'plugins' => [AgentWorkspacePlugin::class]]);
         $embed = self::dispatch($kernel, 'GET', '/desktop?embed=1', '127.0.0.1');
         self::assertSame(200, $embed->getStatusCode());
         self::assertStringContainsString('<html data-theme="dark" lang="en" data-embed="1">', (string) $embed->getBody());
@@ -187,7 +187,7 @@ final class RuntimeBootTest extends TestCase
         $gated = Kernel::boot([
             'root' => sys_get_temp_dir(),
             'container' => $container,
-            'plugins' => [DesktopAppPlugin::class],
+            'plugins' => [AgentWorkspacePlugin::class],
             'config' => ['desktop' => ['middleware' => [RedirectingGateStub::class]]],
         ]);
 
@@ -203,7 +203,7 @@ final class RuntimeBootTest extends TestCase
         // Declared views end to end through the real Kernel (greenhouse decisions/0211): /desktop and
         // /desktop?embed=1 emit the SAME runtime — one boot, one Alpine, the modules LiveBoot lists — and the
         // session id that boot issued is the one `POST /desktop/live` verifies the CSRF token against.
-        $kernel = Kernel::boot(['root' => sys_get_temp_dir(), 'plugins' => [DesktopAppPlugin::class]]);
+        $kernel = Kernel::boot(['root' => sys_get_temp_dir(), 'plugins' => [AgentWorkspacePlugin::class]]);
 
         foreach (['/desktop', '/desktop?embed=1'] as $path) {
             $body = (string) self::dispatch($kernel, 'GET', $path, '127.0.0.1')->getBody();

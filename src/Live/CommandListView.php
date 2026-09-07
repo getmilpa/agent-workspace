@@ -12,7 +12,7 @@
 
 declare(strict_types=1);
 
-namespace Milpa\DesktopApp\Live;
+namespace Milpa\AgentWorkspace\Live;
 
 /**
  * Renders the composer's command completion — the list the house serves (greenhouse decisions/0202).
@@ -21,7 +21,7 @@ namespace Milpa\DesktopApp\Live;
  * (`/<skill-name>`), each with its description and usage. The popup is CSS state (`data-open`) driven by one
  * delegated handler in `desktop-commands.js`, the module that owns this popup's behaviour (greenhouse
  * decisions/0211, phase C4) — no per-instance x-data (Alpine double-inits dynamic x-data). The same list
- * ({@see \Milpa\DesktopApp\Data\DesktopData::commands()}) has two projections here: the popup HTML and the
+ * ({@see \Milpa\AgentWorkspace\Data\DesktopData::commands()}) has two projections here: the popup HTML and the
  * JSON the parser reads ({@see self::json()}), so what completes is exactly what runs. Pure, so it is tested
  * directly with fixtures.
  */

@@ -12,10 +12,10 @@
 
 declare(strict_types=1);
 
-namespace Milpa\DesktopApp\Data;
+namespace Milpa\AgentWorkspace\Data;
 
 use Milpa\Attributes\PluginMetadata;
-use Milpa\DesktopApp\Live\ShellEventLog;
+use Milpa\AgentWorkspace\Live\ShellEventLog;
 use Milpa\Interfaces\Di\DIContainerInterface;
 use Milpa\Runtime\Config;
 use Milpa\Runtime\Kernel;

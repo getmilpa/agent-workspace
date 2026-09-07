@@ -12,10 +12,10 @@
 
 declare(strict_types=1);
 
-namespace Milpa\DesktopApp\Tests;
+namespace Milpa\AgentWorkspace\Tests;
 
-use Milpa\DesktopApp\Live\Activity;
-use Milpa\DesktopApp\Live\ActivityComponent;
+use Milpa\AgentWorkspace\Live\Activity;
+use Milpa\AgentWorkspace\Live\ActivityComponent;
 use Milpa\Eventing\EventDispatcher;
 use Milpa\Live\ValueObjects\ComponentContext;
 use PHPUnit\Framework\TestCase;

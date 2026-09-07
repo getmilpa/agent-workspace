@@ -12,11 +12,11 @@
 
 declare(strict_types=1);
 
-namespace Milpa\DesktopApp\Tests\Data;
+namespace Milpa\AgentWorkspace\Tests\Data;
 
 use Milpa\Container\DIContainer;
-use Milpa\DesktopApp\Data\DesktopData;
-use Milpa\DesktopApp\Data\DesktopStore;
+use Milpa\AgentWorkspace\Data\DesktopData;
+use Milpa\AgentWorkspace\Data\DesktopStore;
 use PHPUnit\Framework\TestCase;
 
 /**

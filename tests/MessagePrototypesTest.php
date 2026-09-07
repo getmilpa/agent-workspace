@@ -12,13 +12,13 @@
 
 declare(strict_types=1);
 
-namespace Milpa\DesktopApp\Tests;
+namespace Milpa\AgentWorkspace\Tests;
 
-use Milpa\DesktopApp\Live\MessagePrototypes;
-use Milpa\DesktopApp\Live\SystemNoticeComponent;
-use Milpa\DesktopApp\Live\TaskComponent;
-use Milpa\DesktopApp\Live\ToolCallComponent;
-use Milpa\DesktopApp\Live\UserMessageComponent;
+use Milpa\AgentWorkspace\Live\MessagePrototypes;
+use Milpa\AgentWorkspace\Live\SystemNoticeComponent;
+use Milpa\AgentWorkspace\Live\TaskComponent;
+use Milpa\AgentWorkspace\Live\ToolCallComponent;
+use Milpa\AgentWorkspace\Live\UserMessageComponent;
 use Milpa\Eventing\EventDispatcher;
 use Milpa\Live\ValueObjects\ComponentContext;
 use PHPUnit\Framework\TestCase;
@@ -90,7 +90,7 @@ final class MessagePrototypesTest extends TestCase
         self::assertSame('desktop-tool-call', ToolCallComponent::contract()->name);
         self::assertSame('desktop-task', TaskComponent::contract()->name);
         self::assertSame('desktop-system-notice', SystemNoticeComponent::contract()->name);
-        self::assertSame('desktop-result-claim', \Milpa\DesktopApp\Live\ResultClaimComponent::contract()->name);
+        self::assertSame('desktop-result-claim', \Milpa\AgentWorkspace\Live\ResultClaimComponent::contract()->name);
 
         $tool = new ToolCallComponent();
         $state = $tool->mount(['name' => 'capabilities.list', 'result' => '6 capabilities'], new ComponentContext('tool-call'));

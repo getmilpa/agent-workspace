@@ -12,10 +12,10 @@
 
 declare(strict_types=1);
 
-namespace Milpa\DesktopApp\Tests\Http;
+namespace Milpa\AgentWorkspace\Tests\Http;
 
-use Milpa\DesktopApp\Http\RequestPrincipal;
-use Milpa\DesktopApp\Tests\Fixtures\PasskeyGateStub;
+use Milpa\AgentWorkspace\Http\RequestPrincipal;
+use Milpa\AgentWorkspace\Tests\Fixtures\PasskeyGateStub;
 use Nyholm\Psr7\ServerRequest;
 use PHPUnit\Framework\TestCase;
 

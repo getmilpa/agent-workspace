@@ -12,9 +12,9 @@
 
 declare(strict_types=1);
 
-namespace Milpa\DesktopApp\Tests\I18n;
+namespace Milpa\AgentWorkspace\Tests\I18n;
 
-use Milpa\DesktopApp\I18n\Catalog;
+use Milpa\AgentWorkspace\I18n\Catalog;
 use PHPUnit\Framework\TestCase;
 
 /** The Desktop's copy: English by default, Spanish on request, the key itself when nobody wrote it. */

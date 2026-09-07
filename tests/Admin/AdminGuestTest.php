@@ -12,17 +12,17 @@
 
 declare(strict_types=1);
 
-namespace Milpa\DesktopApp\Tests\Admin;
+namespace Milpa\AgentWorkspace\Tests\Admin;
 
 use Milpa\Admin\AdminPlugin;
 use Milpa\Admin\Section\SectionCatalogue;
 use Milpa\Container\DIContainer;
-use Milpa\DesktopApp\Admin\AgentViewComponent;
-use Milpa\DesktopApp\DesktopAppPlugin;
-use Milpa\DesktopApp\DesktopSettings;
-use Milpa\DesktopApp\Live\DesktopAssets;
-use Milpa\DesktopApp\Live\DesktopComponents;
-use Milpa\DesktopApp\Tests\Fixtures\PasskeyGateStub;
+use Milpa\AgentWorkspace\Admin\AgentViewComponent;
+use Milpa\AgentWorkspace\AgentWorkspacePlugin;
+use Milpa\AgentWorkspace\DesktopSettings;
+use Milpa\AgentWorkspace\Live\DesktopAssets;
+use Milpa\AgentWorkspace\Live\DesktopComponents;
+use Milpa\AgentWorkspace\Tests\Fixtures\PasskeyGateStub;
 use Milpa\Live\Contracts\Component\ComponentDefinitionInterface;
 use Milpa\Live\Contracts\Rendering\ComponentRendererInterface;
 use Milpa\Live\ValueObjects\ComponentContext;
@@ -52,7 +52,7 @@ final class AdminGuestTest extends TestCase
 {
     public function testTheAdminListsTheAgentSectionAndComposesTheDesktopInsideItWithNoFrame(): void
     {
-        [, $kernel] = self::boot([AdminPlugin::class, DesktopAppPlugin::class]);
+        [, $kernel] = self::boot([AdminPlugin::class, AgentWorkspacePlugin::class]);
 
         // Discovery: the section, its group and who declared it — what the admin's catalogue KNOWS.
         $catalogue = SectionCatalogue::discover($kernel->plugins());
@@ -60,7 +60,7 @@ final class AdminGuestTest extends TestCase
         self::assertNotNull($agent, 'the admin discovered the Desktop\'s section');
         self::assertSame('agent', $agent->group, 'under the AGENT group');
         self::assertSame(60, $agent->order, 'after the host\'s own 10..40 (greenhouse decisions/0210)');
-        self::assertSame(DesktopAppPlugin::class, $catalogue->declaredBy('agent'), 'declared by the Desktop plugin');
+        self::assertSame(AgentWorkspacePlugin::class, $catalogue->declaredBy('agent'), 'declared by the Desktop plugin');
         self::assertTrue($agent->hasView(), 'a whole view, not one component (greenhouse decisions/0211)');
 
         // The sidebar (milpa/admin ≥ 0.11): the item sits under the AGENT group heading, with its glyph.
@@ -83,7 +83,7 @@ final class AdminGuestTest extends TestCase
         // The HOST puts the header and the attribution; the guest emits the region.
         self::assertStringContainsString('<span class="mui-kbd">Agent</span>', $html, 'the host header names the section');
         self::assertStringContainsString('<title>Agent · Milpa Admin</title>', $html);
-        self::assertStringContainsString('data-declared-by="Milpa\DesktopApp\DesktopAppPlugin">declared by DesktopAppPlugin</span>', $html);
+        self::assertStringContainsString('data-declared-by="Milpa\AgentWorkspace\AgentWorkspacePlugin">declared by AgentWorkspacePlugin</span>', $html);
         self::assertStringContainsString('<div class="desktop-agent" id="milpa-agent" data-desktop-agent="live" data-gate="loopback">', $html);
 
         // THE RETIREMENT, asserted: no frame anywhere on the page, and no embed path pointed at.
@@ -115,7 +115,7 @@ final class AdminGuestTest extends TestCase
      */
     public function testTheRegionSpeaksTheDeclaredLocaleEvenWhenTheHostAnswersInAnother(): void
     {
-        [, $kernel] = self::boot([AdminPlugin::class, DesktopAppPlugin::class]);
+        [, $kernel] = self::boot([AdminPlugin::class, AgentWorkspacePlugin::class]);
         $spanish = (string) self::dispatch($kernel, '/milpa/admin/s/agent?lang=es')->getBody();
 
         // The HOST answered in Spanish: its own chrome, its own chips, its own seeds.
@@ -139,7 +139,7 @@ final class AdminGuestTest extends TestCase
      */
     public function testTheHostEmitsOneRuntimeAndEveryDeclaredFileExactlyOnce(): void
     {
-        [, $kernel] = self::boot([AdminPlugin::class, DesktopAppPlugin::class]);
+        [, $kernel] = self::boot([AdminPlugin::class, AgentWorkspacePlugin::class]);
         $html = (string) self::dispatch($kernel, '/milpa/admin/s/agent')->getBody();
 
         foreach (['alpine.min.js', 'milpa-live.js', 'milpa-live-remote.js'] as $runtime) {
@@ -183,7 +183,7 @@ final class AdminGuestTest extends TestCase
      */
     public function testTheRegionCarriesItsDataTagsAndNoExecutableScriptOfItsOwn(): void
     {
-        [, $kernel] = self::boot([AdminPlugin::class, DesktopAppPlugin::class]);
+        [, $kernel] = self::boot([AdminPlugin::class, AgentWorkspacePlugin::class]);
         $html = (string) self::dispatch($kernel, '/milpa/admin/s/agent')->getBody();
 
         foreach (['milpa-commands', 'milpa-desktop-i18n', 'milpa-desktop-guard', 'milpa-desktop-session'] as $tag) {
@@ -204,7 +204,7 @@ final class AdminGuestTest extends TestCase
 
     public function testTheDeclaredLocaleNamesTheSectionInSpanish(): void
     {
-        [, $kernel] = self::boot([AdminPlugin::class, DesktopAppPlugin::class], ['desktop' => ['locale' => 'es'], 'admin' => ['locale' => 'es']]);
+        [, $kernel] = self::boot([AdminPlugin::class, AgentWorkspacePlugin::class], ['desktop' => ['locale' => 'es'], 'admin' => ['locale' => 'es']]);
 
         $index = (string) self::dispatch($kernel, '/milpa/admin')->getBody();
         self::assertStringContainsString('<span class="mui-sidebar__item-label">Agente</span>', $index);
@@ -233,7 +233,7 @@ final class AdminGuestTest extends TestCase
         if (!class_exists(DesktopSettings::PASSKEY_GATE)) {
             require __DIR__ . '/../Fixtures/app-runtime-passkey-gate.php';
         }
-        [, $kernel] = self::boot([AdminPlugin::class, DesktopAppPlugin::class], ['desktop' => ['middleware' => [DesktopSettings::PASSKEY_GATE]]]);
+        [, $kernel] = self::boot([AdminPlugin::class, AgentWorkspacePlugin::class], ['desktop' => ['middleware' => [DesktopSettings::PASSKEY_GATE]]]);
 
         $section = self::dispatch($kernel, '/milpa/admin/s/agent');
         self::assertSame(200, $section->getStatusCode());
@@ -258,7 +258,7 @@ final class AdminGuestTest extends TestCase
         self::assertStringContainsString('href="/webauthn/signin?next=%2Fmilpa%2Fadmin%2Fs%2Fagent%3Flang%3Des">Sign in</a>', $spanish);
 
         // The admin mounted elsewhere: the way back follows its mount point, read from the context's route.
-        [, $panel] = self::boot([AdminPlugin::class, DesktopAppPlugin::class], ['desktop' => ['middleware' => [DesktopSettings::PASSKEY_GATE]], 'admin' => ['route' => '/panel']]);
+        [, $panel] = self::boot([AdminPlugin::class, AgentWorkspacePlugin::class], ['desktop' => ['middleware' => [DesktopSettings::PASSKEY_GATE]], 'admin' => ['route' => '/panel']]);
         self::assertStringContainsString('href="/webauthn/signin?next=%2Fpanel%2Fs%2Fagent">', (string) self::dispatch($panel, '/panel/s/agent')->getBody());
     }
 
@@ -275,7 +275,7 @@ final class AdminGuestTest extends TestCase
         $container = new DIContainer();
         $container->registerService(PasskeyGateStub::class, new PasskeyGateStub());
         [, $kernel] = self::boot(
-            [AdminPlugin::class, DesktopAppPlugin::class],
+            [AdminPlugin::class, AgentWorkspacePlugin::class],
             ['admin' => ['middleware' => [PasskeyGateStub::class]], 'desktop' => ['middleware' => [DesktopSettings::PASSKEY_GATE]]],
             $container,
         );
@@ -299,7 +299,7 @@ final class AdminGuestTest extends TestCase
         $again = (string) self::dispatch($kernel, '/milpa/admin/s/agent', '203.0.113.9')->getBody();
         self::assertStringContainsString('"agent":"' . $mine[1] . '"', $again, 'the same human returns to the same session');
         // …and a panel that authenticated NOBODY drives a different one: the id is derived, not a constant.
-        [, $anonymous] = self::boot([AdminPlugin::class, DesktopAppPlugin::class]);
+        [, $anonymous] = self::boot([AdminPlugin::class, AgentWorkspacePlugin::class]);
         self::assertStringNotContainsString('"agent":"' . $mine[1] . '"', (string) self::dispatch($anonymous, '/milpa/admin/s/agent')->getBody(), 'a different principal, a different session');
     }
 
@@ -314,7 +314,7 @@ final class AdminGuestTest extends TestCase
     public function testASurfaceThatThrowsPaintsItsOwnRegionAndTheRestOfThePanelStands(): void
     {
         $container = new DIContainer();
-        [, $kernel] = self::boot([AdminPlugin::class, DesktopAppPlugin::class], [], $container);
+        [, $kernel] = self::boot([AdminPlugin::class, AgentWorkspacePlugin::class], [], $container);
 
         // Break ONE surface, in the registry the region composes from — the same instance the shell uses.
         $live = $container->get(DesktopComponents::class);
@@ -364,7 +364,7 @@ final class AdminGuestTest extends TestCase
         $container = new DIContainer();
         $container->registerService(PasskeyGateStub::class, new PasskeyGateStub());
         [, $kernel] = self::boot(
-            [AdminPlugin::class, DesktopAppPlugin::class],
+            [AdminPlugin::class, AgentWorkspacePlugin::class],
             ['admin' => ['middleware' => [PasskeyGateStub::class]], 'desktop' => ['middleware' => [DesktopSettings::PASSKEY_GATE]]],
             $container,
         );

@@ -12,10 +12,10 @@
 
 declare(strict_types=1);
 
-namespace Milpa\DesktopApp\Controllers;
+namespace Milpa\AgentWorkspace\Controllers;
 
-use Milpa\DesktopApp\Live\ShellEventLog;
-use Milpa\DesktopApp\Live\SseFormatter;
+use Milpa\AgentWorkspace\Live\ShellEventLog;
+use Milpa\AgentWorkspace\Live\SseFormatter;
 use Milpa\Runtime\Http\CallbackStream;
 use Nyholm\Psr7\Response;
 use Psr\Http\Message\ResponseInterface;

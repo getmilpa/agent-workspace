@@ -12,16 +12,16 @@
 
 declare(strict_types=1);
 
-namespace Milpa\DesktopApp\Live;
+namespace Milpa\AgentWorkspace\Live;
 
-use Milpa\DesktopApp\Data\DesktopData;
-use Milpa\DesktopApp\I18n\Catalog;
+use Milpa\AgentWorkspace\Data\DesktopData;
+use Milpa\AgentWorkspace\I18n\Catalog;
 
 /**
  * The shared signals the Desktop's surfaces read, and the derivations built on them — ONE authority for
  * both pages that mount those surfaces (greenhouse decisions/0211, slice 3).
  *
- * Until the Desktop was only ever its own page, this lived inside {@see \Milpa\DesktopApp\Controllers\ShellController}
+ * Until the Desktop was only ever its own page, this lived inside {@see \Milpa\AgentWorkspace\Controllers\ShellController}
  * as the JSON of `#milpa-live-signals`. The Agent region of milpa/admin mounts the SAME components inside
  * SOMEBODY ELSE's document, and that document seeds its own tags: two copies of this map would be two
  * truths about what a fresh page starts with, and the first one to drift would be a surface reading a

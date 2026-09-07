@@ -1,5 +1,5 @@
 {
-  "name": "@milpa/desktop-app-client-tests",
+  "name": "@milpa/agent-workspace-client-tests",
   "private": true,
   "description": "Test harness for the no-build client modules shipped in resources/components (node:test, nothing to install).",
   "license": "Apache-2.0",

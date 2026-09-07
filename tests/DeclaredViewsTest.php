@@ -12,14 +12,14 @@
 
 declare(strict_types=1);
 
-namespace Milpa\DesktopApp\Tests;
+namespace Milpa\AgentWorkspace\Tests;
 
-use Milpa\DesktopApp\Controllers\AssetsController;
-use Milpa\DesktopApp\Controllers\ShellController;
-use Milpa\DesktopApp\Live\DesktopAssets;
-use Milpa\DesktopApp\Live\DesktopComponentRenderer;
-use Milpa\DesktopApp\Live\DesktopComponents;
-use Milpa\DesktopApp\Live\SidebarComponent;
+use Milpa\AgentWorkspace\Controllers\AssetsController;
+use Milpa\AgentWorkspace\Controllers\ShellController;
+use Milpa\AgentWorkspace\Live\DesktopAssets;
+use Milpa\AgentWorkspace\Live\DesktopComponentRenderer;
+use Milpa\AgentWorkspace\Live\DesktopComponents;
+use Milpa\AgentWorkspace\Live\SidebarComponent;
 use Milpa\Eventing\EventDispatcher;
 use Milpa\Http\HttpMethod;
 use Milpa\Http\Routing\HandlerReference;
@@ -412,7 +412,7 @@ final class DeclaredViewsTest extends TestCase
         self::assertSame('painted', $renderer->render(new SidebarComponent(), $request)->output);
 
         $this->expectException(\InvalidArgumentException::class);
-        $renderer->render(new \Milpa\DesktopApp\Live\TabsComponent(), $request);
+        $renderer->render(new \Milpa\AgentWorkspace\Live\TabsComponent(), $request);
     }
 
     public function testARendererRefusesATargetItDoesNotPaint(): void

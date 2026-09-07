@@ -12,7 +12,7 @@
 
 declare(strict_types=1);
 
-namespace Milpa\DesktopApp;
+namespace Milpa\AgentWorkspace;
 
 /**
  * The mutable collector other plugins contribute the desktop shell's UI through (greenhouse decisions/0188).

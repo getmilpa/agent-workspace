@@ -12,10 +12,10 @@
 
 declare(strict_types=1);
 
-namespace Milpa\DesktopApp\Tests;
+namespace Milpa\AgentWorkspace\Tests;
 
-use Milpa\DesktopApp\Live\Tabs;
-use Milpa\DesktopApp\Live\TabsComponent;
+use Milpa\AgentWorkspace\Live\Tabs;
+use Milpa\AgentWorkspace\Live\TabsComponent;
 use Milpa\Eventing\EventDispatcher;
 use Milpa\Live\ValueObjects\ComponentContext;
 use Milpa\Live\ValueObjects\InteractionRequest;

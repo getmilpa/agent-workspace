@@ -1,6 +1,6 @@
 # Milpa Desktop — Electron host
 
-A minimal, generic Electron host for any Milpa app running `milpa/desktop-app`. It does two things:
+A minimal, generic Electron host for any Milpa app running `milpa/agent-workspace`. It does two things:
 
 1. starts the app's HTTP server (PHP's built-in server bound on `127.0.0.1`, via the app's
    `public/router.php` — bound on the IP because that server listens on one address family only), and

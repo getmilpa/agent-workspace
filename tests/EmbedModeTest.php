@@ -12,13 +12,13 @@
 
 declare(strict_types=1);
 
-namespace Milpa\DesktopApp\Tests;
+namespace Milpa\AgentWorkspace\Tests;
 
 use Milpa\Container\DIContainer;
-use Milpa\DesktopApp\Controllers\ShellController;
-use Milpa\DesktopApp\Data\DesktopData;
-use Milpa\DesktopApp\I18n\Catalog;
-use Milpa\DesktopApp\Live\SessionStrip;
+use Milpa\AgentWorkspace\Controllers\ShellController;
+use Milpa\AgentWorkspace\Data\DesktopData;
+use Milpa\AgentWorkspace\I18n\Catalog;
+use Milpa\AgentWorkspace\Live\SessionStrip;
 use Milpa\Eventing\EventDispatcher;
 use Nyholm\Psr7\ServerRequest;
 use PHPUnit\Framework\TestCase;

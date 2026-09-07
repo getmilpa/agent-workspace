@@ -12,10 +12,10 @@
 
 declare(strict_types=1);
 
-namespace Milpa\DesktopApp\Live;
+namespace Milpa\AgentWorkspace\Live;
 
-use Milpa\DesktopApp\Data\DesktopData;
-use Milpa\DesktopApp\I18n\Catalog;
+use Milpa\AgentWorkspace\Data\DesktopData;
+use Milpa\AgentWorkspace\I18n\Catalog;
 use Milpa\Interfaces\Event\MilpaEventDispatcherInterface;
 use Milpa\Live\Security\HmacStateSigner;
 use Milpa\Live\Security\SignedXhtmlStateTransferCodec;
@@ -30,7 +30,7 @@ use Milpa\Live\ValueObjects\StateSnapshot;
  * of every session with the current one selected, the «New session» control), carries the signed state
  * envelope, and emits `desktop.session_strip.before_render` / `after_render` so other plugins can extend it.
  *
- * Rendered only in embed mode, by {@see \Milpa\DesktopApp\Controllers\ShellController}. The controls keep the
+ * Rendered only in embed mode, by {@see \Milpa\AgentWorkspace\Controllers\ShellController}. The controls keep the
  * ids and the `data-new-session` hook the shell script wires to the SAME handlers as the sidebar's.
  */
 final class SessionStrip

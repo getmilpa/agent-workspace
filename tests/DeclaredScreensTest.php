@@ -12,19 +12,19 @@
 
 declare(strict_types=1);
 
-namespace Milpa\DesktopApp\Tests;
+namespace Milpa\AgentWorkspace\Tests;
 
 use Milpa\Container\DIContainer;
-use Milpa\DesktopApp\Controllers\LiveController;
-use Milpa\DesktopApp\Data\DesktopData;
-use Milpa\DesktopApp\Data\DesktopStore;
-use Milpa\DesktopApp\I18n\Catalog;
-use Milpa\DesktopApp\Live\AuthOverlay;
-use Milpa\DesktopApp\Live\AuthOverlayComponent;
-use Milpa\DesktopApp\Live\ComposerField;
-use Milpa\DesktopApp\Live\DesktopComponents;
-use Milpa\DesktopApp\Live\SettingsScreen;
-use Milpa\DesktopApp\Live\SettingsScreenComponent;
+use Milpa\AgentWorkspace\Controllers\LiveController;
+use Milpa\AgentWorkspace\Data\DesktopData;
+use Milpa\AgentWorkspace\Data\DesktopStore;
+use Milpa\AgentWorkspace\I18n\Catalog;
+use Milpa\AgentWorkspace\Live\AuthOverlay;
+use Milpa\AgentWorkspace\Live\AuthOverlayComponent;
+use Milpa\AgentWorkspace\Live\ComposerField;
+use Milpa\AgentWorkspace\Live\DesktopComponents;
+use Milpa\AgentWorkspace\Live\SettingsScreen;
+use Milpa\AgentWorkspace\Live\SettingsScreenComponent;
 use Milpa\Eventing\EventDispatcher;
 use Milpa\Live\ValueObjects\ComponentContext;
 use Milpa\Live\ValueObjects\InteractionRequest;

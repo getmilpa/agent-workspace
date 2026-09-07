@@ -12,9 +12,9 @@
 
 declare(strict_types=1);
 
-namespace Milpa\DesktopApp\Tests\Live;
+namespace Milpa\AgentWorkspace\Tests\Live;
 
-use Milpa\DesktopApp\Live\CommandListView;
+use Milpa\AgentWorkspace\Live\CommandListView;
 use PHPUnit\Framework\TestCase;
 
 /**

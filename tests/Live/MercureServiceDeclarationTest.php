@@ -12,9 +12,9 @@
 
 declare(strict_types=1);
 
-namespace Milpa\DesktopApp\Tests\Live;
+namespace Milpa\AgentWorkspace\Tests\Live;
 
-use Milpa\DesktopApp\Live\MercureServiceDeclaration;
+use Milpa\AgentWorkspace\Live\MercureServiceDeclaration;
 use Milpa\Runtime\Config;
 use Milpa\Runtime\Stack\EnvVar;
 use Milpa\Runtime\Stack\ServiceDeclaration;

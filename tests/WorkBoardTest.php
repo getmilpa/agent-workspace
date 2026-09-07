@@ -12,12 +12,12 @@
 
 declare(strict_types=1);
 
-namespace Milpa\DesktopApp\Tests;
+namespace Milpa\AgentWorkspace\Tests;
 
 use Milpa\Container\DIContainer;
-use Milpa\DesktopApp\Data\DesktopData;
-use Milpa\DesktopApp\Live\WorkBoard;
-use Milpa\DesktopApp\Live\WorkBoardComponent;
+use Milpa\AgentWorkspace\Data\DesktopData;
+use Milpa\AgentWorkspace\Live\WorkBoard;
+use Milpa\AgentWorkspace\Live\WorkBoardComponent;
 use Milpa\Eventing\EventDispatcher;
 use Milpa\Live\ValueObjects\ComponentContext;
 use PHPUnit\Framework\TestCase;

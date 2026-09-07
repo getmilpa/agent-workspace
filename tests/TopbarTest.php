@@ -12,15 +12,15 @@
 
 declare(strict_types=1);
 
-namespace Milpa\DesktopApp\Tests;
+namespace Milpa\AgentWorkspace\Tests;
 
 use Milpa\Container\DIContainer;
-use Milpa\DesktopApp\Data\DesktopData;
-use Milpa\DesktopApp\DesktopSettings;
-use Milpa\DesktopApp\I18n\Catalog;
-use Milpa\DesktopApp\Live\Topbar;
-use Milpa\DesktopApp\Live\TopbarComponent;
-use Milpa\DesktopApp\Tests\Fixtures\AllowAllMiddleware;
+use Milpa\AgentWorkspace\Data\DesktopData;
+use Milpa\AgentWorkspace\DesktopSettings;
+use Milpa\AgentWorkspace\I18n\Catalog;
+use Milpa\AgentWorkspace\Live\Topbar;
+use Milpa\AgentWorkspace\Live\TopbarComponent;
+use Milpa\AgentWorkspace\Tests\Fixtures\AllowAllMiddleware;
 use Milpa\Eventing\EventDispatcher;
 use Milpa\Live\ValueObjects\ComponentContext;
 use PHPUnit\Framework\TestCase;

@@ -12,7 +12,7 @@
 
 declare(strict_types=1);
 
-namespace Milpa\DesktopApp\Http;
+namespace Milpa\AgentWorkspace\Http;
 
 use Psr\Http\Message\ServerRequestInterface;
 

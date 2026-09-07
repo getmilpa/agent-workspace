@@ -12,12 +12,12 @@
 
 declare(strict_types=1);
 
-namespace Milpa\DesktopApp\Live;
+namespace Milpa\AgentWorkspace\Live;
 
 /**
  * Records a shell change to both transports (greenhouse decisions/0188, 0475).
  *
- * When a plugin dispatches {@see \Milpa\DesktopApp\DesktopAppPlugin::CHANGED_EVENT}, this appends the event
+ * When a plugin dispatches {@see \Milpa\AgentWorkspace\AgentWorkspacePlugin::CHANGED_EVENT}, this appends the event
  * to the shared log (the backlog the `/desktop/events` feed replays and polls) and, when a live publisher is
  * wired, ALSO publishes it to the hub for real-time fanout. Both, on purpose: the log gives resume-on-
  * reconnect and a no-hub fallback; the publisher removes the poll when a hub is present. With no publisher

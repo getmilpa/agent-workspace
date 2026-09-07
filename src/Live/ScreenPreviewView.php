@@ -12,7 +12,7 @@
 
 declare(strict_types=1);
 
-namespace Milpa\DesktopApp\Live;
+namespace Milpa\AgentWorkspace\Live;
 
 /**
  * Renders the chips of live screens the agent declared (greenhouse decisions/0197): pick one to preview the UI

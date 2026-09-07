@@ -12,14 +12,14 @@
 
 declare(strict_types=1);
 
-namespace Milpa\DesktopApp\Admin;
+namespace Milpa\AgentWorkspace\Admin;
 
 use Milpa\Admin\Section\DeclaredView;
-use Milpa\DesktopApp\Data\DesktopData;
-use Milpa\DesktopApp\DesktopSettings;
-use Milpa\DesktopApp\I18n\Catalog;
-use Milpa\DesktopApp\Live\DesktopComponents;
-use Milpa\DesktopApp\Live\ShellSignals;
+use Milpa\AgentWorkspace\Data\DesktopData;
+use Milpa\AgentWorkspace\DesktopSettings;
+use Milpa\AgentWorkspace\I18n\Catalog;
+use Milpa\AgentWorkspace\Live\DesktopComponents;
+use Milpa\AgentWorkspace\Live\ShellSignals;
 use Milpa\Live\Contracts\Component\ComponentDefinitionInterface;
 use Milpa\Live\Contracts\Rendering\ComponentRendererInterface;
 use Milpa\Live\ValueObjects\RenderTarget;

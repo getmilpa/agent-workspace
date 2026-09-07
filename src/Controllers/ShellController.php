@@ -12,53 +12,53 @@
 
 declare(strict_types=1);
 
-namespace Milpa\DesktopApp\Controllers;
+namespace Milpa\AgentWorkspace\Controllers;
 
-use Milpa\DesktopApp\Data\DesktopData;
-use Milpa\DesktopApp\DesktopAppPlugin;
-use Milpa\DesktopApp\DesktopSettings;
-use Milpa\DesktopApp\Http\RequestPrincipal;
-use Milpa\DesktopApp\I18n\Catalog;
-use Milpa\DesktopApp\Live\ActivityComponent;
-use Milpa\DesktopApp\Live\AgentMessageComponent;
-use Milpa\DesktopApp\Live\AuthOverlay;
-use Milpa\DesktopApp\Live\AuthOverlayComponent;
-use Milpa\DesktopApp\Live\CapabilitiesScreen;
-use Milpa\DesktopApp\Live\CapabilitiesScreenComponent;
-use Milpa\DesktopApp\Live\CommandListView;
-use Milpa\DesktopApp\Live\ComposerBar;
-use Milpa\DesktopApp\Live\ComposerBarComponent;
-use Milpa\DesktopApp\Live\ComposerField;
-use Milpa\DesktopApp\Live\ContextComponent;
-use Milpa\DesktopApp\Live\ConversationComponent;
-use Milpa\DesktopApp\Live\DecisionsInbox;
-use Milpa\DesktopApp\Live\DecisionsInboxComponent;
-use Milpa\DesktopApp\Live\DesktopAssets;
-use Milpa\DesktopApp\Live\DesktopComponents;
-use Milpa\DesktopApp\Live\GateComponent;
-use Milpa\DesktopApp\Live\MercureConfig;
-use Milpa\DesktopApp\Live\ResultClaimComponent;
-use Milpa\DesktopApp\Live\ScreenPreview;
-use Milpa\DesktopApp\Live\ScreenPreviewComponent;
-use Milpa\DesktopApp\Live\SessionStrip;
-use Milpa\DesktopApp\Live\SessionStripComponent;
-use Milpa\DesktopApp\Live\SettingsScreen;
-use Milpa\DesktopApp\Live\SettingsScreenComponent;
-use Milpa\DesktopApp\Live\ShellSignals;
-use Milpa\DesktopApp\Live\SidebarComponent;
-use Milpa\DesktopApp\Live\SkillsScreen;
-use Milpa\DesktopApp\Live\SkillsScreenComponent;
-use Milpa\DesktopApp\Live\StatusBar;
-use Milpa\DesktopApp\Live\StatusBarComponent;
-use Milpa\DesktopApp\Live\SystemNoticeComponent;
-use Milpa\DesktopApp\Live\TabsComponent;
-use Milpa\DesktopApp\Live\TaskComponent;
-use Milpa\DesktopApp\Live\ThinkingComponent;
-use Milpa\DesktopApp\Live\ToolCallComponent;
-use Milpa\DesktopApp\Live\TopbarComponent;
-use Milpa\DesktopApp\Live\UserMessageComponent;
-use Milpa\DesktopApp\Live\WorkBoardComponent;
-use Milpa\DesktopApp\ShellComposition;
+use Milpa\AgentWorkspace\Data\DesktopData;
+use Milpa\AgentWorkspace\AgentWorkspacePlugin;
+use Milpa\AgentWorkspace\DesktopSettings;
+use Milpa\AgentWorkspace\Http\RequestPrincipal;
+use Milpa\AgentWorkspace\I18n\Catalog;
+use Milpa\AgentWorkspace\Live\ActivityComponent;
+use Milpa\AgentWorkspace\Live\AgentMessageComponent;
+use Milpa\AgentWorkspace\Live\AuthOverlay;
+use Milpa\AgentWorkspace\Live\AuthOverlayComponent;
+use Milpa\AgentWorkspace\Live\CapabilitiesScreen;
+use Milpa\AgentWorkspace\Live\CapabilitiesScreenComponent;
+use Milpa\AgentWorkspace\Live\CommandListView;
+use Milpa\AgentWorkspace\Live\ComposerBar;
+use Milpa\AgentWorkspace\Live\ComposerBarComponent;
+use Milpa\AgentWorkspace\Live\ComposerField;
+use Milpa\AgentWorkspace\Live\ContextComponent;
+use Milpa\AgentWorkspace\Live\ConversationComponent;
+use Milpa\AgentWorkspace\Live\DecisionsInbox;
+use Milpa\AgentWorkspace\Live\DecisionsInboxComponent;
+use Milpa\AgentWorkspace\Live\DesktopAssets;
+use Milpa\AgentWorkspace\Live\DesktopComponents;
+use Milpa\AgentWorkspace\Live\GateComponent;
+use Milpa\AgentWorkspace\Live\MercureConfig;
+use Milpa\AgentWorkspace\Live\ResultClaimComponent;
+use Milpa\AgentWorkspace\Live\ScreenPreview;
+use Milpa\AgentWorkspace\Live\ScreenPreviewComponent;
+use Milpa\AgentWorkspace\Live\SessionStrip;
+use Milpa\AgentWorkspace\Live\SessionStripComponent;
+use Milpa\AgentWorkspace\Live\SettingsScreen;
+use Milpa\AgentWorkspace\Live\SettingsScreenComponent;
+use Milpa\AgentWorkspace\Live\ShellSignals;
+use Milpa\AgentWorkspace\Live\SidebarComponent;
+use Milpa\AgentWorkspace\Live\SkillsScreen;
+use Milpa\AgentWorkspace\Live\SkillsScreenComponent;
+use Milpa\AgentWorkspace\Live\StatusBar;
+use Milpa\AgentWorkspace\Live\StatusBarComponent;
+use Milpa\AgentWorkspace\Live\SystemNoticeComponent;
+use Milpa\AgentWorkspace\Live\TabsComponent;
+use Milpa\AgentWorkspace\Live\TaskComponent;
+use Milpa\AgentWorkspace\Live\ThinkingComponent;
+use Milpa\AgentWorkspace\Live\ToolCallComponent;
+use Milpa\AgentWorkspace\Live\TopbarComponent;
+use Milpa\AgentWorkspace\Live\UserMessageComponent;
+use Milpa\AgentWorkspace\Live\WorkBoardComponent;
+use Milpa\AgentWorkspace\ShellComposition;
 use Milpa\Interfaces\Event\MilpaEventDispatcherInterface;
 use Milpa\Live\Http\LiveBoot;
 use Milpa\Live\Rendering\XhtmlComponentCompiler;
@@ -126,17 +126,17 @@ final class ShellController
         private readonly ?MercureConfig $mercure = null,
         private readonly ?DesktopData $data = null,
         private readonly ?ComposerField $composerField = null,
-        private readonly ?\Milpa\DesktopApp\Live\Sidebar $sidebar = null,
-        private readonly ?\Milpa\DesktopApp\Live\Topbar $topbar = null,
-        private readonly ?\Milpa\DesktopApp\Live\Tabs $tabs = null,
-        private readonly ?\Milpa\DesktopApp\Live\WorkBoard $workBoard = null,
-        private readonly ?\Milpa\DesktopApp\Live\Activity $activity = null,
-        private readonly ?\Milpa\DesktopApp\Live\Context $context = null,
-        private readonly ?\Milpa\DesktopApp\Live\Gate $gate = null,
-        private readonly ?\Milpa\DesktopApp\Live\Thinking $thinking = null,
-        private readonly ?\Milpa\DesktopApp\Live\AgentMessage $agentMessage = null,
-        private readonly ?\Milpa\DesktopApp\Live\MessagePrototypes $messages = null,
-        private readonly ?\Milpa\DesktopApp\Live\Conversation $conversation = null,
+        private readonly ?\Milpa\AgentWorkspace\Live\Sidebar $sidebar = null,
+        private readonly ?\Milpa\AgentWorkspace\Live\Topbar $topbar = null,
+        private readonly ?\Milpa\AgentWorkspace\Live\Tabs $tabs = null,
+        private readonly ?\Milpa\AgentWorkspace\Live\WorkBoard $workBoard = null,
+        private readonly ?\Milpa\AgentWorkspace\Live\Activity $activity = null,
+        private readonly ?\Milpa\AgentWorkspace\Live\Context $context = null,
+        private readonly ?\Milpa\AgentWorkspace\Live\Gate $gate = null,
+        private readonly ?\Milpa\AgentWorkspace\Live\Thinking $thinking = null,
+        private readonly ?\Milpa\AgentWorkspace\Live\AgentMessage $agentMessage = null,
+        private readonly ?\Milpa\AgentWorkspace\Live\MessagePrototypes $messages = null,
+        private readonly ?\Milpa\AgentWorkspace\Live\Conversation $conversation = null,
         private readonly ?DesktopSettings $settings = null,
         private readonly ?Catalog $catalog = null,
         private readonly ?SessionStrip $sessionStrip = null,
@@ -236,15 +236,15 @@ final class ShellController
         $gate = ($this->settings ?? new DesktopSettings())->gateLabel();
 
         return (string) json_encode(
-            ['signin' => $gate === DesktopSettings::GATE_PASSKEY ? DesktopAppPlugin::SIGNIN_PATH : ''],
+            ['signin' => $gate === DesktopSettings::GATE_PASSKEY ? AgentWorkspacePlugin::SIGNIN_PATH : ''],
             \JSON_HEX_TAG | \JSON_HEX_AMP | \JSON_HEX_APOS | \JSON_HEX_QUOT | \JSON_UNESCAPED_SLASHES,
         );
     }
 
     /** The plainer message prototypes (user/tool/task/system), or a fallback set (greenhouse decisions/0191). */
-    private function messages(): \Milpa\DesktopApp\Live\MessagePrototypes
+    private function messages(): \Milpa\AgentWorkspace\Live\MessagePrototypes
     {
-        return $this->messages ?? new \Milpa\DesktopApp\Live\MessagePrototypes('desktop-messages-fallback', $this->events);
+        return $this->messages ?? new \Milpa\AgentWorkspace\Live\MessagePrototypes('desktop-messages-fallback', $this->events);
     }
 
     /** Serve the dashboard, composed with every plugin's contributed panels. */
@@ -272,7 +272,7 @@ final class ShellController
             $cookies[] = 'milpa_agent_sid=' . $agentSid . '; Path=/; SameSite=Lax';
             // The hub reads the subscriber JWT from this cookie; the browser sends it with EventSource. It is
             // scoped to the shell topic AND this session's exact stream topic (greenhouse decisions/0190).
-            $jwt = $this->mercure->subscriberJwt([\Milpa\DesktopApp\Live\MercureConfig::sessionTopic($agentSid)]);
+            $jwt = $this->mercure->subscriberJwt([\Milpa\AgentWorkspace\Live\MercureConfig::sessionTopic($agentSid)]);
             $cookies[] = 'mercureAuthorization=' . $jwt . '; Path=/; SameSite=Lax';
         }
 
@@ -477,21 +477,21 @@ final class ShellController
     }
 
     /** The sidebar surface (greenhouse decisions/0189) — the injected one, else a fallback over the same data. */
-    private function sidebarOf(): \Milpa\DesktopApp\Live\Sidebar
+    private function sidebarOf(): \Milpa\AgentWorkspace\Live\Sidebar
     {
-        return $this->sidebar ?? new \Milpa\DesktopApp\Live\Sidebar('desktop-sidebar-fallback', $this->data, $this->events);
+        return $this->sidebar ?? new \Milpa\AgentWorkspace\Live\Sidebar('desktop-sidebar-fallback', $this->data, $this->events);
     }
 
     /** The topbar surface (greenhouse decisions/0189, 0209) — the injected one, else a fallback over the same data and door. */
-    private function topbarOf(): \Milpa\DesktopApp\Live\Topbar
+    private function topbarOf(): \Milpa\AgentWorkspace\Live\Topbar
     {
-        return $this->topbar ?? new \Milpa\DesktopApp\Live\Topbar('desktop-topbar-fallback', $this->data, $this->events, $this->settings, $this->catalog);
+        return $this->topbar ?? new \Milpa\AgentWorkspace\Live\Topbar('desktop-topbar-fallback', $this->data, $this->events, $this->settings, $this->catalog);
     }
 
     /** The main tablist surface (greenhouse decisions/0189) — the panes and composer dock read its `desktop.tab` signal. */
-    private function tabsOf(): \Milpa\DesktopApp\Live\Tabs
+    private function tabsOf(): \Milpa\AgentWorkspace\Live\Tabs
     {
-        return $this->tabs ?? new \Milpa\DesktopApp\Live\Tabs('desktop-tabs-fallback', $this->events);
+        return $this->tabs ?? new \Milpa\AgentWorkspace\Live\Tabs('desktop-tabs-fallback', $this->events);
     }
 
     /**
@@ -506,45 +506,45 @@ final class ShellController
     }
 
     /** The Work board surface (greenhouse decisions/0189) — moving a card still persists through /desktop/work. */
-    private function workBoardOf(): \Milpa\DesktopApp\Live\WorkBoard
+    private function workBoardOf(): \Milpa\AgentWorkspace\Live\WorkBoard
     {
-        return $this->workBoard ?? new \Milpa\DesktopApp\Live\WorkBoard('desktop-work-board-fallback', $this->data, $this->events);
+        return $this->workBoard ?? new \Milpa\AgentWorkspace\Live\WorkBoard('desktop-work-board-fallback', $this->data, $this->events);
     }
 
     /** The Activity tab surface (greenhouse decisions/0189) — facts arrive live over the hub, prepended to #milpa-activity. */
-    private function activityOf(): \Milpa\DesktopApp\Live\Activity
+    private function activityOf(): \Milpa\AgentWorkspace\Live\Activity
     {
-        return $this->activity ?? new \Milpa\DesktopApp\Live\Activity('desktop-activity-fallback', $this->data, $this->events);
+        return $this->activity ?? new \Milpa\AgentWorkspace\Live\Activity('desktop-activity-fallback', $this->data, $this->events);
     }
 
     /** The Context tab surface (greenhouse decisions/0189) — plugins contribute panels through the composition (addPanel). */
-    private function contextOf(): \Milpa\DesktopApp\Live\Context
+    private function contextOf(): \Milpa\AgentWorkspace\Live\Context
     {
-        return $this->context ?? new \Milpa\DesktopApp\Live\Context('desktop-context-fallback', $this->events);
+        return $this->context ?? new \Milpa\AgentWorkspace\Live\Context('desktop-context-fallback', $this->events);
     }
 
     /** The consent gate surface (greenhouse decisions/0189) — its visibility is the `desktop.gate.open` signal. */
-    private function gateOf(): \Milpa\DesktopApp\Live\Gate
+    private function gateOf(): \Milpa\AgentWorkspace\Live\Gate
     {
-        return $this->gate ?? new \Milpa\DesktopApp\Live\Gate('desktop-gate-fallback', $this->events);
+        return $this->gate ?? new \Milpa\AgentWorkspace\Live\Gate('desktop-gate-fallback', $this->events);
     }
 
     /** The conversation surface (greenhouse decisions/0191): the empty state + envelope inside the chat container. */
-    private function conversationOf(): \Milpa\DesktopApp\Live\Conversation
+    private function conversationOf(): \Milpa\AgentWorkspace\Live\Conversation
     {
-        return $this->conversation ?? new \Milpa\DesktopApp\Live\Conversation('desktop-conversation-fallback', $this->events, $this->data, $this->catalog());
+        return $this->conversation ?? new \Milpa\AgentWorkspace\Live\Conversation('desktop-conversation-fallback', $this->events, $this->data, $this->catalog());
     }
 
     /** The thinking prototype's surface (greenhouse decisions/0191): cloned per turn, fed the reasoning by events. */
-    private function thinkingOf(): \Milpa\DesktopApp\Live\Thinking
+    private function thinkingOf(): \Milpa\AgentWorkspace\Live\Thinking
     {
-        return $this->thinking ?? new \Milpa\DesktopApp\Live\Thinking('desktop-thinking-fallback', $this->events);
+        return $this->thinking ?? new \Milpa\AgentWorkspace\Live\Thinking('desktop-thinking-fallback', $this->events);
     }
 
     /** The agent-message prototype's surface (greenhouse decisions/0191): cloned per answer, its foot tools delegated. */
-    private function agentMessageOf(): \Milpa\DesktopApp\Live\AgentMessage
+    private function agentMessageOf(): \Milpa\AgentWorkspace\Live\AgentMessage
     {
-        return $this->agentMessage ?? new \Milpa\DesktopApp\Live\AgentMessage('desktop-agent-message-fallback', $this->events);
+        return $this->agentMessage ?? new \Milpa\AgentWorkspace\Live\AgentMessage('desktop-agent-message-fallback', $this->events);
     }
 
     /**

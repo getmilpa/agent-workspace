@@ -12,25 +12,25 @@
 
 declare(strict_types=1);
 
-namespace Milpa\DesktopApp\Tests;
+namespace Milpa\AgentWorkspace\Tests;
 
 use Milpa\Container\DIContainer;
-use Milpa\DesktopApp\Controllers\ShellController;
-use Milpa\DesktopApp\Data\DesktopData;
-use Milpa\DesktopApp\Data\DesktopStore;
-use Milpa\DesktopApp\DesktopSettings;
-use Milpa\DesktopApp\Http\RequestPrincipal;
-use Milpa\DesktopApp\I18n\Catalog;
-use Milpa\DesktopApp\Tests\Fixtures\PasskeyGateStub;
-use Milpa\DesktopApp\Live\CapabilityCatalogueView;
-use Milpa\DesktopApp\Live\DecisionsInboxView;
-use Milpa\DesktopApp\Live\RolesView;
-use Milpa\DesktopApp\Live\ScreenPreviewView;
-use Milpa\DesktopApp\Live\SkillsView;
-use Milpa\DesktopApp\DesktopAppPlugin;
-use Milpa\DesktopApp\Live\MercureConfig;
-use Milpa\DesktopApp\Live\ShellEvent;
-use Milpa\DesktopApp\Live\ShellEventLog;
+use Milpa\AgentWorkspace\Controllers\ShellController;
+use Milpa\AgentWorkspace\Data\DesktopData;
+use Milpa\AgentWorkspace\Data\DesktopStore;
+use Milpa\AgentWorkspace\DesktopSettings;
+use Milpa\AgentWorkspace\Http\RequestPrincipal;
+use Milpa\AgentWorkspace\I18n\Catalog;
+use Milpa\AgentWorkspace\Tests\Fixtures\PasskeyGateStub;
+use Milpa\AgentWorkspace\Live\CapabilityCatalogueView;
+use Milpa\AgentWorkspace\Live\DecisionsInboxView;
+use Milpa\AgentWorkspace\Live\RolesView;
+use Milpa\AgentWorkspace\Live\ScreenPreviewView;
+use Milpa\AgentWorkspace\Live\SkillsView;
+use Milpa\AgentWorkspace\AgentWorkspacePlugin;
+use Milpa\AgentWorkspace\Live\MercureConfig;
+use Milpa\AgentWorkspace\Live\ShellEvent;
+use Milpa\AgentWorkspace\Live\ShellEventLog;
 use Milpa\Eventing\EventDispatcher;
 use Milpa\Runtime\Kernel;
 use Nyholm\Psr7\ServerRequest;
@@ -140,7 +140,7 @@ final class ShellControllerTest extends TestCase
     {
         // Real backend data (0193): the catalogue shows what is installed and what is available, the same
         // answer the agent reads — installed as a section, available as another.
-        $kernel = Kernel::boot(['root' => sys_get_temp_dir(), 'plugins' => [DesktopAppPlugin::class]]);
+        $kernel = Kernel::boot(['root' => sys_get_temp_dir(), 'plugins' => [AgentWorkspacePlugin::class]]);
         $kernel->container()->registerService(Kernel::class, $kernel);
         $controller = new ShellController(new EventDispatcher(new NullLogger()), null, new DesktopData($kernel->container()));
 
@@ -401,7 +401,7 @@ final class ShellControllerTest extends TestCase
     {
         // Milpa Components is the framework's official UI system (greenhouse decisions/0189): the composer's
         // text field is a real milpa/live <textarea> component — Alpine-bound, carrying a signed state envelope.
-        $field = new \Milpa\DesktopApp\Live\ComposerField('sign-secret', 'csrf-secret');
+        $field = new \Milpa\AgentWorkspace\Live\ComposerField('sign-secret', 'csrf-secret');
         $rendered = $field->render();
 
         self::assertStringContainsString('milpaField', $rendered, 'the Alpine local runtime factory');
@@ -419,7 +419,7 @@ final class ShellControllerTest extends TestCase
     {
         // End-to-end demo of cross-component reactivity (greenhouse evidence/0491): on blur the field
         // validates on the server and DECLARES a RenderEffect that re-paints the sibling status component.
-        $field = new \Milpa\DesktopApp\Live\ComposerMessageComponent();
+        $field = new \Milpa\AgentWorkspace\Live\ComposerMessageComponent();
         $context = new \Milpa\Live\ValueObjects\ComponentContext('composer-message');
         $state = $field->mount(['name' => 'message'], $context);
 
@@ -445,14 +445,14 @@ final class ShellControllerTest extends TestCase
         // Milpa is event-driven: a component emits lifecycle events so other plugins can subscribe and
         // extend it (greenhouse decisions/0189). before_render mutates the props, after_render the HTML.
         $events = new EventDispatcher(new NullLogger());
-        $events->subscribe(\Milpa\DesktopApp\Live\ComposerField::BEFORE_RENDER, static function (string $n, array $p): void {
+        $events->subscribe(\Milpa\AgentWorkspace\Live\ComposerField::BEFORE_RENDER, static function (string $n, array $p): void {
             $p['composer']->props['placeholder'] = 'Extended by a plugin';
         });
-        $events->subscribe(\Milpa\DesktopApp\Live\ComposerField::AFTER_RENDER, static function (string $n, array $p): void {
+        $events->subscribe(\Milpa\AgentWorkspace\Live\ComposerField::AFTER_RENDER, static function (string $n, array $p): void {
             $p['composer']->html .= '<!-- plugin appended -->';
         });
 
-        $html = (new \Milpa\DesktopApp\Live\ComposerField('sign', 'csrf', $events))->render();
+        $html = (new \Milpa\AgentWorkspace\Live\ComposerField('sign', 'csrf', $events))->render();
 
         self::assertStringContainsString('Extended by a plugin', $html, 'the before_render subscriber changed the props');
         self::assertStringContainsString('plugin appended', $html, 'the after_render subscriber changed the html');

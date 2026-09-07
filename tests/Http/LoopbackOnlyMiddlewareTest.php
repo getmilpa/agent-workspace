@@ -12,10 +12,10 @@
 
 declare(strict_types=1);
 
-namespace Milpa\DesktopApp\Tests\Http;
+namespace Milpa\AgentWorkspace\Tests\Http;
 
-use Milpa\DesktopApp\Http\LoopbackOnlyMiddleware;
-use Milpa\DesktopApp\I18n\Catalog;
+use Milpa\AgentWorkspace\Http\LoopbackOnlyMiddleware;
+use Milpa\AgentWorkspace\I18n\Catalog;
 use Nyholm\Psr7\Response;
 use Nyholm\Psr7\ServerRequest;
 use PHPUnit\Framework\TestCase;

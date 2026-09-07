@@ -12,10 +12,10 @@
 
 declare(strict_types=1);
 
-namespace Milpa\DesktopApp\Tests\Controllers;
+namespace Milpa\AgentWorkspace\Tests\Controllers;
 
-use Milpa\DesktopApp\Controllers\MutationController;
-use Milpa\DesktopApp\Data\DesktopStore;
+use Milpa\AgentWorkspace\Controllers\MutationController;
+use Milpa\AgentWorkspace\Data\DesktopStore;
 use Nyholm\Psr7\ServerRequest;
 use PHPUnit\Framework\TestCase;
 

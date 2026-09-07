@@ -12,10 +12,10 @@
 
 declare(strict_types=1);
 
-namespace Milpa\DesktopApp\Tests;
+namespace Milpa\AgentWorkspace\Tests;
 
-use Milpa\DesktopApp\Live\Conversation;
-use Milpa\DesktopApp\Live\ConversationComponent;
+use Milpa\AgentWorkspace\Live\Conversation;
+use Milpa\AgentWorkspace\Live\ConversationComponent;
 use Milpa\Eventing\EventDispatcher;
 use Milpa\Live\ValueObjects\ComponentContext;
 use PHPUnit\Framework\TestCase;

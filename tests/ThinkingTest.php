@@ -12,10 +12,10 @@
 
 declare(strict_types=1);
 
-namespace Milpa\DesktopApp\Tests;
+namespace Milpa\AgentWorkspace\Tests;
 
-use Milpa\DesktopApp\Live\Thinking;
-use Milpa\DesktopApp\Live\ThinkingComponent;
+use Milpa\AgentWorkspace\Live\Thinking;
+use Milpa\AgentWorkspace\Live\ThinkingComponent;
 use Milpa\Eventing\EventDispatcher;
 use Milpa\Live\ValueObjects\ComponentContext;
 use Milpa\Live\ValueObjects\InteractionRequest;

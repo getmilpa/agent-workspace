@@ -12,7 +12,7 @@
 
 declare(strict_types=1);
 
-namespace Milpa\DesktopApp\Live;
+namespace Milpa\AgentWorkspace\Live;
 
 use Milpa\Interfaces\Event\MilpaEventDispatcherInterface;
 use Milpa\Live\Security\HmacStateSigner;
@@ -27,7 +27,7 @@ use Milpa\Live\ValueObjects\StateSnapshot;
  * design-system panel grid from the panels other plugins contributed, carries the signed state envelope, and
  * emits `desktop.context.before_render` / `after_render` so other plugins can extend it.
  *
- * The panels come from the {@see \Milpa\DesktopApp\ShellComposition} (via `addPanel`), assembled per request;
+ * The panels come from the {@see \Milpa\AgentWorkspace\ShellComposition} (via `addPanel`), assembled per request;
  * this component is their container, unchanged in how a plugin contributes.
  */
 final class Context

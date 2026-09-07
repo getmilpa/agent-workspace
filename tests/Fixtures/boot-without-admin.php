@@ -29,7 +29,7 @@ spl_autoload_register(static function (string $class) use ($loader): void {
     $loader->loadClass($class);
 });
 
-$kernel = \Milpa\Runtime\Kernel::boot(['root' => sys_get_temp_dir(), 'plugins' => [\Milpa\DesktopApp\DesktopAppPlugin::class]]);
+$kernel = \Milpa\Runtime\Kernel::boot(['root' => sys_get_temp_dir(), 'plugins' => [\Milpa\AgentWorkspace\AgentWorkspacePlugin::class]]);
 $response = (new \Milpa\Runtime\Http\RequestHandler($kernel, new \Nyholm\Psr7\Factory\Psr17Factory()))
     ->handle(new \Nyholm\Psr7\ServerRequest('GET', '/desktop?embed=1', [], null, '1.1', ['REMOTE_ADDR' => '127.0.0.1']));
 $plugin = $kernel->plugins()[0] ?? null;
@@ -40,7 +40,7 @@ echo json_encode([
     'embed' => str_contains((string) $response->getBody(), 'data-embed="1"'),
     'admin_interface' => interface_exists('Milpa\\Admin\\Section\\AdminSectionProvider'),
     'admin_section' => class_exists('Milpa\\Admin\\Section\\AdminSection'),
-    'guest' => $plugin instanceof \Milpa\DesktopApp\Admin\AdminGuest,
+    'guest' => $plugin instanceof \Milpa\AgentWorkspace\Admin\AdminGuest,
     'provider' => $plugin instanceof \Milpa\Admin\Section\AdminSectionProvider,
     'interfaces' => \is_object($plugin) ? array_values(class_implements($plugin)) : [],
 ], JSON_THROW_ON_ERROR), PHP_EOL;

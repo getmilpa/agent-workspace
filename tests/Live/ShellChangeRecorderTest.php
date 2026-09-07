@@ -12,12 +12,12 @@
 
 declare(strict_types=1);
 
-namespace Milpa\DesktopApp\Tests\Live;
+namespace Milpa\AgentWorkspace\Tests\Live;
 
-use Milpa\DesktopApp\Live\ShellChangeRecorder;
-use Milpa\DesktopApp\Live\ShellEvent;
-use Milpa\DesktopApp\Live\ShellEventLog;
-use Milpa\DesktopApp\Live\ShellPublisher;
+use Milpa\AgentWorkspace\Live\ShellChangeRecorder;
+use Milpa\AgentWorkspace\Live\ShellEvent;
+use Milpa\AgentWorkspace\Live\ShellEventLog;
+use Milpa\AgentWorkspace\Live\ShellPublisher;
 use PHPUnit\Framework\TestCase;
 
 /**

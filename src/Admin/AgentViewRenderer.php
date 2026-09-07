@@ -12,15 +12,15 @@
 
 declare(strict_types=1);
 
-namespace Milpa\DesktopApp\Admin;
+namespace Milpa\AgentWorkspace\Admin;
 
-use Milpa\DesktopApp\Data\DesktopData;
-use Milpa\DesktopApp\DesktopSettings;
-use Milpa\DesktopApp\I18n\Catalog;
-use Milpa\DesktopApp\Live\CommandListView;
-use Milpa\DesktopApp\Live\ComposerField;
-use Milpa\DesktopApp\Live\DesktopAssets;
-use Milpa\DesktopApp\Live\DesktopComponents;
+use Milpa\AgentWorkspace\Data\DesktopData;
+use Milpa\AgentWorkspace\DesktopSettings;
+use Milpa\AgentWorkspace\I18n\Catalog;
+use Milpa\AgentWorkspace\Live\CommandListView;
+use Milpa\AgentWorkspace\Live\ComposerField;
+use Milpa\AgentWorkspace\Live\DesktopAssets;
+use Milpa\AgentWorkspace\Live\DesktopComponents;
 use Milpa\Live\Contracts\Component\ComponentDefinitionInterface;
 use Milpa\Live\Contracts\Rendering\ComponentRendererInterface;
 use Milpa\Live\Contracts\Rendering\DeclaresClientAssets;
@@ -177,7 +177,7 @@ final class AgentViewRenderer implements ComponentRendererInterface, DeclaresCli
      * The ONE catalog the whole region answers in: the Desktop's declared one.
      *
      * It is not the request's, on purpose. The composed surfaces are the shell's own instances, each built
-     * with the declared catalog, and the page's seeds ({@see \Milpa\DesktopApp\Live\ShellSignals}) were
+     * with the declared catalog, and the page's seeds ({@see \Milpa\AgentWorkspace\Live\ShellSignals}) were
      * declared with it too — a bar that followed `?lang=` would be the only thing in the region that did.
      * Only when NO catalog was declared (a renderer built by hand, with no plugin behind it) is there
      * nothing to disagree with, and then the locale the host resolved is the best answer available.

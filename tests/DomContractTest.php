@@ -12,20 +12,20 @@
 
 declare(strict_types=1);
 
-namespace Milpa\DesktopApp\Tests;
+namespace Milpa\AgentWorkspace\Tests;
 
 use Milpa\Container\DIContainer;
-use Milpa\DesktopApp\Controllers\ShellController;
-use Milpa\DesktopApp\Data\DesktopData;
-use Milpa\DesktopApp\Admin\AgentViewComponent;
-use Milpa\DesktopApp\Admin\AgentViewRenderer;
-use Milpa\DesktopApp\Live\CapabilitiesScreen;
-use Milpa\DesktopApp\Live\ComposerRender;
-use Milpa\DesktopApp\Live\DecisionsInbox;
-use Milpa\DesktopApp\Live\ScreenPreview;
-use Milpa\DesktopApp\Live\ShellEvent;
-use Milpa\DesktopApp\Live\ShellEventLog;
-use Milpa\DesktopApp\ShellComposition;
+use Milpa\AgentWorkspace\Controllers\ShellController;
+use Milpa\AgentWorkspace\Data\DesktopData;
+use Milpa\AgentWorkspace\Admin\AgentViewComponent;
+use Milpa\AgentWorkspace\Admin\AgentViewRenderer;
+use Milpa\AgentWorkspace\Live\CapabilitiesScreen;
+use Milpa\AgentWorkspace\Live\ComposerRender;
+use Milpa\AgentWorkspace\Live\DecisionsInbox;
+use Milpa\AgentWorkspace\Live\ScreenPreview;
+use Milpa\AgentWorkspace\Live\ShellEvent;
+use Milpa\AgentWorkspace\Live\ShellEventLog;
+use Milpa\AgentWorkspace\ShellComposition;
 use Milpa\Live\ValueObjects\ComponentContext;
 use Milpa\Live\ValueObjects\RenderRequest;
 use Milpa\Eventing\EventDispatcher;

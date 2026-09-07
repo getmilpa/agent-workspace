@@ -12,17 +12,17 @@
 
 declare(strict_types=1);
 
-namespace Milpa\DesktopApp\Tests;
+namespace Milpa\AgentWorkspace\Tests;
 
 use Milpa\Container\DIContainer;
-use Milpa\DesktopApp\Admin\AdminGuest;
-use Milpa\DesktopApp\Admin\AgentViewComponent;
-use Milpa\DesktopApp\Admin\AgentViewRenderer;
-use Milpa\DesktopApp\Controllers\ShellController;
-use Milpa\DesktopApp\DesktopAppPlugin;
-use Milpa\DesktopApp\Http\LoopbackOnlyMiddleware;
-use Milpa\DesktopApp\I18n\Catalog;
-use Milpa\DesktopApp\Tests\Fixtures\AllowAllMiddleware;
+use Milpa\AgentWorkspace\Admin\AdminGuest;
+use Milpa\AgentWorkspace\Admin\AgentViewComponent;
+use Milpa\AgentWorkspace\Admin\AgentViewRenderer;
+use Milpa\AgentWorkspace\Controllers\ShellController;
+use Milpa\AgentWorkspace\AgentWorkspacePlugin;
+use Milpa\AgentWorkspace\Http\LoopbackOnlyMiddleware;
+use Milpa\AgentWorkspace\I18n\Catalog;
+use Milpa\AgentWorkspace\Tests\Fixtures\AllowAllMiddleware;
 use Milpa\Eventing\EventDispatcher;
 use Milpa\Http\Routing\Route;
 use Milpa\Interfaces\Event\MilpaEventDispatcherInterface;
@@ -37,7 +37,7 @@ use Psr\Log\NullLogger;
  * needs through the runtime's stack contract (greenhouse decisions/0201), and stands every non-asset
  * route behind the door the app declared — loopback-only by default (greenhouse decisions/0209).
  */
-final class DesktopAppPluginTest extends TestCase
+final class AgentWorkspacePluginTest extends TestCase
 {
     /**
      * The package files a page load pulls with `<link>` and `<script>`: never behind the door. Since the
@@ -51,7 +51,7 @@ final class DesktopAppPluginTest extends TestCase
 
     public function testItMountsTheShellEventsAndAssetRoutes(): void
     {
-        $plugin = new DesktopAppPlugin(new DIContainer());
+        $plugin = new AgentWorkspacePlugin(new DIContainer());
 
         $routes = $plugin->routes();
         self::assertCount(14, $routes);
@@ -72,7 +72,7 @@ final class DesktopAppPluginTest extends TestCase
 
     public function testEveryRouteButTheAssetsCarriesTheDoorLoopbackOnlyByDefault(): void
     {
-        $plugin = new DesktopAppPlugin(new DIContainer());
+        $plugin = new AgentWorkspacePlugin(new DIContainer());
 
         self::assertSame([LoopbackOnlyMiddleware::class], $plugin->settings()->effectiveMiddleware());
         self::assertSame(['/desktop', '/desktop/events', '/desktop/data.json', '/desktop/export', '/desktop/live', '/desktop/settings', '/desktop/sessions', '/desktop/work'], self::gatedPaths($plugin->routes()));
@@ -106,7 +106,7 @@ final class DesktopAppPluginTest extends TestCase
         $container = new DIContainer();
         // The kernel registers the dispatcher before plugins boot; mirror that here.
         $container->registerService(MilpaEventDispatcherInterface::class, new EventDispatcher(new NullLogger()));
-        $plugin = new DesktopAppPlugin($container);
+        $plugin = new AgentWorkspacePlugin($container);
         $plugin->boot();
 
         // The router resolves the handler's class from the container; after boot it is the shell controller.
@@ -121,13 +121,13 @@ final class DesktopAppPluginTest extends TestCase
         $container->registerService(MilpaEventDispatcherInterface::class, new EventDispatcher(new NullLogger()));
         $own = new LoopbackOnlyMiddleware(new Catalog('es'));
         $container->registerService(LoopbackOnlyMiddleware::class, $own);
-        (new DesktopAppPlugin($container))->boot();
+        (new AgentWorkspacePlugin($container))->boot();
         self::assertSame($own, $container->get(LoopbackOnlyMiddleware::class), 'registered only when absent');
 
         $container = new DIContainer();
         $container->registerService(MilpaEventDispatcherInterface::class, new EventDispatcher(new NullLogger()));
         $container->registerService(Config::class, new Config(['desktop' => ['locale' => 'es']]));
-        $plugin = new DesktopAppPlugin($container);
+        $plugin = new AgentWorkspacePlugin($container);
         $plugin->boot();
         self::assertSame('es', $plugin->settings()->locale);
         $gate = $container->get(LoopbackOnlyMiddleware::class);
@@ -146,7 +146,7 @@ final class DesktopAppPluginTest extends TestCase
 
     public function testItDeclaresTheMercureHubItNeeds(): void
     {
-        $plugin = new DesktopAppPlugin(new DIContainer());
+        $plugin = new AgentWorkspacePlugin(new DIContainer());
 
         self::assertInstanceOf(StackProviderInterface::class, $plugin, 'the first real declarant of the stack contract (decisions/0201)');
         $services = $plugin->services();
@@ -163,7 +163,7 @@ final class DesktopAppPluginTest extends TestCase
             'desktop' => ['mercure' => ['hub_url' => 'http://127.0.0.1:3010/.well-known/mercure']],
         ]));
 
-        $services = (new DesktopAppPlugin($container))->services();
+        $services = (new AgentWorkspacePlugin($container))->services();
 
         self::assertSame(3010, $services[0]->probePort(), 'the declaration reads the same config the wiring does');
     }
@@ -171,7 +171,7 @@ final class DesktopAppPluginTest extends TestCase
     public function testItExposesItsContainer(): void
     {
         $container = new DIContainer();
-        self::assertSame($container, (new DesktopAppPlugin($container))->container());
+        self::assertSame($container, (new AgentWorkspacePlugin($container))->container());
     }
 
     public function testItIsTheAdminsGuestAndDeclaresTheAgentSectionAsAView(): void
@@ -179,7 +179,7 @@ final class DesktopAppPluginTest extends TestCase
         // The Desktop as the admin's guest (greenhouse decisions/0210, 0211): the plugin class carries the
         // admin's contract through the AdminGuest bridge — the admin, installed here, finds it by instanceof
         // — and declares ONE section, which since slice 3 declares a whole VIEW instead of one component.
-        $plugin = new DesktopAppPlugin(new DIContainer());
+        $plugin = new AgentWorkspacePlugin(new DIContainer());
         self::assertInstanceOf(AdminGuest::class, $plugin);
         self::assertInstanceOf(\Milpa\Admin\Section\AdminSectionProvider::class, $plugin);
 
@@ -222,7 +222,7 @@ final class DesktopAppPluginTest extends TestCase
      */
     public function testAnUnbootedPluginStillDeclaresTheSection(): void
     {
-        $view = (new DesktopAppPlugin(new DIContainer()))->adminSections()[0]->view;
+        $view = (new AgentWorkspacePlugin(new DIContainer()))->adminSections()[0]->view;
 
         self::assertInstanceOf(\Milpa\Admin\Section\DeclaredView::class, $view);
         self::assertSame(['desktop-agent'], $view->names(), 'no shell surfaces: nothing declared them');
@@ -230,7 +230,7 @@ final class DesktopAppPluginTest extends TestCase
 
     public function testLifecycleHooksAreInert(): void
     {
-        $plugin = new DesktopAppPlugin(new DIContainer());
+        $plugin = new AgentWorkspacePlugin(new DIContainer());
 
         // Installing the plugin IS the activation; there is no persistent state to create or remove.
         $plugin->install();
@@ -246,12 +246,12 @@ final class DesktopAppPluginTest extends TestCase
     /**
      * @param array<string, mixed> $config
      */
-    private static function withConfig(array $config): DesktopAppPlugin
+    private static function withConfig(array $config): AgentWorkspacePlugin
     {
         $container = new DIContainer();
         $container->registerService(Config::class, new Config($config));
 
-        return new DesktopAppPlugin($container);
+        return new AgentWorkspacePlugin($container);
     }
 
     /**

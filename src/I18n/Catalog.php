@@ -12,7 +12,7 @@
 
 declare(strict_types=1);
 
-namespace Milpa\DesktopApp\I18n;
+namespace Milpa\AgentWorkspace\I18n;
 
 /**
  * The Desktop's human-facing copy, by key, in English (default) and Spanish.

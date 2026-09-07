@@ -12,11 +12,11 @@
 
 declare(strict_types=1);
 
-namespace Milpa\DesktopApp\Tests\Controllers;
+namespace Milpa\AgentWorkspace\Tests\Controllers;
 
 use Milpa\Container\DIContainer;
-use Milpa\DesktopApp\Controllers\DataController;
-use Milpa\DesktopApp\Data\DesktopData;
+use Milpa\AgentWorkspace\Controllers\DataController;
+use Milpa\AgentWorkspace\Data\DesktopData;
 use Nyholm\Psr7\ServerRequest;
 use PHPUnit\Framework\TestCase;
 

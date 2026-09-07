@@ -12,7 +12,7 @@
 
 declare(strict_types=1);
 
-namespace Milpa\DesktopApp\Live;
+namespace Milpa\AgentWorkspace\Live;
 
 /**
  * Renders shell events as `text/event-stream` records a browser's `EventSource` reads (greenhouse decisions/0188).
@@ -20,7 +20,7 @@ namespace Milpa\DesktopApp\Live;
  * Pure formatting, no I/O: the {@see preamble()} opens the stream (a keep-alive comment + the reconnect
  * `retry` hint), and each {@see event()} is one SSE record carrying its `id` (so the client resumes with
  * `Last-Event-ID`), its `event` name, and its `data` JSON. Kept as small pure pieces because
- * {@see \Milpa\DesktopApp\Controllers\EventsController} now streams them one at a time over a live
+ * {@see \Milpa\AgentWorkspace\Controllers\EventsController} now streams them one at a time over a live
  * connection (via the runtime's CallbackStream, evidence/0472) rather than formatting one batch and closing.
  */
 final class SseFormatter

@@ -12,9 +12,9 @@
 
 declare(strict_types=1);
 
-namespace Milpa\DesktopApp\Controllers;
+namespace Milpa\AgentWorkspace\Controllers;
 
-use Milpa\DesktopApp\Data\DesktopStore;
+use Milpa\AgentWorkspace\Data\DesktopStore;
 use Nyholm\Psr7\Response;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
@@ -23,7 +23,7 @@ use Psr\Http\Message\ServerRequestInterface;
  * The Desktop's write endpoints (greenhouse decisions/0483).
  *
  * `POST /desktop/settings` persists the settings form; `POST /desktop/sessions` creates a session in the
- * store and returns its id. Both write to the same real stores {@see \Milpa\DesktopApp\Data\DesktopData}
+ * store and returns its id. Both write to the same real stores {@see \Milpa\AgentWorkspace\Data\DesktopData}
  * reads, so the change survives a reload. What the app exposes and how it governs these mutations is the
  * app's concern (its middleware / consent), exactly like any other route it mounts.
  */

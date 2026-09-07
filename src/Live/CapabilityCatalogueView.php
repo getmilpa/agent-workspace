@@ -12,7 +12,7 @@
 
 declare(strict_types=1);
 
-namespace Milpa\DesktopApp\Live;
+namespace Milpa\AgentWorkspace\Live;
 
 /**
  * Renders the capability catalogue — INSTALLED and AVAILABLE, side by side (greenhouse decisions/0193).

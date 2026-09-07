@@ -12,12 +12,12 @@
 
 declare(strict_types=1);
 
-namespace Milpa\DesktopApp\Tests\Live;
+namespace Milpa\AgentWorkspace\Tests\Live;
 
-use Milpa\DesktopApp\Controllers\LiveController;
-use Milpa\DesktopApp\Http\RequestPrincipal;
-use Milpa\DesktopApp\Live\DesktopComponents;
-use Milpa\DesktopApp\Tests\Fixtures\PasskeyGateStub;
+use Milpa\AgentWorkspace\Controllers\LiveController;
+use Milpa\AgentWorkspace\Http\RequestPrincipal;
+use Milpa\AgentWorkspace\Live\DesktopComponents;
+use Milpa\AgentWorkspace\Tests\Fixtures\PasskeyGateStub;
 use Milpa\Live\Contracts\Component\ComponentDefinitionInterface;
 use Milpa\Live\ValueObjects\ComponentContext;
 use Milpa\Live\ValueObjects\ComponentContract;

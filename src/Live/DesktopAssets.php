@@ -12,7 +12,7 @@
 
 declare(strict_types=1);
 
-namespace Milpa\DesktopApp\Live;
+namespace Milpa\AgentWorkspace\Live;
 
 use Milpa\Live\ValueObjects\ClientAssets;
 
@@ -31,7 +31,7 @@ use Milpa\Live\ValueObjects\ClientAssets;
  * missing file is a lying declaration — the `<link>` would 404 in silence).
  *
  * The route shape is `/desktop/assets/c/<component>.css` and `/desktop/assets/c/<component>.js`, served
- * by {@see \Milpa\DesktopApp\Controllers\AssetsController::component()} from
+ * by {@see \Milpa\AgentWorkspace\Controllers\AssetsController::component()} from
  * `resources/components/<component>/<component>.<ext>` — package files, so they carry no gate, like the
  * design-system stylesheets: a JSON 401 to a `<link>` or `<script>` breaks the page in silence.
  */

@@ -12,11 +12,11 @@
 
 declare(strict_types=1);
 
-namespace Milpa\DesktopApp\Tests\Admin;
+namespace Milpa\AgentWorkspace\Tests\Admin;
 
 use Milpa\Container\DIContainer;
-use Milpa\DesktopApp\Admin\AdminGuest;
-use Milpa\DesktopApp\DesktopAppPlugin;
+use Milpa\AgentWorkspace\Admin\AdminGuest;
+use Milpa\AgentWorkspace\AgentWorkspacePlugin;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -38,7 +38,7 @@ final class AdminAbsentBootTest extends TestCase
         self::assertSame(0, $exit, 'the process must not fatal: ' . $stdout);
         $report = json_decode((string) end($output), true);
         self::assertIsArray($report, 'one JSON line: ' . $stdout);
-        self::assertSame(['DesktopApp'], $report['booted'], 'the runtime booted the plugin');
+        self::assertSame(['AgentWorkspace'], $report['booted'], 'the runtime booted the plugin');
         self::assertSame(200, $report['status'], '/desktop?embed=1 is served');
         self::assertTrue($report['embed'], 'in embed mode');
         self::assertFalse($report['admin_interface'], 'the control of the control: the admin really was unloadable in that process');
@@ -53,7 +53,7 @@ final class AdminAbsentBootTest extends TestCase
     {
         // The positive control, in this process: the bridge extends the real interface, so the admin's
         // `instanceof` discovery finds the plugin with no registration step.
-        $plugin = new DesktopAppPlugin(new DIContainer());
+        $plugin = new AgentWorkspacePlugin(new DIContainer());
 
         self::assertTrue(interface_exists(\Milpa\Admin\Section\AdminSectionProvider::class));
         self::assertInstanceOf(AdminGuest::class, $plugin);

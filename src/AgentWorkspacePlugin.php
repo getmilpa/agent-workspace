@@ -12,32 +12,32 @@
 
 declare(strict_types=1);
 
-namespace Milpa\DesktopApp;
+namespace Milpa\AgentWorkspace;
 
 use Milpa\Attributes\PluginMetadata;
-use Milpa\DesktopApp\Admin\AdminGuest;
-use Milpa\DesktopApp\Admin\AgentView;
-use Milpa\DesktopApp\Admin\AgentViewComponent;
-use Milpa\DesktopApp\Controllers\AssetsController;
-use Milpa\DesktopApp\Controllers\DataController;
-use Milpa\DesktopApp\Controllers\EventsController;
-use Milpa\DesktopApp\Controllers\LiveController;
-use Milpa\DesktopApp\Controllers\MutationController;
-use Milpa\DesktopApp\Controllers\ShellController;
-use Milpa\DesktopApp\Live\ComposerField;
-use Milpa\DesktopApp\Data\DesktopData;
+use Milpa\AgentWorkspace\Admin\AdminGuest;
+use Milpa\AgentWorkspace\Admin\AgentView;
+use Milpa\AgentWorkspace\Admin\AgentViewComponent;
+use Milpa\AgentWorkspace\Controllers\AssetsController;
+use Milpa\AgentWorkspace\Controllers\DataController;
+use Milpa\AgentWorkspace\Controllers\EventsController;
+use Milpa\AgentWorkspace\Controllers\LiveController;
+use Milpa\AgentWorkspace\Controllers\MutationController;
+use Milpa\AgentWorkspace\Controllers\ShellController;
+use Milpa\AgentWorkspace\Live\ComposerField;
+use Milpa\AgentWorkspace\Data\DesktopData;
 use Milpa\Live\Contracts\Component\DeclaresComponents;
-use Milpa\DesktopApp\Data\DesktopStore;
-use Milpa\DesktopApp\Http\LoopbackOnlyMiddleware;
-use Milpa\DesktopApp\Live\DesktopAssets;
-use Milpa\DesktopApp\Live\DesktopComponents;
-use Milpa\DesktopApp\Live\MercureConfig;
-use Milpa\DesktopApp\Live\MercurePublisher;
-use Milpa\DesktopApp\Live\MercureServiceDeclaration;
-use Milpa\DesktopApp\Live\ShellChangeRecorder;
-use Milpa\DesktopApp\Live\ShellEvent;
-use Milpa\DesktopApp\Live\ShellEventLog;
-use Milpa\DesktopApp\Live\SseFormatter;
+use Milpa\AgentWorkspace\Data\DesktopStore;
+use Milpa\AgentWorkspace\Http\LoopbackOnlyMiddleware;
+use Milpa\AgentWorkspace\Live\DesktopAssets;
+use Milpa\AgentWorkspace\Live\DesktopComponents;
+use Milpa\AgentWorkspace\Live\MercureConfig;
+use Milpa\AgentWorkspace\Live\MercurePublisher;
+use Milpa\AgentWorkspace\Live\MercureServiceDeclaration;
+use Milpa\AgentWorkspace\Live\ShellChangeRecorder;
+use Milpa\AgentWorkspace\Live\ShellEvent;
+use Milpa\AgentWorkspace\Live\ShellEventLog;
+use Milpa\AgentWorkspace\Live\SseFormatter;
 use Milpa\Http\HttpMethod;
 use Milpa\Http\Routing\HandlerReference;
 use Milpa\Http\Routing\Route;
@@ -86,10 +86,10 @@ use Milpa\Runtime\Support\RootResolver;
     version: '0.1.0',
     author: 'Rodrigo Vicente - TeamX Agency',
     site: 'https://teamx.agency',
-    name: 'DesktopApp',
+    name: 'AgentWorkspace',
     type: 'Web',
 )]
-final class DesktopAppPlugin implements PluginInterface, RouteProviderInterface, StackProviderInterface, AdminGuest, DeclaresComponents
+final class AgentWorkspacePlugin implements PluginInterface, RouteProviderInterface, StackProviderInterface, AdminGuest, DeclaresComponents
 {
     /**
      * The components this plugin brings, so `components:catalogue` can name them and say they are
@@ -217,76 +217,76 @@ final class DesktopAppPlugin implements PluginInterface, RouteProviderInterface,
 
         // The sidebar is the shell's first pure-Milpa-Components surface (greenhouse decisions/0189): a
         // declared component with a signed envelope, lifecycle events and a signal-driven active nav.
-        $sidebar = new \Milpa\DesktopApp\Live\Sidebar($this->liveSecret('signing'), $data, $events);
-        $this->container->registerService(\Milpa\DesktopApp\Live\Sidebar::class, $sidebar);
+        $sidebar = new \Milpa\AgentWorkspace\Live\Sidebar($this->liveSecret('signing'), $data, $events);
+        $this->container->registerService(\Milpa\AgentWorkspace\Live\Sidebar::class, $sidebar);
 
         // The topbar is the shell's second pure-Milpa-Components surface (greenhouse decisions/0189): a
         // projection surface reading shared signals, with a signed envelope and lifecycle events. It carries the
         // door's chips too (decisions/0209), so it reads the judged settings and speaks the declared locale.
-        $topbar = new \Milpa\DesktopApp\Live\Topbar($this->liveSecret('signing'), $data, $events, $settings, $catalog);
-        $this->container->registerService(\Milpa\DesktopApp\Live\Topbar::class, $topbar);
+        $topbar = new \Milpa\AgentWorkspace\Live\Topbar($this->liveSecret('signing'), $data, $events, $settings, $catalog);
+        $this->container->registerService(\Milpa\AgentWorkspace\Live\Topbar::class, $topbar);
 
         // The main tablist is the shell's third pure-Milpa-Components surface (greenhouse decisions/0189): the
         // tablist declares the shared `desktop.tab` signal; the panes and composer dock project it.
-        $tabs = new \Milpa\DesktopApp\Live\Tabs($this->liveSecret('signing'), $events);
-        $this->container->registerService(\Milpa\DesktopApp\Live\Tabs::class, $tabs);
+        $tabs = new \Milpa\AgentWorkspace\Live\Tabs($this->liveSecret('signing'), $events);
+        $this->container->registerService(\Milpa\AgentWorkspace\Live\Tabs::class, $tabs);
 
         // The Work board is the shell's fourth pure-Milpa-Components surface (greenhouse decisions/0189): a
         // projection component with a signed envelope and lifecycle events; drag-drop persists via /desktop/work.
-        $workBoard = new \Milpa\DesktopApp\Live\WorkBoard($this->liveSecret('signing'), $data, $events);
-        $this->container->registerService(\Milpa\DesktopApp\Live\WorkBoard::class, $workBoard);
+        $workBoard = new \Milpa\AgentWorkspace\Live\WorkBoard($this->liveSecret('signing'), $data, $events);
+        $this->container->registerService(\Milpa\AgentWorkspace\Live\WorkBoard::class, $workBoard);
 
         // The Activity tab is the shell's fifth pure-Milpa-Components surface (greenhouse decisions/0189): the
         // session's live fact stream + a counter projection, as a signed component with lifecycle events.
-        $activity = new \Milpa\DesktopApp\Live\Activity($this->liveSecret('signing'), $data, $events);
-        $this->container->registerService(\Milpa\DesktopApp\Live\Activity::class, $activity);
+        $activity = new \Milpa\AgentWorkspace\Live\Activity($this->liveSecret('signing'), $data, $events);
+        $this->container->registerService(\Milpa\AgentWorkspace\Live\Activity::class, $activity);
 
         // The Context tab is the shell's sixth pure-Milpa-Components surface (greenhouse decisions/0189): the
         // container of plugin-contributed panels, as a signed component with lifecycle events.
-        $context = new \Milpa\DesktopApp\Live\Context($this->liveSecret('signing'), $events);
-        $this->container->registerService(\Milpa\DesktopApp\Live\Context::class, $context);
+        $context = new \Milpa\AgentWorkspace\Live\Context($this->liveSecret('signing'), $events);
+        $this->container->registerService(\Milpa\AgentWorkspace\Live\Context::class, $context);
 
         // The consent gate is the shell's seventh and last pure-Milpa-Components surface (greenhouse
         // decisions/0189): the durable question, a signed component whose visibility is a shared signal.
-        $gate = new \Milpa\DesktopApp\Live\Gate($this->liveSecret('signing'), $events);
-        $this->container->registerService(\Milpa\DesktopApp\Live\Gate::class, $gate);
+        $gate = new \Milpa\AgentWorkspace\Live\Gate($this->liveSecret('signing'), $events);
+        $this->container->registerService(\Milpa\AgentWorkspace\Live\Gate::class, $gate);
 
         // The conversation's message types become Milpa Components too (greenhouse decisions/0191). The first:
         // the thinking block — a declared component whose prototype the shell clones per turn and feeds live.
-        $thinking = new \Milpa\DesktopApp\Live\Thinking($this->liveSecret('signing'), $events);
-        $this->container->registerService(\Milpa\DesktopApp\Live\Thinking::class, $thinking);
+        $thinking = new \Milpa\AgentWorkspace\Live\Thinking($this->liveSecret('signing'), $events);
+        $this->container->registerService(\Milpa\AgentWorkspace\Live\Thinking::class, $thinking);
 
         // The agent message is a component too (greenhouse decisions/0191): it carries its foot tools — copy
         // the answer, regenerate it — and a plugin adds more by hooking its render events.
-        $agentMessage = new \Milpa\DesktopApp\Live\AgentMessage($this->liveSecret('signing'), $events);
-        $this->container->registerService(\Milpa\DesktopApp\Live\AgentMessage::class, $agentMessage);
+        $agentMessage = new \Milpa\AgentWorkspace\Live\AgentMessage($this->liveSecret('signing'), $events);
+        $this->container->registerService(\Milpa\AgentWorkspace\Live\AgentMessage::class, $agentMessage);
 
         // The plainer message types (user, tool, task, system) as components too (greenhouse decisions/0191).
-        $messages = new \Milpa\DesktopApp\Live\MessagePrototypes($this->liveSecret('signing'), $events);
-        $this->container->registerService(\Milpa\DesktopApp\Live\MessagePrototypes::class, $messages);
+        $messages = new \Milpa\AgentWorkspace\Live\MessagePrototypes($this->liveSecret('signing'), $events);
+        $this->container->registerService(\Milpa\AgentWorkspace\Live\MessagePrototypes::class, $messages);
 
         // The conversation itself is a component that composes the message components (greenhouse decisions/0191).
-        $conversation = new \Milpa\DesktopApp\Live\Conversation($this->liveSecret('signing'), $events, $data, $catalog);
-        $this->container->registerService(\Milpa\DesktopApp\Live\Conversation::class, $conversation);
+        $conversation = new \Milpa\AgentWorkspace\Live\Conversation($this->liveSecret('signing'), $events, $data, $catalog);
+        $this->container->registerService(\Milpa\AgentWorkspace\Live\Conversation::class, $conversation);
 
         // The session strip of embed mode (greenhouse decisions/0210) is a component too (decisions/0189): the
         // sidebar's reach in one row when the sidebar is folded, signed, with lifecycle events.
-        $sessionStrip = new \Milpa\DesktopApp\Live\SessionStrip($this->liveSecret('signing'), $data, $events, $catalog);
-        $this->container->registerService(\Milpa\DesktopApp\Live\SessionStrip::class, $sessionStrip);
+        $sessionStrip = new \Milpa\AgentWorkspace\Live\SessionStrip($this->liveSecret('signing'), $data, $events, $catalog);
+        $this->container->registerService(\Milpa\AgentWorkspace\Live\SessionStrip::class, $sessionStrip);
 
         // The two screens that were still raw HTML in the shell's template become declared views too
         // (greenhouse decisions/0211, phase B): the Settings screen — whose Save says «Saved» only when
         // the door did — and the entry overlay, the one ceremony every «New session» control runs.
-        $settingsScreen = new \Milpa\DesktopApp\Live\SettingsScreen($this->liveSecret('signing'), $data, $events, $catalog);
-        $this->container->registerService(\Milpa\DesktopApp\Live\SettingsScreen::class, $settingsScreen);
-        $authOverlay = new \Milpa\DesktopApp\Live\AuthOverlay($this->liveSecret('signing'), $data, $events, $catalog);
-        $this->container->registerService(\Milpa\DesktopApp\Live\AuthOverlay::class, $authOverlay);
+        $settingsScreen = new \Milpa\AgentWorkspace\Live\SettingsScreen($this->liveSecret('signing'), $data, $events, $catalog);
+        $this->container->registerService(\Milpa\AgentWorkspace\Live\SettingsScreen::class, $settingsScreen);
+        $authOverlay = new \Milpa\AgentWorkspace\Live\AuthOverlay($this->liveSecret('signing'), $data, $events, $catalog);
+        $this->container->registerService(\Milpa\AgentWorkspace\Live\AuthOverlay::class, $authOverlay);
 
         // The composer bar is a declared view too (greenhouse decisions/0211, phase C): the last surface the
         // shell hand-stitched. Its markup is a renderer's, its behaviour `desktop-composer.js`, and the mode
         // its chip shows travels in a signed envelope like every other component's state.
-        $composerBar = new \Milpa\DesktopApp\Live\ComposerBar($this->liveSecret('signing'), $data, $composerField, $events, $catalog);
-        $this->container->registerService(\Milpa\DesktopApp\Live\ComposerBar::class, $composerBar);
+        $composerBar = new \Milpa\AgentWorkspace\Live\ComposerBar($this->liveSecret('signing'), $data, $composerField, $events, $catalog);
+        $this->container->registerService(\Milpa\AgentWorkspace\Live\ComposerBar::class, $composerBar);
 
         $this->container->registerService(ShellController::class, new ShellController($events, $mercure, $data, $composerField, $sidebar, $topbar, $tabs, $workBoard, $activity, $context, $gate, $thinking, $agentMessage, $messages, $conversation, $settings, $catalog, $sessionStrip, $settingsScreen, $authOverlay, $composerBar, $desktopComponents));
 

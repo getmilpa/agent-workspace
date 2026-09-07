@@ -12,11 +12,11 @@
 
 declare(strict_types=1);
 
-namespace Milpa\DesktopApp\Tests\Live;
+namespace Milpa\AgentWorkspace\Tests\Live;
 
-use Milpa\DesktopApp\Admin\AgentViewComponent;
-use Milpa\DesktopApp\DesktopAppPlugin;
-use Milpa\DesktopApp\Live\ComposerMessageComponent;
+use Milpa\AgentWorkspace\Admin\AgentViewComponent;
+use Milpa\AgentWorkspace\AgentWorkspacePlugin;
+use Milpa\AgentWorkspace\Live\ComposerMessageComponent;
 use Milpa\Live\Contracts\Component\ComponentDefinitionInterface;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
@@ -24,7 +24,7 @@ use PHPUnit\Framework\TestCase;
 /**
  * The declaration and the shell are two lists, so they are measured against each other.
  *
- * `DesktopAppPlugin::COMPONENTS` tells the catalogue what this plugin brings; `ShellController`
+ * `AgentWorkspacePlugin::COMPONENTS` tells the catalogue what this plugin brings; `ShellController`
  * paints them. Two hand-kept lists of the same fact is a lie waiting to happen — and the lie would
  * be the exact defect greenhouse decisions/0213 names: a catalogue reporting a capability that is
  * not wired. So every surface the shell declares must appear in the declaration.
@@ -35,7 +35,7 @@ use PHPUnit\Framework\TestCase;
  * name as declared by two hosts; and {@see AgentViewComponent} is built inside `AgentView::of()` for
  * the admin's guest section and never reaches a registry at all.
  */
-#[CoversClass(DesktopAppPlugin::class)]
+#[CoversClass(AgentWorkspacePlugin::class)]
 final class DeclarationMatchesTheShellTest extends TestCase
 {
     public function testEverySurfaceTheShellPaintsIsDeclared(): void
@@ -44,7 +44,7 @@ final class DeclarationMatchesTheShellTest extends TestCase
         self::assertNotSame([], $painted, 'the shell declares no surfaces — this test would pass vacuously');
 
         $declared = [];
-        foreach (DesktopAppPlugin::COMPONENTS as $class) {
+        foreach (AgentWorkspacePlugin::COMPONENTS as $class) {
             $declared[] = $class::contract()->name;
         }
 
@@ -55,7 +55,7 @@ final class DeclarationMatchesTheShellTest extends TestCase
 
     public function testEveryDeclaredClassIsAComponentDefinition(): void
     {
-        foreach (DesktopAppPlugin::COMPONENTS as $class) {
+        foreach (AgentWorkspacePlugin::COMPONENTS as $class) {
             self::assertTrue(class_exists($class), $class . ' is declared but does not exist');
             self::assertTrue(is_subclass_of($class, ComponentDefinitionInterface::class), $class . ' is not a component');
         }
@@ -66,7 +66,7 @@ final class DeclarationMatchesTheShellTest extends TestCase
         $painted = $this->componentsTheShellDeclares();
 
         $unpainted = [];
-        foreach (DesktopAppPlugin::COMPONENTS as $class) {
+        foreach (AgentWorkspacePlugin::COMPONENTS as $class) {
             $name = $class::contract()->name;
             if (!\in_array($name, $painted, true)) {
                 $unpainted[] = $class;
@@ -93,7 +93,7 @@ final class DeclarationMatchesTheShellTest extends TestCase
 
         $names = [];
         foreach ($matches[1] as $short) {
-            $class = 'Milpa\\DesktopApp\\Live\\' . $short;
+            $class = 'Milpa\\AgentWorkspace\\Live\\' . $short;
             if (class_exists($class) && is_subclass_of($class, ComponentDefinitionInterface::class)) {
                 $names[] = $class::contract()->name;
             }

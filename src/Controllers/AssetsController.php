@@ -12,9 +12,9 @@
 
 declare(strict_types=1);
 
-namespace Milpa\DesktopApp\Controllers;
+namespace Milpa\AgentWorkspace\Controllers;
 
-use Milpa\DesktopApp\Live\DesktopAssets;
+use Milpa\AgentWorkspace\Live\DesktopAssets;
 use Milpa\Http\Routing\RouteResult;
 use Nyholm\Psr7\Response;
 use Psr\Http\Message\ResponseInterface;
@@ -43,7 +43,7 @@ use Psr\Http\Message\ServerRequestInterface;
  * behaviour against this release's markup — the `x-data` factory names and the `data-*` hooks are a
  * CONTRACT between the two halves of a component, so a stale half is a dead surface. They are served
  * with the same hour the package's other behaviour files get
- * ({@see \Milpa\DesktopApp\Controllers\LiveController::asset()}): one cache policy for everything that
+ * ({@see \Milpa\AgentWorkspace\Controllers\LiveController::asset()}): one cache policy for everything that
  * carries behaviour, and an upgrade is live within the hour instead of within the year.
  */
 final class AssetsController
@@ -51,7 +51,7 @@ final class AssetsController
     /**
      * What a file whose URL carries no version may be cached for: an hour, revalidated after it.
      *
-     * The same value {@see \Milpa\DesktopApp\Controllers\LiveController::asset()} serves the runtime with
+     * The same value {@see \Milpa\AgentWorkspace\Controllers\LiveController::asset()} serves the runtime with
      * — one policy for every file that carries BEHAVIOUR, so an upgrade cannot leave a browser running a
      * module from a previous release against this release's markup.
      */
