@@ -75,7 +75,7 @@ final class MutationControllerTest extends TestCase
 
         self::assertSame(200, $res->getStatusCode());
         self::assertIsArray($decoded);
-        self::assertMatchesRegularExpression('/^[0-9a-f]{8}$/', $decoded['id']);
+        self::assertMatchesRegularExpression('/^desk-[0-9a-f]{16}$/', $decoded['id'], 'the id the agent session will carry (greenhouse evidence/0561)');
         self::assertFileExists($this->dir . '/sessions/' . $decoded['id'] . '.json');
     }
 

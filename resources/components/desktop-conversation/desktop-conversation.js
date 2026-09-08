@@ -201,6 +201,43 @@
     return true;
   }
 
+  /**
+   * REPLAY the thread the server printed (greenhouse evidence/0561), ONCE.
+   *
+   * The ledger is the truth of a session, and a reload used to lose the thread: the page carried nothing
+   * of it, so a parked question could not be answered from the conversation it was raised in. The server
+   * now prints the session's transcript as data; each row is painted with the SAME prototype a live turn
+   * uses, so a replayed thread and a live one are one markup.
+   */
+  var TRANSCRIPT_TAG = 'milpa-desktop-transcript';
+  var replayed = false;
+
+  function replay() {
+    if (replayed) { return 0; }
+    var tag = document.getElementById(TRANSCRIPT_TAG);
+    if (!tag) { return 0; }
+    replayed = true;
+    var rows = [];
+    try { rows = JSON.parse(tag.textContent || '[]'); } catch (e) { rows = []; }
+    if (!Array.isArray(rows)) { return 0; }
+    var painted = 0;
+    for (var i = 0; i < rows.length; i++) {
+      var row = rows[i] || {};
+      switch (row.kind) {
+        case 'user': append('user', { text: row.text || '' }); break;
+        case 'agent': append('agent', { text: row.text || '' }); break;
+        case 'tool': append('tool', { name: row.name || 'tool', result: row.result || '' }); break;
+        case 'question': append('system', { text: tr('hub.waiting', row.text || '') }); break;
+        case 'answered': append('system', { text: tr('conversation.answered', row.answer || '', row.by || '') }); break;
+        case 'sequence_paused': append('system', { text: tr('conversation.sequence_paused', row.sequence || '') }); break;
+        case 'sequence_resumed': append('system', { text: tr('conversation.sequence_resumed', row.sequence || '') }); break;
+        default: continue;
+      }
+      painted += 1;
+    }
+    return painted;
+  }
+
   /** Consume `desktop.notice`, ONCE: the guard says what happened, the thread renders it. */
   var listening = false;
 
@@ -219,6 +256,7 @@
       init: function () {
         subscribe();
         listen();
+        replay();
       },
       /** The thread's ONE click handler — every message component's actions ride it. */
       onClick: function (event) {
@@ -239,9 +277,13 @@
       tip: tip,
       label: label,
       aria: aria,
+      replay: replay,
     };
   }
 
   subscribe();
+  // The replay waits for `init()`: every message module must have registered its prototype fill first,
+  // and the factory's init runs after all deferred modules did — a replay at load would paint the first
+  // row and lose the rest to fills that were not there yet (measured in the node harness).
   listen();
 })();

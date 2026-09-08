@@ -123,6 +123,9 @@ final class Catalog
             'session.state.idle' => 'Idle',
             // The conversation's interrupted-run notice (greenhouse decisions/0196), rendered by the
             // thread's own renderer — the last user-facing sentence the shell hand-wrote in English.
+            'conversation.answered' => 'Answered «%s» by %s',
+            'conversation.sequence_paused' => 'Sequence «%s» paused — answer it in Decisions',
+            'conversation.sequence_resumed' => 'Sequence «%s» resumed',
             'conversation.interrupted' => 'A prior run was interrupted — it was left mid-turn and did not finish. Send again to continue; nothing was auto-resumed.',
             // The declared-screen preview: the wire is asked before the frame is pointed at it.
             'preview.failed' => 'The wire does not serve «%s» (HTTP %s)',
@@ -272,6 +275,9 @@ final class Catalog
             'turn.stop_requested' => 'se pidió detener',
             'session.state.working' => 'Trabajando',
             'session.state.idle' => 'Inactivo',
+            'conversation.answered' => 'Contestada «%s» por %s',
+            'conversation.sequence_paused' => 'Secuencia «%s» pausada — contéstala en Decisiones',
+            'conversation.sequence_resumed' => 'Secuencia «%s» retomada',
             'conversation.interrupted' => 'Una corrida previa quedó interrumpida — se quedó a media vuelta y no terminó. Vuelve a enviar para continuar; nada se retomó solo.',
             'preview.failed' => 'El wire no sirve «%s» (HTTP %s)',
             'preview.unreachable' => 'No se pudo alcanzar el wire para «%s»',

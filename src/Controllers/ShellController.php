@@ -171,7 +171,7 @@ final class ShellController
         $this->live->declare(new TopbarComponent(), fn (array $props): string => $this->topbarOf()->render(\is_string($props['principal'] ?? null) && $props['principal'] !== '' ? $props['principal'] : null));
         $this->live->declare(new TabsComponent(), fn (array $props): string => $this->tabsOf()->render());
         $this->live->declare(new SessionStripComponent(), fn (array $props): string => $this->sessionStripOf()->render());
-        $this->live->declare(new ConversationComponent(), fn (array $props): string => $this->conversationOf()->render());
+        $this->live->declare(new ConversationComponent(), fn (array $props): string => $this->conversationOf()->render(\is_string($props['agent'] ?? null) ? $props['agent'] : ''));
         $this->live->declare(new ComposerBarComponent(), fn (array $props): string => $this->composerBarOf()->render());
         $this->live->declare(new GateComponent(), fn (array $props): string => $this->gateOf()->render());
         $this->live->declare(new WorkBoardComponent(), fn (array $props): string => $this->workBoardOf()->render());
@@ -250,26 +250,26 @@ final class ShellController
     /** Serve the dashboard, composed with every plugin's contributed panels. */
     public function shell(ServerRequestInterface $request): ResponseInterface
     {
-        // A sidebar click selects a session via `?session=<id>`; the data seam loads that one's counters,
-        // context and conversation (an unknown or malformed id is ignored — the newest session stands).
-        $session = self::queryParam($request, 'session');
-        if (\is_string($session)) {
-            $this->data?->select($session);
-        }
+        // THE SESSION LIVES IN THE URL (greenhouse evidence/0561). The agent session this Desktop drives is ONE
+        // id — the stream in the ledger — and `?session=<id>` names it: a reload keeps it, the inbox's «Open
+        // session» reaches it, «New session» navigates to it. The cookie is only the fallback for a bare
+        // `/desktop`, and it is set on EVERY page — it used to be set only when a hub was wired, so a Desktop
+        // without one minted a fresh session on each reload and painted nothing of the one that was running.
+        $named = self::queryParam($request, 'session');
+        $cookie = $request->getCookieParams()['milpa_agent_sid'] ?? null;
+        $agentSid = \is_string($named) && self::isSessionId($named) ? $named
+            : (\is_string($cookie) && self::isSessionId($cookie) ? $cookie : 'desk-' . bin2hex(random_bytes(8)));
+        // The data seam loads that session's counters, context and work when the store holds a record for it
+        // (a session started from a terminal or a sequence has none, and the page still binds to it).
+        $this->data?->select($agentSid);
         // Embed mode (greenhouse decisions/0210): the flag folds the chrome; the DOM and the door are the same.
         $embed = self::queryParam($request, self::EMBED_PARAM) === '1';
 
         $composition = new ShellComposition();
         $this->events->dispatch(self::COMPOSE_EVENT, ['composition' => $composition]);
 
-        // The agent session this Desktop drives (greenhouse decisions/0190): a stable id, kept in a cookie so
-        // reloads continue the SAME governed session. Its `session.*` events ride the exact topic below.
-        $agentSid = $request->getCookieParams()['milpa_agent_sid'] ?? null;
-        $agentSid = \is_string($agentSid) && $agentSid !== '' ? $agentSid : 'desk-' . bin2hex(random_bytes(8));
-
-        $cookies = [];
+        $cookies = ['milpa_agent_sid=' . $agentSid . '; Path=/; SameSite=Lax'];
         if ($this->mercure !== null) {
-            $cookies[] = 'milpa_agent_sid=' . $agentSid . '; Path=/; SameSite=Lax';
             // The hub reads the subscriber JWT from this cookie; the browser sends it with EventSource. It is
             // scoped to the shell topic AND this session's exact stream topic (greenhouse decisions/0190).
             $jwt = $this->mercure->subscriberJwt([\Milpa\AgentWorkspace\Live\MercureConfig::sessionTopic($agentSid)]);
@@ -281,16 +281,22 @@ final class ShellController
         // request body — so `POST /desktop/live` reads it from there and no cookie carries a page's session.
         $boot = LiveBoot::issue($this->live->csrf(), ComposerField::ROUTE);
 
-        // The only cookies the shell still sets are the hub's (greenhouse decisions/0190) — the live session
-        // travels in the boot now, not in `milpa_live_sid` (decisions/0211), so a Desktop with no hub sets none.
-        $headers = ['Content-Type' => 'text/html; charset=utf-8', 'Cache-Control' => 'no-store'];
-        if ($cookies !== []) {
-            $headers['Set-Cookie'] = $cookies;
-        }
+        // The cookies the shell sets: the agent session (always) and the hub's (with a hub) — the live session
+        // travels in the boot, not in a cookie (greenhouse decisions/0211).
+        $headers = ['Content-Type' => 'text/html; charset=utf-8', 'Cache-Control' => 'no-store', 'Set-Cookie' => $cookies];
 
         // Who the gate let in (greenhouse decisions/0209): read from the attribute the gate leaves on the request,
         // never from a cookie — the Desktop invents no identity; the topbar shows the actor, or nobody.
         return new Response(200, $headers, $this->html($composition, $boot, $agentSid, RequestPrincipal::of($request), $embed));
+    }
+
+    /**
+     * A well-formed agent session id: the shapes the ledger holds — `desk-<hex>`, `run-<stamp>`,
+     * `sequence:<name>` — and nothing that could name a path or a script.
+     */
+    private static function isSessionId(string $id): bool
+    {
+        return preg_match('/^[A-Za-z0-9][A-Za-z0-9_:.-]{0,63}$/', $id) === 1;
     }
 
     /**
@@ -325,6 +331,7 @@ final class ShellController
             'desktop-sidebar' => ['chrome' => !$embed],
             'desktop-topbar' => ['principal' => $principal ?? ''],
             'desktop-decisions' => ['principal' => $principal ?? ''],
+            'desktop-conversation' => ['agent' => $agentSid],
             'desktop-context' => ['sections' => $composition->sections()],
         ]);
         $paint = function (string $component) use ($compiler, &$assets): string {

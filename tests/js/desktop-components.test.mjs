@@ -288,11 +288,11 @@ test('the passkey probe degrades the link on a 404 and reports a real failure', 
   assert.deepEqual(told, ['The request failed (HTTP 500)'], 'a 500 is a broken door, not a missing one');
 });
 
-test('the entry overlay creates the session through the guard, and reloads only on a 2xx', async () => {
+test('the entry overlay creates the session through the guard, and NAVIGATES to it only on a 2xx', async () => {
   const html = shellTree();
   const p = page({ tree: html, modules: ['desktop-sidebar', 'desktop-auth'] });
   const auth = p.mount('desktopAuth');
-  const calls = stubFetch(p, [response(201, { ok: true }), response(403, { error: 'loopback_only' })]);
+  const calls = stubFetch(p, [response(201, { ok: true, id: 'desk-0123456789abcdef' }), response(403, { error: 'loopback_only' })]);
 
   html.querySelector('#milpa-auth-open').fire('click');
   assert.equal(auth.open, true);
@@ -300,15 +300,29 @@ test('the entry overlay creates the session through the guard, and reloads only 
   await auth.enter();
   assert.equal(calls[0].url, '/desktop/sessions');
   assert.deepEqual(JSON.parse(calls[0].init.body), { goal: 'New session · getmilpa/framework' });
-  assert.equal(p.reloads(), 1);
+  // The session lives in the URL (greenhouse evidence/0561): the page goes to the session it created, it
+  // does not reload into whatever the cookie held.
+  assert.deepEqual(p.assigned, ['?session=desk-0123456789abcdef']);
+  assert.equal(p.reloads(), 0);
 
   const told = [];
   p.desktop().onNotice((n) => told.push(n.text));
   await auth.enter();
 
-  assert.equal(p.reloads(), 1, 'a refused creation reloads nothing');
+  assert.equal(p.assigned.length, 1, 'a refused creation navigates nowhere');
   assert.equal(auth.open, false, 'the overlay closes so the notice is in view');
   assert.deepEqual(told, ['Not allowed here (loopback_only)']);
+});
+
+test('in embed mode the entry overlay keeps the embed flag on the session it navigates to', async () => {
+  const html = shellTree();
+  const p = page({ tree: html, modules: ['desktop-sidebar', 'desktop-auth'] });
+  p.sandbox.location.search = '?embed=1';
+  const auth = p.mount('desktopAuth');
+  stubFetch(p, [response(201, { ok: true, id: 'desk-0123456789abcdef' })]);
+
+  await auth.enter();
+  assert.deepEqual(p.assigned, ['?session=desk-0123456789abcdef&embed=1']);
 });
 
 // ── desktop-activity (B6) ───────────────────────────────────────────────────────────────────────────

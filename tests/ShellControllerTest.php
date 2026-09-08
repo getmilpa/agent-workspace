@@ -34,6 +34,7 @@ use Milpa\AgentWorkspace\Live\ShellEventLog;
 use Milpa\Eventing\EventDispatcher;
 use Milpa\Runtime\Kernel;
 use Nyholm\Psr7\ServerRequest;
+use Psr\Http\Message\ResponseInterface;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
 
@@ -609,13 +610,89 @@ final class ShellControllerTest extends TestCase
         self::assertStringNotContainsString("querySelector('[data-nav=\"decisions\"]", $body);
     }
 
-    public function testWithoutAHubTheShellCarriesNoConnectionOrCookie(): void
+    /**
+     * WITHOUT A HUB the shell still pins the agent session in its cookie (greenhouse evidence/0561): the cookie
+     * used to be set only with a hub, so a hub-less Desktop minted a fresh session on every reload. Nothing
+     * connects the runtime to a transport, though — that part is the hub's.
+     */
+    public function testWithoutAHubTheShellPinsTheSessionButConnectsNoTransport(): void
     {
         $res = $this->controller()->shell(new ServerRequest('GET', '/desktop'));
 
-        self::assertSame('', $res->getHeaderLine('Set-Cookie'));
+        self::assertMatchesRegularExpression('/^milpa_agent_sid=desk-[0-9a-f]{16}; Path=\/; SameSite=Lax$/', $res->getHeaderLine('Set-Cookie'));
+        self::assertStringNotContainsString('mercureAuthorization=', $res->getHeaderLine('Set-Cookie'));
         // The runtime is there, but nothing connects it to a transport without a hub.
         self::assertStringNotContainsString('new EventSource(', (string) $res->getBody());
+    }
+
+    /**
+     * THE SESSION LIVES IN THE URL (greenhouse evidence/0561): `?session=<id>` names the agent session the page
+     * drives — it wins over the cookie, the cookie follows it, and the tag the turn reads carries it. Without a
+     * name the cookie stands; without either, a fresh session is minted. The inbox's «Open session» link and a
+     * reload therefore reach the SAME session, which the measured Desktop did not.
+     */
+    public function testTheSessionNamedInTheUrlWinsOverTheCookieAndTheCookieFollowsIt(): void
+    {
+        $controller = $this->controller();
+        $tag = static function (ResponseInterface $res): string {
+            self::assertSame(1, preg_match('#<script id="milpa-desktop-session" type="application/json">(.*?)</script>#s', (string) $res->getBody(), $m));
+
+            return (string) json_decode($m[1], true, 512, JSON_THROW_ON_ERROR)['agent'];
+        };
+
+        $named = $controller->shell((new ServerRequest('GET', '/desktop'))->withQueryParams(['session' => 'desk-e58147eb41103731'])->withCookieParams(['milpa_agent_sid' => 'desk-ffffffffffffffff']));
+        self::assertSame('desk-e58147eb41103731', $tag($named), 'the URL names the session');
+        self::assertStringStartsWith('milpa_agent_sid=desk-e58147eb41103731;', $named->getHeaderLine('Set-Cookie'), 'the cookie follows the URL');
+
+        $bare = $controller->shell(new ServerRequest('GET', '/desktop?session=sequence:deploy'));
+        self::assertSame('sequence:deploy', $tag($bare), 'a sequence session is a session too, read from the bare URI');
+
+        $cookie = $controller->shell((new ServerRequest('GET', '/desktop'))->withCookieParams(['milpa_agent_sid' => 'desk-ffffffffffffffff']));
+        self::assertSame('desk-ffffffffffffffff', $tag($cookie), 'no name: the cookie stands');
+
+        $fresh = $controller->shell(new ServerRequest('GET', '/desktop'));
+        self::assertMatchesRegularExpression('/^desk-[0-9a-f]{16}$/', $tag($fresh), 'neither: a fresh session');
+
+        $bad = $controller->shell((new ServerRequest('GET', '/desktop'))->withQueryParams(['session' => '../etc/passwd']));
+        self::assertMatchesRegularExpression('/^desk-[0-9a-f]{16}$/', $tag($bad), 'a malformed name is not a session');
+    }
+
+    /**
+     * THE THREAD IS REPLAYED FROM THE LEDGER (greenhouse evidence/0561): the page prints the named session's
+     * transcript as data, in order, and the module paints it with the prototypes a live turn uses. A reload
+     * used to show «No messages yet» over a session whose ledger held the whole exchange.
+     */
+    public function testThePagePrintsTheNamedSessionsTranscriptFromTheLedger(): void
+    {
+        $dir = sys_get_temp_dir() . '/milpa-replay-' . uniqid('', true);
+        mkdir($dir);
+        $ledger = $dir . '/agent-sessions.jsonl';
+        $rows = [
+            ['stream_id' => 'agent-session:desk-e58147eb41103731', 'type' => 'session.started', 'payload' => ['goal' => 'run the rollout sequence', 'mode' => 'ask'], 'seq' => 1],
+            ['stream_id' => 'agent-session:desk-e58147eb41103731', 'type' => 'session.turn', 'payload' => ['role' => 'user', 'content' => 'run the rollout sequence'], 'seq' => 2],
+            ['stream_id' => 'agent-session:desk-other', 'type' => 'session.turn', 'payload' => ['role' => 'user', 'content' => 'NOT THIS ONE'], 'seq' => 3],
+            ['stream_id' => 'agent-session:desk-e58147eb41103731', 'type' => 'session.tool_called', 'payload' => ['tool' => 'house_context', 'ok' => true, 'result' => '{"ok":true}'], 'seq' => 4],
+            ['stream_id' => 'agent-session:desk-e58147eb41103731', 'type' => 'session.question_asked', 'payload' => ['id' => 'perm:sequence:run', 'question' => 'El agente quiere correr «sequence:run». ¿Lo autorizas?', 'reason' => 'permission'], 'seq' => 5],
+        ];
+        file_put_contents($ledger, implode("\n", array_map(static fn (array $r): string => json_encode($r, JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE), $rows)) . "\n");
+        $data = new DesktopData(new DIContainer(), null, '', null, $ledger);
+        $controller = new ShellController(new EventDispatcher(new NullLogger()), null, $data);
+
+        $body = (string) $controller->shell(new ServerRequest('GET', '/desktop?session=desk-e58147eb41103731'))->getBody();
+        self::assertSame(1, preg_match('#<script id="milpa-desktop-transcript" type="application/json">(.*?)</script>#s', $body, $m));
+        $transcript = json_decode(html_entity_decode($m[1]), true, 512, JSON_THROW_ON_ERROR);
+        self::assertSame(['user', 'tool', 'question'], array_column($transcript, 'kind'), 'the thread, in order, of THIS session only');
+        self::assertSame('run the rollout sequence', $transcript[0]['text']);
+        self::assertSame('house_context', $transcript[1]['name']);
+        self::assertStringContainsString('sequence:run', $transcript[2]['text']);
+        self::assertStringNotContainsString('NOT THIS ONE', $body);
+
+        // The control: another session, or none named, replays nothing.
+        $other = (string) $controller->shell(new ServerRequest('GET', '/desktop?session=desk-nobody'))->getBody();
+        self::assertStringContainsString('<script id="milpa-desktop-transcript" type="application/json">[]</script>', $other);
+
+        unlink($ledger);
+        rmdir($dir);
     }
 
     public function testWithAHubTheShellSetsTheCookieAndSubscribesOverEventSource(): void
@@ -891,7 +968,9 @@ final class ShellControllerTest extends TestCase
             self::assertStringContainsString("return Promise.reject(new Error('desktop-guard not loaded'));", self::module($caller), $caller . ' fails closed');
         }
         // The writes that moved with their surfaces keep the SAME discipline, in their own modules.
-        self::assertStringContainsString("}).then(d.guarded).then(function () {\n          location.reload();", self::module('desktop-auth'), 'POST /desktop/sessions');
+        self::assertStringContainsString("}).then(d.guarded).then(function (response) { return response.json(); }).then(function (created) {", self::module('desktop-auth'), 'POST /desktop/sessions — then NAVIGATE to the session it created');
+        self::assertStringContainsString("location.assign('?session=' + encodeURIComponent((created && created.id) || '')", self::module('desktop-auth'), 'the session lives in the URL (greenhouse evidence/0561)');
+        self::assertStringNotContainsString('location.reload()', self::module('desktop-auth'), 'a reload would land on whatever the cookie held, not on the session created');
         self::assertStringContainsString("}).then(d.guarded).then(function () {\n          self.report(true, tr('settings.saved'));", self::module('desktop-settings'), 'POST /desktop/settings — Saved only on a 2xx');
         self::assertStringContainsString("self.report(false, tr('settings.save_failed', (err && err.status) || 0));", self::module('desktop-settings'));
         self::assertStringContainsString('.then(d.guardedFlow)', self::module('desktop-capabilities'), 'capabilities step one: the confirm gate passes, a door does not');

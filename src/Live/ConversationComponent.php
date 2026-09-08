@@ -38,8 +38,8 @@ final class ConversationComponent implements ComponentDefinitionInterface
             contractVersion: '1',
             summary: 'The conversation thread: composes the message components.',
             designContract: '@milpa/design:components/milpa-conversation.contract.json',
-            propsSchema: ['empty' => ['type' => 'bool', 'default' => true], 'interrupted' => ['type' => 'bool', 'default' => false]],
-            stateSchema: ['empty' => ['type' => 'bool'], 'interrupted' => ['type' => 'bool']],
+            propsSchema: ['empty' => ['type' => 'bool', 'default' => true], 'interrupted' => ['type' => 'bool', 'default' => false], 'transcript' => ['type' => 'array', 'default' => []]],
+            stateSchema: ['empty' => ['type' => 'bool'], 'interrupted' => ['type' => 'bool'], 'messages' => ['type' => 'integer']],
             actions: [],
         );
     }
@@ -53,6 +53,7 @@ final class ConversationComponent implements ComponentDefinitionInterface
         return new StateSnapshot($context->componentId, 'desktop-conversation', '1', [
             'empty' => (bool) ($props['empty'] ?? true),
             'interrupted' => (bool) ($props['interrupted'] ?? false),
+            'messages' => \count(\is_array($props['transcript'] ?? null) ? $props['transcript'] : []),
         ], []);
     }
 
