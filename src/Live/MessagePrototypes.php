@@ -14,6 +14,7 @@ declare(strict_types=1);
 
 namespace Milpa\AgentWorkspace\Live;
 
+use Milpa\AgentWorkspace\Event\RenderEvents;
 use Milpa\Interfaces\Event\MilpaEventDispatcherInterface;
 use Milpa\Live\Contracts\Component\ComponentDefinitionInterface;
 use Milpa\Live\Security\HmacStateSigner;
@@ -43,6 +44,13 @@ final class MessagePrototypes
     public const string RESULT_BEFORE = 'desktop.result_claim.before_render';
     public const string RESULT_AFTER = 'desktop.result_claim.after_render';
 
+    /** The payload keys each prototype's render events carry their mutable {@see ComposerRender} under. */
+    public const string USER_KEY = 'userMessage';
+    public const string TOOL_KEY = 'toolCall';
+    public const string TASK_KEY = 'task';
+    public const string SYSTEM_KEY = 'systemNotice';
+    public const string RESULT_KEY = 'resultClaim';
+
     private readonly SignedXhtmlStateTransferCodec $codec;
 
     public function __construct(
@@ -52,6 +60,24 @@ final class MessagePrototypes
         $this->codec = new SignedXhtmlStateTransferCodec(new XhtmlStateTransferCodec(), new HmacStateSigner($signingSecret), null);
     }
 
+    /**
+     * The ten events the prototypes dispatch — five render pairs — declared from the same constants
+     * each prototype hands `wrap()` (greenhouse decisions/0228). `wrap()` computes nothing: the names
+     * it dispatches are these constants, one pair per public prototype.
+     *
+     * @return list<\Milpa\Interfaces\Event\EventDeclaration>
+     */
+    public static function events(): array
+    {
+        return [
+            ...RenderEvents::of(self::class, self::USER_BEFORE, self::USER_AFTER, self::USER_KEY, 'the user-message prototype'),
+            ...RenderEvents::of(self::class, self::TOOL_BEFORE, self::TOOL_AFTER, self::TOOL_KEY, 'the tool-call prototype'),
+            ...RenderEvents::of(self::class, self::TASK_BEFORE, self::TASK_AFTER, self::TASK_KEY, 'the task prototype'),
+            ...RenderEvents::of(self::class, self::SYSTEM_BEFORE, self::SYSTEM_AFTER, self::SYSTEM_KEY, 'the system-notice prototype'),
+            ...RenderEvents::of(self::class, self::RESULT_BEFORE, self::RESULT_AFTER, self::RESULT_KEY, 'the result-claim prototype'),
+        ];
+    }
+
     /** The user-message prototype (`desktop-user-message`). */
     public function user(): string
     {
@@ -59,7 +85,7 @@ final class MessagePrototypes
             . '<div><span class="msg__meta">you · now</span>'
             . '<p data-user-body style="margin:var(--space-2) 0 0;font-size:var(--text-sm);white-space:pre-wrap"></p></div></div>';
 
-        return $this->wrap(new UserMessageComponent(), 'user-message', $markup, self::USER_BEFORE, self::USER_AFTER, 'userMessage');
+        return $this->wrap(new UserMessageComponent(), 'user-message', $markup, self::USER_BEFORE, self::USER_AFTER, self::USER_KEY);
     }
 
     /** The tool-call prototype (`desktop-tool-call`) — the name and a summary, the raw result collapsed. */
@@ -71,7 +97,7 @@ final class MessagePrototypes
             . '<span class="msg__tool-summary" data-tool-summary></span></button>'
             . '<pre class="msg__tool-raw" data-tool-body></pre></div>';
 
-        return $this->wrap(new ToolCallComponent(), 'tool-call', $markup, self::TOOL_BEFORE, self::TOOL_AFTER, 'toolCall');
+        return $this->wrap(new ToolCallComponent(), 'tool-call', $markup, self::TOOL_BEFORE, self::TOOL_AFTER, self::TOOL_KEY);
     }
 
     /** The task prototype (`desktop-task`). */
@@ -81,7 +107,7 @@ final class MessagePrototypes
             . '<div><span class="msg__mark">+</span><span class="msg__title" data-task-title></span>'
             . '<span class="mui-badge" data-task-status style="margin-inline-start:auto">todo</span></div></div>';
 
-        return $this->wrap(new TaskComponent(), 'task', $markup, self::TASK_BEFORE, self::TASK_AFTER, 'task');
+        return $this->wrap(new TaskComponent(), 'task', $markup, self::TASK_BEFORE, self::TASK_AFTER, self::TASK_KEY);
     }
 
     /** The system-notice prototype (`desktop-system-notice`). */
@@ -89,7 +115,7 @@ final class MessagePrototypes
     {
         $markup = '<div class="msg msg--system" data-milpa-component="desktop-system-notice" data-milpa-component-id="system-notice" data-system-body></div>';
 
-        return $this->wrap(new SystemNoticeComponent(), 'system-notice', $markup, self::SYSTEM_BEFORE, self::SYSTEM_AFTER, 'systemNotice');
+        return $this->wrap(new SystemNoticeComponent(), 'system-notice', $markup, self::SYSTEM_BEFORE, self::SYSTEM_AFTER, self::SYSTEM_KEY);
     }
 
     /** The result-claim prototype (`desktop-result-claim`) — the closure verdict as a conversation message. */
@@ -104,7 +130,7 @@ final class MessagePrototypes
             . '<span class="msg__result-tip" role="tooltip" data-result-tip>The ledger backs this turn: every completed step carries evidence, nothing was left open, and no artifact&#39;s latest check is red.</span>'
             . '</div>';
 
-        return $this->wrap(new ResultClaimComponent(), 'result-claim', $markup, self::RESULT_BEFORE, self::RESULT_AFTER, 'resultClaim');
+        return $this->wrap(new ResultClaimComponent(), 'result-claim', $markup, self::RESULT_BEFORE, self::RESULT_AFTER, self::RESULT_KEY);
     }
 
     /** Mount the component, fire before/after render with a mutable subject, and cap with the signed envelope. */

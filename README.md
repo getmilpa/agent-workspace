@@ -472,6 +472,38 @@ The client runtime `MilpaShell`: `on(type, cb)` / `onAny(cb)` react to events, `
 panel's body element, `onStatus(cb)` tracks the live connection. Events reach the browser through a Mercure
 hub when one is configured (`desktop.mercure.*`), else through the `/desktop/events` feed.
 
+## Every event it dispatches, declared
+
+You do not have to grep this package to learn what you can subscribe to. It **declares** its events to the
+dispatcher, in `boot()`, where the dispatcher enters the package (greenhouse `decisions/0228`) — so the house
+can answer «what events exist?» from the emitter itself instead of from a scan of source:
+
+```php
+if ($events instanceof DeclaredEvents) {
+    $events->declare(...AgentWorkspaceEvents::declarations());
+}
+```
+
+`AgentWorkspaceEvents` **retypes no name**: every surface answers `events(): array` from its own
+`BEFORE_RENDER` / `AFTER_RENDER` / `SUBJECT_KEY` constants — the very constants its `dispatch()` reads — and
+the holder only gathers the answers. That matters here because the names are irregular: `ScreenPreview`
+dispatches `desktop.screens.*`, `StatusBar` `desktop.statusbar.*`, `WorkBoard` `desktop.work_board.*`. A copy
+would drift; a build cannot.
+
+Fifty-one names: `desktop.shell.compose` (subject `composition`, a mutable `ShellComposition`) plus a
+`before_render` / `after_render` pair for each of the twenty surfaces and the five message prototypes, each
+carrying a mutable `ComposerRender` under its own camelCase key — the props before the mount, the HTML after
+it. Each declaration says who dispatches it, when, the payload key, the subject's type, and that the subject
+is yours to change.
+
+Declaring is not enforced and costs nothing: a dispatcher that does not implement `DeclaredEvents` is asked
+nothing, and `dispatch()` of an undeclared name still works. What keeps the declaration honest is a
+falsifier — `TheWorkspaceDeclaresEveryEventItDispatchesTest` boots the plugin with a spy dispatcher, serves
+the shell in both modes, and asserts that what was declared is exactly what was dispatched, subject key and
+type included. Names dispatched by a dependency (milpa/live's `component.mounting` / `component.mounted`
+around every `mount()`) are that package's to declare, and the test proves them foreign by the file the call
+came from rather than by their spelling.
+
 ## Commands
 
 The composer understands slash commands (greenhouse `decisions/0202`). `/goal <text>` sets the session's

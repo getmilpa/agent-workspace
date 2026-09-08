@@ -15,6 +15,7 @@ declare(strict_types=1);
 namespace Milpa\AgentWorkspace\Live;
 
 use Milpa\AgentWorkspace\Data\DesktopData;
+use Milpa\AgentWorkspace\Event\RenderEvents;
 use Milpa\AgentWorkspace\I18n\Catalog;
 use Milpa\Interfaces\Event\MilpaEventDispatcherInterface;
 use Milpa\Live\Security\HmacStateSigner;
@@ -45,6 +46,9 @@ final class AuthOverlay
     public const string BEFORE_RENDER = 'desktop.auth.before_render';
     public const string AFTER_RENDER = 'desktop.auth.after_render';
 
+    /** The payload key both render events carry their mutable {@see ComposerRender} under. */
+    public const string SUBJECT_KEY = 'auth';
+
     /** The overlay's element id — what the shell's other surfaces open through the client module. */
     public const string ID = 'milpa-auth';
 
@@ -65,18 +69,28 @@ final class AuthOverlay
         $this->catalog = $catalog ?? new Catalog();
     }
 
+    /**
+     * The events `render()` dispatches, declared from the same constants it dispatches with (greenhouse decisions/0228).
+     *
+     * @return list<\Milpa\Interfaces\Event\EventDeclaration>
+     */
+    public static function events(): array
+    {
+        return RenderEvents::of(self::class, self::BEFORE_RENDER, self::AFTER_RENDER, self::SUBJECT_KEY, 'the entry overlay');
+    }
+
     /** The overlay's server-rendered HTML — a component with its signed envelope, hidden until asked for. */
     public function render(): string
     {
         $component = new AuthOverlayComponent();
         $subject = new ComposerRender(['open' => false, 'app' => 'getmilpa/framework', 'provider' => $this->providerLabel()]);
-        $this->events?->dispatch(self::BEFORE_RENDER, ['auth' => $subject]);
+        $this->events?->dispatch(self::BEFORE_RENDER, [self::SUBJECT_KEY => $subject]);
 
         $context = new ComponentContext(componentId: self::COMPONENT_ID);
         $state = $component->mount($subject->props, $context);
         $subject->html = $this->markup($subject->props) . $this->envelope($state);
 
-        $this->events?->dispatch(self::AFTER_RENDER, ['auth' => $subject]);
+        $this->events?->dispatch(self::AFTER_RENDER, [self::SUBJECT_KEY => $subject]);
 
         return $subject->html;
     }

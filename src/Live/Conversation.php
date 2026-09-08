@@ -15,6 +15,7 @@ declare(strict_types=1);
 namespace Milpa\AgentWorkspace\Live;
 
 use Milpa\AgentWorkspace\Data\DesktopData;
+use Milpa\AgentWorkspace\Event\RenderEvents;
 use Milpa\AgentWorkspace\I18n\Catalog;
 use Milpa\Interfaces\Event\MilpaEventDispatcherInterface;
 use Milpa\Live\Security\HmacStateSigner;
@@ -46,6 +47,9 @@ final class Conversation
     public const string BEFORE_RENDER = 'desktop.conversation.before_render';
     public const string AFTER_RENDER = 'desktop.conversation.after_render';
 
+    /** The payload key both render events carry their mutable {@see ComposerRender} under. */
+    public const string SUBJECT_KEY = 'conversation';
+
     private readonly SignedXhtmlStateTransferCodec $codec;
 
     private readonly Catalog $catalog;
@@ -61,6 +65,16 @@ final class Conversation
     }
 
     /**
+     * The events `render()` dispatches, declared from the same constants it dispatches with (greenhouse decisions/0228).
+     *
+     * @return list<\Milpa\Interfaces\Event\EventDeclaration>
+     */
+    public static function events(): array
+    {
+        return RenderEvents::of(self::class, self::BEFORE_RENDER, self::AFTER_RENDER, self::SUBJECT_KEY, 'the conversation');
+    }
+
+    /**
      * The conversation's inner content — the empty state, the TRANSCRIPT of the agent session named, and its
      * signed envelope. The transcript is printed as data (greenhouse evidence/0561): the thread replays from
      * the ledger on every load, painted by the module with the same prototypes a live turn uses.
@@ -70,13 +84,13 @@ final class Conversation
         $component = new ConversationComponent();
         $transcript = $this->data?->transcript($agentSid) ?? [];
         $subject = new ComposerRender(['empty' => $transcript === [], 'interrupted' => $this->interrupted(), 'transcript' => $transcript]);
-        $this->events?->dispatch(self::BEFORE_RENDER, ['conversation' => $subject]);
+        $this->events?->dispatch(self::BEFORE_RENDER, [self::SUBJECT_KEY => $subject]);
 
         $context = new ComponentContext(componentId: self::COMPONENT_ID);
         $state = $component->mount($subject->props, $context);
         $subject->html = $this->markup($subject->props) . $this->envelope($state);
 
-        $this->events?->dispatch(self::AFTER_RENDER, ['conversation' => $subject]);
+        $this->events?->dispatch(self::AFTER_RENDER, [self::SUBJECT_KEY => $subject]);
 
         return $subject->html;
     }

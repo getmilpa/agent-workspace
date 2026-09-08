@@ -59,6 +59,7 @@ use Milpa\AgentWorkspace\Live\TopbarComponent;
 use Milpa\AgentWorkspace\Live\UserMessageComponent;
 use Milpa\AgentWorkspace\Live\WorkBoardComponent;
 use Milpa\AgentWorkspace\ShellComposition;
+use Milpa\Interfaces\Event\EventDeclaration;
 use Milpa\Interfaces\Event\MilpaEventDispatcherInterface;
 use Milpa\Live\Http\LiveBoot;
 use Milpa\Live\Rendering\XhtmlComponentCompiler;
@@ -101,6 +102,9 @@ final class ShellController
 {
     /** The event other plugins subscribe to (in their `boot()`) to contribute dashboard panels. */
     public const COMPOSE_EVENT = 'desktop.shell.compose';
+
+    /** The payload key {@see COMPOSE_EVENT} carries the mutable {@see ShellComposition} under. */
+    public const COMPOSE_SUBJECT_KEY = 'composition';
 
     /** The query flag that folds the chrome: `?embed=1` (greenhouse decisions/0210). Only `1` counts. */
     public const EMBED_PARAM = 'embed';
@@ -247,6 +251,26 @@ final class ShellController
         return $this->messages ?? new \Milpa\AgentWorkspace\Live\MessagePrototypes('desktop-messages-fallback', $this->events);
     }
 
+    /**
+     * The one event the shell itself dispatches, declared from the same constants `shell()` dispatches
+     * with (greenhouse decisions/0228); every surface declares its own render pair.
+     *
+     * @return list<EventDeclaration>
+     */
+    public static function events(): array
+    {
+        return [
+            new EventDeclaration(
+                name: self::COMPOSE_EVENT,
+                dispatchedBy: self::class,
+                when: 'When the shell composes the page, before any surface is painted: a plugin adds its panels and sections.',
+                subjectKey: self::COMPOSE_SUBJECT_KEY,
+                subjectType: ShellComposition::class,
+                mutable: true,
+            ),
+        ];
+    }
+
     /** Serve the dashboard, composed with every plugin's contributed panels. */
     public function shell(ServerRequestInterface $request): ResponseInterface
     {
@@ -271,7 +295,7 @@ final class ShellController
         $embed = self::queryParam($request, self::EMBED_PARAM) === '1';
 
         $composition = new ShellComposition();
-        $this->events->dispatch(self::COMPOSE_EVENT, ['composition' => $composition]);
+        $this->events->dispatch(self::COMPOSE_EVENT, [self::COMPOSE_SUBJECT_KEY => $composition]);
 
         $cookies = ['milpa_agent_sid=' . $agentSid . '; Path=/; SameSite=Lax'];
         if ($this->mercure !== null) {

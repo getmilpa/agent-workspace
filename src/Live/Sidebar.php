@@ -15,6 +15,7 @@ declare(strict_types=1);
 namespace Milpa\AgentWorkspace\Live;
 
 use Milpa\AgentWorkspace\Data\DesktopData;
+use Milpa\AgentWorkspace\Event\RenderEvents;
 use Milpa\Interfaces\Event\MilpaEventDispatcherInterface;
 use Milpa\Live\Security\HmacStateSigner;
 use Milpa\Live\Security\SignedXhtmlStateTransferCodec;
@@ -32,6 +33,9 @@ final class Sidebar
     public const string COMPONENT_ID = 'sidebar';
     public const string BEFORE_RENDER = 'desktop.sidebar.before_render';
     public const string AFTER_RENDER = 'desktop.sidebar.after_render';
+
+    /** The payload key both render events carry their mutable {@see ComposerRender} under. */
+    public const string SUBJECT_KEY = 'sidebar';
 
     /** @var list<array{key: string, label: string, icon: string}> */
     private const NAV = [
@@ -56,6 +60,16 @@ final class Sidebar
     }
 
     /**
+     * The events `render()` dispatches, declared from the same constants it dispatches with (greenhouse decisions/0228).
+     *
+     * @return list<\Milpa\Interfaces\Event\EventDeclaration>
+     */
+    public static function events(): array
+    {
+        return RenderEvents::of(self::class, self::BEFORE_RENDER, self::AFTER_RENDER, self::SUBJECT_KEY, 'the sidebar');
+    }
+
+    /**
      * The sidebar's server-rendered HTML — a component with its signed envelope and a signal-driven nav.
      *
      * @param bool $chrome false in embed mode (greenhouse decisions/0210): the nav to the chrome screens
@@ -73,13 +87,13 @@ final class Sidebar
             'chrome' => $chrome,
         ];
         $subject = new ComposerRender($props);
-        $this->events?->dispatch(self::BEFORE_RENDER, ['sidebar' => $subject]);
+        $this->events?->dispatch(self::BEFORE_RENDER, [self::SUBJECT_KEY => $subject]);
 
         $context = new ComponentContext(componentId: self::COMPONENT_ID);
         $state = $component->mount($subject->props, $context);
         $subject->html = $this->markup($subject->props) . $this->envelope($state);
 
-        $this->events?->dispatch(self::AFTER_RENDER, ['sidebar' => $subject]);
+        $this->events?->dispatch(self::AFTER_RENDER, [self::SUBJECT_KEY => $subject]);
 
         return $subject->html;
     }
