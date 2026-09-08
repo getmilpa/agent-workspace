@@ -153,7 +153,11 @@ final class DesktopData
      * {@see \Milpa\Agent\SessionStore} (each session's `->question`), guarded so an app without the agent
      * package degrades to none rather than failing.
      *
-     * @return list<array{session: string, goal: string, question: string, operation: string, reason: string}>
+     * Each row also names the SEQUENCE the session is parked on, when it is one (greenhouse decisions/0223):
+     * a governed sequence pauses at the step that needs consent, and the card that answers it can then
+     * resume the run — the same `sequence:run` a terminal would call again.
+     *
+     * @return list<array{session: string, goal: string, question: string, operation: string, reason: string, sequence: string}>
      *
      * @codeCoverageIgnore reads through to the agent SessionStore; exercised by integration on a booted app
      *                     (greenhouse evidence/0509), not by the standalone unit suite
@@ -195,10 +199,79 @@ final class DesktopData
                 'question' => $q->question,
                 'operation' => $operation,
                 'reason' => is_string($q->reason) ? $q->reason : '',
+                'sequence' => $session->pausedSequence !== null ? $session->pausedSequence->sequenceId : '',
             ];
         }
 
         return $out;
+    }
+
+    /**
+     * The sequences this app declared in `config/sequences.php`, each with the pause it may be parked at.
+     *
+     * A deployment is a list (greenhouse decisions/0223), and the Desktop is where a human authorizes
+     * everything else — so the list is offered here to RUN, and when a step needs consent the run pauses
+     * and the card answers it in place. The session a sequence runs in is the one `sequence:run` derives
+     * from its name, so the card can name it without the run having started.
+     *
+     * Guarded so an app without the runtime's sequences, or without the agent store, degrades to none.
+     *
+     * @return list<array{name: string, steps: list<string>, session: string, paused: bool, pending_operation: string}>
+     *
+     * @codeCoverageIgnore reads through to app-runtime's DeclaredSequences and the agent SessionStore;
+     *                     exercised by integration on a booted app (greenhouse evidence/0561), not by the
+     *                     standalone unit suite
+     */
+    public function declaredSequences(): array
+    {
+        if (!class_exists(\Milpa\AppRuntime\Sequence\DeclaredSequences::class)) {
+            return [];
+        }
+        $kernel = $this->container->has(Kernel::class) ? $this->container->get(Kernel::class) : null;
+        if (!$kernel instanceof Kernel) {
+            return [];
+        }
+        $declared = \Milpa\AppRuntime\Sequence\DeclaredSequences::underRoot($kernel->root());
+
+        // Which sessions are parked on a sequence, and at which operation — read from the same ledger the
+        // inbox reads. A session id here is the one `sequence:run` derives: `sequence:<name>`.
+        $parked = [];
+        $file = $kernel->root() . '/var/agent-sessions.jsonl';
+        if (class_exists(\Milpa\Agent\SessionStore::class) && class_exists(\Milpa\EventStore\FileEventStore::class) && is_file($file)) {
+            $store = new \Milpa\Agent\SessionStore(new \Milpa\EventStore\FileEventStore($file));
+            foreach ($store->loadAll() as $session) {
+                if ($session->pausedSequence === null) {
+                    continue;
+                }
+                $operation = '';
+                $why = $session->question?->why;
+                if (is_string($why) && $why !== '') {
+                    $decoded = json_decode($why, true);
+                    if (is_array($decoded) && is_string($decoded['operation'] ?? null)) {
+                        $operation = $decoded['operation'];
+                    }
+                }
+                $parked[$session->id] = $operation;
+            }
+        }
+
+        $rows = [];
+        foreach ($declared->names() as $name) {
+            $steps = [];
+            foreach ($declared->stepsOf($name) ?? [] as $step) {
+                $steps[] = $step->operation;
+            }
+            $sessionId = 'sequence:' . $name;
+            $rows[] = [
+                'name' => $name,
+                'steps' => $steps,
+                'session' => $sessionId,
+                'paused' => \array_key_exists($sessionId, $parked),
+                'pending_operation' => $parked[$sessionId] ?? '',
+            ];
+        }
+
+        return $rows;
     }
 
     /**

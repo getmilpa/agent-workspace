@@ -91,6 +91,17 @@ MILPA_APP_DIR=/path/to/my-app npm start
   composes the Desktop's components inline; see below.)
 - `GET /desktop/events` — the shell's live event feed (SSE), the transport when no hub is wired.
 
+### Run a sequence, and answer its pause, from the inbox
+
+A deployment is a list the app declares in `config/sequences.php` (greenhouse `decisions/0223`). The
+**Decisions** screen lists those sequences and runs one from here: the card posts `sequence:run` through
+the house's confirm gate (a 428 with a one-use token, then the same call with `Confirm-Token`), with the
+passkey session as principal. When a step needs consent the run **pauses** — the card says at which step
+and shows **Approve / Deny**, which post `agent:answer` to the session the run pauses in (`sequence:<name>`);
+an approval then resumes the run through the same gate. A session parked on a sequence from elsewhere (a
+terminal) gets the same two buttons on its inbox card. The passkey must be enrolled with `agent:run` (to
+start and resume) and `agent:answer` (to answer); nothing here bypasses a door a terminal would meet.
+
 Every one of those routes — and the data, export, live and write endpoints — stands behind the door below.
 Only the assets under `/desktop/assets/*` are public.
 

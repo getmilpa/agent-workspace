@@ -57,6 +57,7 @@ final class DecisionsInbox
         $subject = new ComposerRender([
             'pending' => $this->data?->pendingDecisions() ?? [],
             'graphs' => $this->data?->pendingGraphDecisions() ?? [],
+            'sequences' => $this->data?->declaredSequences() ?? [],
             'principal' => $this->principal,
         ]);
         $this->events?->dispatch(self::BEFORE_RENDER, ['decisions' => $subject]);
@@ -76,11 +77,26 @@ final class DecisionsInbox
         $pending = \is_array($props['pending'] ?? null) ? $props['pending'] : [];
         /** @var list<array{graph: string, instance: string, question: string, options: list<string>, requester: string}> $graphs */
         $graphs = \is_array($props['graphs'] ?? null) ? $props['graphs'] : [];
+        /** @var list<array{name: string, steps: list<string>, session: string, paused: bool, pending_operation: string}> $sequences */
+        $sequences = \is_array($props['sequences'] ?? null) ? $props['sequences'] : [];
+        $copy = [
+            'run' => $this->plain('decisions.run'),
+            'approve' => $this->plain('decisions.approve'),
+            'deny' => $this->plain('decisions.deny'),
+            'paused_on' => $this->plain('decisions.paused_on'),
+        ];
+        $view = new DecisionsInboxView();
 
         return '<div class="view milpa-decisions" data-view="decisions"'
             . ' data-milpa-component="desktop-decisions" data-milpa-component-id="' . self::COMPONENT_ID . '" hidden>'
             . '<p class="milpa-decisions__intro">' . $this->tr('decisions.intro') . '</p>'
-            . (new DecisionsInboxView())->html($pending, $this->plain('decisions.empty'), $graphs, (string) ($props['principal'] ?? ''))
+            . $view->html($pending, $this->plain('decisions.empty'), $graphs, (string) ($props['principal'] ?? ''), $copy)
+            // THE SEQUENCES THIS APP DECLARED, to run from here (greenhouse decisions/0223, F4): a deployment
+            // is a list, and the place a human authorizes everything else is where its run starts and where
+            // its pause is answered.
+            . '<h3 class="milpa-decisions__heading">' . $this->tr('decisions.sequences') . '</h3>'
+            . '<p class="milpa-decisions__intro">' . $this->tr('decisions.sequences_intro') . '</p>'
+            . $view->sequencesHtml($sequences, $this->plain('decisions.sequences_empty'), $copy)
             // The prototype for a GRAPH card, always printed: the module reaches for these hooks, and a hook
             // no page ever carries is a module talking to itself (this package's DOM contract refuses it).
             . '<template id="milpa-graph-decision-proto">'

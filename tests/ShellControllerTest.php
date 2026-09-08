@@ -212,6 +212,61 @@ final class ShellControllerTest extends TestCase
         self::assertStringContainsString('/desktop?session=s-42', $html);
     }
 
+    /**
+     * AN AGENT'S CARD ANSWERS HERE (greenhouse decisions/0223, F4): two buttons carrying what `agent:answer`
+     * reads, and the sequence the session is parked on so an approval can resume the run in place.
+     */
+    public function testAParkedQuestionCarriesItsAnswersAndTheSequenceItPausedOn(): void
+    {
+        $html = (new DecisionsInboxView())->html([
+            ['session' => 'sequence:deploy', 'goal' => 'run the deploy sequence', 'question' => 'El agente quiere correr «config:set». ¿Lo autorizas?', 'operation' => 'config:set', 'reason' => 'permission', 'sequence' => 'deploy'],
+        ], copy: ['approve' => 'Aprobar', 'deny' => 'Rechazar']);
+
+        self::assertStringContainsString('data-decision-sequence="deploy"', $html);
+        self::assertStringContainsString('data-agent-answer="sí"', $html);
+        self::assertStringContainsString('data-agent-answer="no"', $html);
+        self::assertStringContainsString('>Aprobar<', $html, 'the caller\'s words');
+        self::assertStringContainsString('data-decision-status', $html, 'the line the outcome lands in is printed, not invented');
+
+        // A question that is NOT a sequence pause still prints the attribute — empty — so the module's hook
+        // exists on every card (the DOM contract), and the module reads «no sequence» from its emptiness.
+        $plain = (new DecisionsInboxView())->html([
+            ['session' => 's-1', 'goal' => 'g', 'question' => 'q', 'operation' => '', 'reason' => ''],
+        ]);
+        self::assertStringContainsString('data-decision-sequence=""', $plain);
+    }
+
+    /**
+     * THE SEQUENCES THIS APP DECLARED are cards that RUN from here: the steps in order, a run button, the
+     * answers hidden until a run parks — and shown, with the status line, when it already is.
+     */
+    public function testTheDeclaredSequencesRenderAsRunnableCardsThatAnswerTheirPauseInPlace(): void
+    {
+        $html = (new DecisionsInboxView())->sequencesHtml([
+            ['name' => 'deploy', 'steps' => ['plugins:list', 'config:set'], 'session' => 'sequence:deploy', 'paused' => false, 'pending_operation' => ''],
+            ['name' => 'rollout', 'steps' => ['plugins:list'], 'session' => 'sequence:rollout', 'paused' => true, 'pending_operation' => 'plugins:lock'],
+        ], copy: ['run' => 'Correr', 'paused_on' => 'pausada en %s']);
+
+        self::assertStringContainsString('milpa-sequences-list', $html);
+        self::assertStringContainsString('data-sequence="deploy"', $html);
+        self::assertStringContainsString('data-sequence-session="sequence:deploy"', $html);
+        self::assertStringContainsString('plugins:list → config:set', $html, 'the steps, in order');
+        self::assertStringContainsString('>Correr<', $html);
+        self::assertStringContainsString('data-agent-answer="sí" hidden', $html, 'no run parked: the answers wait, hidden');
+        self::assertStringContainsString('data-sequence-paused', $html, 'the parked one says so');
+        self::assertStringContainsString('pausada en plugins:lock', $html, 'and at which step');
+        self::assertStringNotContainsString('milpa-sequences-empty', $html);
+    }
+
+    public function testTheDeclaredSequencesShowAnEmptyLineWhenTheAppDeclaresNone(): void
+    {
+        $html = (new DecisionsInboxView())->sequencesHtml([], 'Ninguna secuencia.');
+
+        self::assertStringContainsString('milpa-sequences-list', $html, 'the list is always rendered');
+        self::assertStringContainsString('milpa-sequences-empty', $html);
+        self::assertStringContainsString('Ninguna secuencia.', $html);
+    }
+
     public function testTheDecisionsInboxShowsAnEmptyStateWhenNothingIsParked(): void
     {
         $html = (new DecisionsInboxView())->html([]);
