@@ -86,6 +86,11 @@ MILPA_APP_DIR=/path/to/my-app npm start
 
 - `GET /desktop` — the Milpa Desktop dashboard, served over HTTP. Point an Electron `loadURL` (or a
   browser) at it. Built-in panels: the consent gate, the activity stream, and the passkey doors.
+- `GET /desktop?session=<id>` — the page bound to ONE agent session: the id the ledger's stream carries
+  (`desk-…`, `sequence:<name>`). A reload keeps it, «New session» navigates to it, the inbox's «Open session»
+  reaches it, and the conversation is **replayed from the ledger** on every load — so a parked question is
+  answered in the thread it was raised in, and the turn continues after a reload. Without a name the
+  `milpa_agent_sid` cookie stands; without either, a fresh session is minted (greenhouse `evidence/0561`).
 - `GET /desktop?embed=1` — the same page in **embed mode**: the chrome folds and the shell fits one region of
   a host page you own. Same route, same door. (The admin's Agent section does **not** use it any more — it
   composes the Desktop's components inline; see below.)

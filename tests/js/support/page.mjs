@@ -93,6 +93,10 @@ export const CATALOG = {
   'cap.no_token': 'the house issued no confirm token',
   'decisions.just_now': 'just now · open the conversation to answer',
   'decisions.unnamed': 'A question is waiting for you.',
+  'hub.waiting': 'Waiting on you: %s',
+  'conversation.answered': 'Answered «%s» by %s',
+  'conversation.sequence_paused': 'Sequence «%s» paused — answer it in Decisions',
+  'conversation.sequence_resumed': 'Sequence «%s» resumed',
 };
 
 /**

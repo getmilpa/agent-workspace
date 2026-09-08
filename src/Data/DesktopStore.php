@@ -69,7 +69,9 @@ final class DesktopStore
         if (!is_dir($this->sessionsPath)) {
             mkdir($this->sessionsPath, 0o775, true);
         }
-        $id = substr(bin2hex(random_bytes(4)), 0, 8);
+        // THE SAME ID THE AGENT SESSION WILL CARRY (greenhouse evidence/0561): the store's record and the ledger's
+        // stream are one session, named once, so `?session=<id>` binds both and a reload keeps both.
+        $id = 'desk-' . bin2hex(random_bytes(8));
         $session = [
             'id' => $id,
             'goal' => $goal !== '' ? $goal : '(no goal)',

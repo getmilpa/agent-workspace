@@ -29,6 +29,49 @@ function thread(extra = {}) {
   return { p, html, chat, conversation: () => p.desktop().conversation };
 }
 
+
+// ── the replay (greenhouse evidence/0561) ─────────────────────────────────────────────────────────
+function transcriptTag(rows) {
+  const tag = new El('script', { id: 'milpa-desktop-transcript' });
+  tag.textContent = JSON.stringify(rows);
+  return tag;
+}
+
+test('the thread the server printed is replayed on load, each row with the prototype a live turn uses', () => {
+  const html = new El('html');
+  const chat = html.appendChild(new El('section', { id: 'milpa-chat' }));
+  const rows = [
+    { kind: 'user', text: 'run the rollout sequence' },
+    { kind: 'tool', name: 'house_context', result: '{"ok":true}' },
+    { kind: 'agent', text: 'On it.' },
+    { kind: 'question', text: 'El agente quiere correr «sequence:run». ¿Lo autorizas?' },
+    { kind: 'answered', answer: 'sí', by: 'actor:passkey:abc' },
+    { kind: 'sequence_paused', sequence: 'rollout' },
+    { kind: 'nonsense' },
+  ];
+  const p = page({ tree: html, elements: { ...prototypeTags(), 'milpa-desktop-transcript': transcriptTag(rows) }, bus: true, modules: ['desktop-conversation', 'desktop-thinking', 'desktop-agent-message', 'desktop-tool-call', 'desktop-result-claim'] });
+  assert.equal(chat.children.length, 0, 'nothing is painted at module load: the fills of the other message modules are not registered yet');
+  p.mount('desktopConversation', undefined, chat);
+
+  const kinds = chat.children.map((m) => ['user', 'tool', 'agent', 'system'].find((k) => m.classList.contains('msg--' + k)));
+  assert.deepEqual(kinds, ['user', 'tool', 'agent', 'system', 'system', 'system'], 'six rows painted, in order; the unknown one skipped');
+  assert.equal(chat.children[0].querySelector('[data-user-body]').textContent, 'run the rollout sequence');
+  assert.equal(chat.children[1].querySelector('[data-tool-name]').textContent, 'house_context');
+  const systemText = (m) => (m.getAttribute('data-system-body') !== null ? m : m.querySelector('[data-system-body]')).textContent;
+  assert.equal(systemText(chat.children[3]), 'Waiting on you: El agente quiere correr «sequence:run». ¿Lo autorizas?');
+  assert.equal(systemText(chat.children[4]), 'Answered «sí» by actor:passkey:abc');
+  assert.equal(systemText(chat.children[5]), 'Sequence «rollout» paused — answer it in Decisions');
+  assert.equal(p.desktop().conversation.replay(), 0, 'a second replay paints nothing — once, like the subscriptions');
+});
+
+test('a page with no transcript tag, or an empty one, replays nothing and the thread stays empty', () => {
+  const html = new El('html');
+  const chat = html.appendChild(new El('section', { id: 'milpa-chat' }));
+  const p = page({ tree: html, elements: { ...prototypeTags(), 'milpa-desktop-transcript': transcriptTag([]) }, bus: true, modules: ['desktop-conversation'] });
+  p.mount('desktopConversation', undefined, chat);
+  assert.equal(chat.children.length, 0);
+});
+
 test('every message kind lands as a clone of ITS OWN component prototype, filled by that component', () => {
   const { p, chat, conversation } = thread();
   const conv = conversation();

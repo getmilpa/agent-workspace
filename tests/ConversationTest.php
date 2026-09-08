@@ -36,6 +36,23 @@ final class ConversationTest extends TestCase
         self::assertStringContainsString('security="signed"', $html);
         self::assertStringContainsString('milpa-empty-convo', $html);
         self::assertStringContainsString('No messages yet', $html);
+        // The transcript tag is ALWAYS printed — empty here — so the module has something to read on every page.
+        self::assertStringContainsString('<script id="milpa-desktop-transcript" type="application/json">[]</script>', $html);
+    }
+
+    /** The transcript rides the render props, so a plugin may extend it — and the state counts it. */
+    public function testItPrintsTheTranscriptItIsHandedAsData(): void
+    {
+        $events = new EventDispatcher(new NullLogger());
+        $events->subscribe(Conversation::BEFORE_RENDER, static function (string $n, array $p): void {
+            $p['conversation']->props['transcript'] = [['kind' => 'user', 'text' => 'hi <b>there</b>'], ['kind' => 'agent', 'text' => 'hello']];
+            $p['conversation']->props['empty'] = false;
+        });
+        $html = (new Conversation('secret', $events))->render('desk-0123456789abcdef');
+
+        self::assertSame(1, preg_match('#<script id="milpa-desktop-transcript" type="application/json">(.*?)</script>#s', $html, $m));
+        self::assertStringNotContainsString('</script>', $m[1], 'nothing in the data can close the tag');
+        self::assertSame([['kind' => 'user', 'text' => 'hi <b>there</b>'], ['kind' => 'agent', 'text' => 'hello']], json_decode(html_entity_decode($m[1]), true, 512, JSON_THROW_ON_ERROR));
     }
 
     public function testItEmitsRenderEventsSoPluginsCanExtendTheThread(): void

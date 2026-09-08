@@ -36,7 +36,69 @@ final class DesktopData
         private readonly ?ShellEventLog $log = null,
         private readonly string $sessionsPath = '',
         private readonly ?DesktopStore $store = null,
+        private readonly ?string $ledgerPath = null,
     ) {
+    }
+
+    /**
+     * The thread of ONE agent session, replayed from the ledger the agent writes (greenhouse evidence/0561).
+     *
+     * A reload used to paint nothing: the thread lived in the page's memory, and the ledger — the one truth,
+     * `var/agent-sessions.jsonl` — was never read into it. This reads that stream by its format (one JSON
+     * line per event: `stream_id`, `type`, `payload`, `seq`) and keeps what a human reads as a conversation:
+     * the turns, the tool calls, the questions parked and answered, a sequence pausing and resuming. The
+     * client paints each row with the same prototypes a live turn uses, so a replayed thread and a live one
+     * are the same markup.
+     *
+     * @return list<array<string, mixed>>
+     */
+    public function transcript(string $agentSid): array
+    {
+        $file = $this->ledgerFile();
+        if ($agentSid === '' || $file === null || !is_file($file)) {
+            return [];
+        }
+        $rows = [];
+        foreach (file($file, \FILE_IGNORE_NEW_LINES | \FILE_SKIP_EMPTY_LINES) ?: [] as $line) {
+            $event = json_decode($line, true);
+            if (!\is_array($event) || ($event['stream_id'] ?? null) !== 'agent-session:' . $agentSid) {
+                continue;
+            }
+            $rows[] = $event;
+        }
+        usort($rows, static fn (array $a, array $b): int => (int) ($a['seq'] ?? 0) <=> (int) ($b['seq'] ?? 0));
+
+        $out = [];
+        foreach ($rows as $event) {
+            $p = \is_array($event['payload'] ?? null) ? $event['payload'] : [];
+            $row = match ($event['type'] ?? '') {
+                'session.turn' => ($p['role'] ?? '') === 'assistant'
+                    ? ['kind' => 'agent', 'text' => $this->str($p['content'] ?? null)]
+                    : ['kind' => 'user', 'text' => $this->str($p['content'] ?? null)],
+                'session.tool_called' => ['kind' => 'tool', 'name' => $this->str($p['tool'] ?? null) ?: 'tool', 'result' => $this->str($p['result'] ?? null)],
+                'session.question_asked' => ['kind' => 'question', 'text' => $this->str($p['question'] ?? null), 'id' => $this->str($p['id'] ?? null), 'reason' => $this->str($p['reason'] ?? null)],
+                'session.question_answered' => ['kind' => 'answered', 'answer' => $this->str($p['answer'] ?? null), 'by' => $this->str(\is_array($p['by'] ?? null) ? ($p['by']['id'] ?? null) : null)],
+                'session.sequence_paused' => ['kind' => 'sequence_paused', 'sequence' => $this->str($p['sequenceId'] ?? null)],
+                'session.sequence_resumed' => ['kind' => 'sequence_resumed', 'sequence' => $this->str($p['sequenceId'] ?? null)],
+                default => null,
+            };
+            if ($row !== null) {
+                $out[] = $row;
+            }
+        }
+
+        return $out;
+    }
+
+    /** The ledger the agent writes: the one handed to the constructor, else the booted app's `var/agent-sessions.jsonl`. */
+    private function ledgerFile(): ?string
+    {
+        if ($this->ledgerPath !== null) {
+            return $this->ledgerPath;
+        }
+        $kernel = $this->container->has(Kernel::class) ? $this->container->get(Kernel::class) : null;
+
+        return $kernel instanceof Kernel ? $kernel->root() . '/var/agent-sessions.jsonl' : null;
     }
 
     /**
@@ -494,10 +556,10 @@ final class DesktopData
     /** The session the UI selected (a sidebar click posts `?session=<id>`), when it names a real one. */
     private ?string $selectedId = null;
 
-    /** Select the active session by id; ignored unless it is a well-formed id of a session that exists. */
+    /** Select the active session by id; ignored unless it is a well-formed id of a session the store holds. */
     public function select(string $id): void
     {
-        if (preg_match('/^[0-9A-Za-z_-]{1,64}$/', $id) !== 1) {
+        if (preg_match('/^[0-9A-Za-z][0-9A-Za-z_:.-]{0,63}$/', $id) !== 1) {
             return;
         }
         foreach ($this->sessionFiles() as $file) {

@@ -43,7 +43,11 @@
       get open() {
         return this.$store.milpa[OPEN_SIGNAL] === true;
       },
-      /** Create the session, then reload into it. «Opened» is only ever said on a 2xx. */
+      /**
+       * Create the session, then NAVIGATE to it: `?session=<id>` names the one session the store and the
+       * ledger share (greenhouse evidence/0561), so the page that opens is that session's and a reload keeps
+       * it. «Opened» is only ever said on a 2xx.
+       */
       enter: function () {
         var d = desk();
         if (!d) { return Promise.reject(new Error('desktop-guard not loaded')); }
@@ -54,8 +58,9 @@
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ goal: 'New session · ' + (app ? app.value : '') }),
-        }).then(d.guarded).then(function () {
-          location.reload();
+        }).then(d.guarded).then(function (response) { return response.json(); }).then(function (created) {
+          var embed = String(location.search || '').indexOf('embed=1') !== -1;
+          location.assign('?session=' + encodeURIComponent((created && created.id) || '') + (embed ? '&embed=1' : ''));
         }).catch(function (err) {
           // The door answered instead of the handler: close the overlay so the notice is in view.
           self.$store.milpa[OPEN_SIGNAL] = false;

@@ -73,7 +73,7 @@ final class DesktopStoreTest extends TestCase
 
         $id = $store->createSession('Ship the release');
 
-        self::assertMatchesRegularExpression('/^[0-9a-f]{8}$/', $id);
+        self::assertMatchesRegularExpression('/^desk-[0-9a-f]{16}$/', $id, 'the id the agent session will carry (greenhouse evidence/0561)');
         self::assertFileExists($sessionsDir . '/' . $id . '.json');
 
         $sessions = (new DesktopData(new DIContainer(), null, $sessionsDir))->sessions();

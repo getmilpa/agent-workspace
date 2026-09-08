@@ -60,11 +60,16 @@ final class Conversation
         $this->catalog = $catalog ?? new Catalog();
     }
 
-    /** The conversation's inner content — the empty state and its signed envelope. */
-    public function render(): string
+    /**
+     * The conversation's inner content — the empty state, the TRANSCRIPT of the agent session named, and its
+     * signed envelope. The transcript is printed as data (greenhouse evidence/0561): the thread replays from
+     * the ledger on every load, painted by the module with the same prototypes a live turn uses.
+     */
+    public function render(string $agentSid = ''): string
     {
         $component = new ConversationComponent();
-        $subject = new ComposerRender(['empty' => true, 'interrupted' => $this->interrupted()]);
+        $transcript = $this->data?->transcript($agentSid) ?? [];
+        $subject = new ComposerRender(['empty' => $transcript === [], 'interrupted' => $this->interrupted(), 'transcript' => $transcript]);
         $this->events?->dispatch(self::BEFORE_RENDER, ['conversation' => $subject]);
 
         $context = new ComponentContext(componentId: self::COMPONENT_ID);
@@ -92,7 +97,14 @@ final class Conversation
                 . '</div>'
             : '';
 
-        return $notice . '<p class="milpa-empty-convo">No messages yet — write to the session to begin.</p>';
+        /** @var list<array<string, mixed>> $transcript */
+        $transcript = \is_array($props['transcript'] ?? null) ? array_values($props['transcript']) : [];
+
+        return $notice . '<p class="milpa-empty-convo">No messages yet — write to the session to begin.</p>'
+            // The ledger's thread, as DATA the module replays — never as script (greenhouse decisions/0211).
+            . '<script id="milpa-desktop-transcript" type="application/json">'
+            . json_encode($transcript, \JSON_HEX_TAG | \JSON_HEX_AMP | \JSON_HEX_APOS | \JSON_HEX_QUOT | \JSON_UNESCAPED_SLASHES | \JSON_UNESCAPED_UNICODE)
+            . '</script>';
     }
 
     private function envelope(StateSnapshot $state): string
