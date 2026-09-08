@@ -91,6 +91,12 @@ MILPA_APP_DIR=/path/to/my-app npm start
   reaches it, and the conversation is **replayed from the ledger** on every load — so a parked question is
   answered in the thread it was raised in, and the turn continues after a reload. Without a name the
   `milpa_agent_sid` cookie stands; without either, a fresh session is minted (greenhouse `evidence/0561`).
+  **Every surface reads that session from the ledger** — the header's goal and state, the counters (turns,
+  steps, tokens, tool calls, the context the last call held), the work board (the agent's todos, not dragged
+  by hand), the activity stream and the sidebar's list — folded by `LedgerSession` from
+  `var/agent-sessions.jsonl`. The Desktop's own record (`.milpa/sessions/<id>.json`) is only the fallback
+  for a session the agent never ran, and an id nobody knows shows «No session open», never another
+  session's record.
 - `GET /desktop?embed=1` — the same page in **embed mode**: the chrome folds and the shell fits one region of
   a host page you own. Same route, same door. (The admin's Agent section does **not** use it any more — it
   composes the Desktop's components inline; see below.)

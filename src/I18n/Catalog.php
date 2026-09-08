@@ -121,6 +121,9 @@ final class Catalog
             // shell (`ShellController::liveSignals()` seeds the same key, from the same words).
             'session.state.working' => 'Working',
             'session.state.idle' => 'Idle',
+            'session.state.waiting' => 'Waiting on you',
+            'session.state.paused' => 'Paused',
+            'session.state.ended' => 'Ended',
             // The conversation's interrupted-run notice (greenhouse decisions/0196), rendered by the
             // thread's own renderer — the last user-facing sentence the shell hand-wrote in English.
             'conversation.answered' => 'Answered «%s» by %s',
@@ -275,6 +278,9 @@ final class Catalog
             'turn.stop_requested' => 'se pidió detener',
             'session.state.working' => 'Trabajando',
             'session.state.idle' => 'Inactivo',
+            'session.state.waiting' => 'Te espera',
+            'session.state.paused' => 'Pausada',
+            'session.state.ended' => 'Terminada',
             'conversation.answered' => 'Contestada «%s» por %s',
             'conversation.sequence_paused' => 'Secuencia «%s» pausada — contéstala en Decisiones',
             'conversation.sequence_resumed' => 'Secuencia «%s» retomada',

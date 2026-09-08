@@ -109,7 +109,7 @@ final class Topbar
             'mode' => ComposerBar::modeLabel($this->catalog, $modeKey),
             'modeKey' => $modeKey,
             'state' => $state,
-            'hasSession' => $id !== '',
+            'hasSession' => $this->data?->hasSession() ?? ($id !== ''),
             'principal' => $principal ?? '',
             'gate' => $this->settings->gateLabel(),
             'gateKind' => $this->settings->gateKind(),

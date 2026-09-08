@@ -238,4 +238,57 @@ final class DesktopDataTest extends TestCase
         unlink($dir . '/s.json');
         rmdir($dir);
     }
+    /**
+     * THE NAMED SESSION IS READ FROM THE LEDGER (greenhouse evidence/0561): counters, context, work and activity
+     * come from the agent's facts, the store's file is not consulted — and a session the ledger holds is listed
+     * even when the Desktop never wrote a record for it.
+     */
+    public function testANamedSessionIsReadFromTheLedgerNotFromTheStore(): void
+    {
+        $dir = sys_get_temp_dir() . '/milpa-data-ledger-' . uniqid('', true);
+        mkdir($dir . '/sessions', 0o775, true);
+        // A store record with the SAME id and stale zeros — the file the Desktop wrote at creation.
+        file_put_contents($dir . '/sessions/desk-1111111111111111.json', json_encode(['id' => 'desk-1111111111111111', 'goal' => 'stale', 'state' => 'ready', 'turns' => 0, 'tokens' => 0, 'work' => [['title' => 'stale card', 'status' => 'pending']]], JSON_THROW_ON_ERROR));
+        $ledger = $dir . '/agent-sessions.jsonl';
+        $rows = [
+            ['stream_id' => 'agent-session:desk-1111111111111111', 'type' => 'session.started', 'payload' => ['goal' => 'run the rollout sequence', 'mode' => 'ask'], 'seq' => 1],
+            ['stream_id' => 'agent-session:desk-1111111111111111', 'type' => 'session.turn', 'payload' => ['role' => 'user', 'content' => 'go'], 'seq' => 2],
+            ['stream_id' => 'agent-session:desk-1111111111111111', 'type' => 'session.model_called', 'payload' => [], 'seq' => 3],
+            ['stream_id' => 'agent-session:desk-1111111111111111', 'type' => 'session.model_returned', 'payload' => ['usage' => ['prompt_tokens' => 800, 'total_tokens' => 1500]], 'seq' => 4],
+            ['stream_id' => 'agent-session:desk-1111111111111111', 'type' => 'session.tool_called', 'payload' => ['tool' => 'plugins_list', 'ok' => true, 'result' => '{}'], 'seq' => 5],
+            ['stream_id' => 'agent-session:desk-1111111111111111', 'type' => 'session.todo_changed', 'payload' => ['id' => 't1', 'text' => 'List plugins', 'status' => 'in_progress'], 'seq' => 6],
+            ['stream_id' => 'agent-session:sequence:deploy', 'type' => 'session.started', 'payload' => ['goal' => 'run the deploy sequence', 'mode' => 'ask'], 'seq' => 7],
+        ];
+        file_put_contents($ledger, implode("\n", array_map(static fn (array $r): string => json_encode($r, JSON_THROW_ON_ERROR), $rows)) . "\n");
+        $data = new DesktopData(new DIContainer(), null, $dir . '/sessions', null, $ledger);
+
+        $data->select('desk-1111111111111111');
+        self::assertTrue($data->hasSession());
+        self::assertSame('desk-1111111111111111', $data->currentSessionId());
+        self::assertSame(['turns' => 1, 'steps' => 1, 'tokens' => 1500, 'tool_calls' => 1, 'state' => 'working'], $data->counters(), 'the ledger, not the stale file');
+        self::assertSame(800, $data->context()['tokens'], 'the last prompt is what the context holds');
+        self::assertSame([['title' => 'List plugins', 'status' => 'in_progress', 'origin' => 'planned', 'draggable' => false]], $data->work(), 'the agent\'s todos, not dragged by hand');
+        self::assertSame('session.tool_called', $data->audit()[4]['type']);
+        self::assertSame(['desk-1111111111111111', 'sequence:deploy'], array_column($data->sessions(), 'id'), 'every session the ledger holds is listed');
+        self::assertSame('run the rollout sequence', $data->sessions()[0]['goal']);
+
+        // A sequence session — no store record at all — is a session too.
+        $data->select('sequence:deploy');
+        self::assertTrue($data->hasSession());
+        self::assertSame(0, $data->counters()['turns']);
+        self::assertSame('run the deploy sequence', $data->sessions()[1]['goal']);
+
+        // THE CONTROL: an id nobody knows selects, but holds nothing — and borrows nobody else's record.
+        $data->select('desk-nobody');
+        self::assertSame('desk-nobody', $data->currentSessionId());
+        self::assertFalse($data->hasSession());
+        self::assertSame(0, $data->counters()['turns']);
+        self::assertSame([], $data->work());
+        self::assertSame('idle', $data->counters()['state']);
+
+        array_map('unlink', glob($dir . '/sessions/*') ?: []);
+        rmdir($dir . '/sessions');
+        unlink($ledger);
+        rmdir($dir);
+    }
 }

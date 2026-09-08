@@ -90,6 +90,40 @@ final class DesktopData
         return $out;
     }
 
+    /** @var array<string, array<string, mixed>>|null every session the ledger holds, folded once per request */
+    private ?array $ledger = null;
+
+    /**
+     * Every session the agent's ledger holds, folded by {@see LedgerSession} — the truth the surfaces read.
+     *
+     * @return array<string, array<string, mixed>>
+     */
+    public function ledgerSessions(): array
+    {
+        return $this->ledger ??= LedgerSession::all($this->ledgerFile() ?? '');
+    }
+
+    /**
+     * One agent session as the ledger tells it, or `null` when the ledger holds no stream by that id.
+     *
+     * @return array<string, mixed>|null
+     */
+    public function session(string $id): ?array
+    {
+        return $this->ledgerSessions()[$id] ?? null;
+    }
+
+    /**
+     * Whether the current id names a session that EXISTS — in the ledger or in the store. A freshly minted id
+     * names nothing yet, and the page says «No session open» rather than borrowing another session's record.
+     */
+    public function hasSession(): bool
+    {
+        $id = $this->currentSessionId();
+
+        return $id !== '' && ($this->session($id) !== null || $this->storeRecord($id) !== null);
+    }
+
     /** The ledger the agent writes: the one handed to the constructor, else the booted app's `var/agent-sessions.jsonl`. */
     private function ledgerFile(): ?string
     {
@@ -540,35 +574,42 @@ final class DesktopData
      */
     public function sessions(): array
     {
+        // THE LEDGER FIRST (greenhouse evidence/0561): every session the agent ran is listed, whether or not the
+        // Desktop ever wrote a record of its own for it — then the store's records the ledger does not know.
         $out = [];
+        foreach ($this->ledgerSessions() as $id => $record) {
+            $out[$id] = ['id' => (string) $id, 'goal' => (string) ($record['goal'] ?: '(no goal recorded)'), 'state' => (string) $record['state']];
+        }
         foreach ($this->sessionFiles() as $file) {
             $s = $this->readJson($file);
-            $out[] = [
-                'id' => $this->str($s['id'] ?? null) ?: basename($file, '.json'),
+            $id = $this->str($s['id'] ?? null) ?: basename($file, '.json');
+            if (isset($out[$id])) {
+                continue;
+            }
+            $out[$id] = [
+                'id' => $id,
                 'goal' => $this->str($s['goal'] ?? $s['objective'] ?? $s['title'] ?? null) ?: '(no goal recorded)',
                 'state' => $this->str($s['state'] ?? $s['status'] ?? null) ?: 'idle',
             ];
         }
 
-        return $out;
+        return array_values($out);
     }
 
     /** The session the UI selected (a sidebar click posts `?session=<id>`), when it names a real one. */
     private ?string $selectedId = null;
 
-    /** Select the active session by id; ignored unless it is a well-formed id of a session the store holds. */
+    /**
+     * Select the active session by id. A well-formed id is selected whether the store, the ledger, or nobody
+     * knows it yet: the page binds to the session it was asked for (greenhouse evidence/0561), and what that
+     * session holds is answered by {@see hasSession()} and the readers — never by showing another one's record.
+     */
     public function select(string $id): void
     {
         if (preg_match('/^[0-9A-Za-z][0-9A-Za-z_:.-]{0,63}$/', $id) !== 1) {
             return;
         }
-        foreach ($this->sessionFiles() as $file) {
-            if (basename($file, '.json') === $id) {
-                $this->selectedId = $id;
-
-                return;
-            }
-        }
+        $this->selectedId = $id;
     }
 
     /**
@@ -593,6 +634,16 @@ final class DesktopData
      */
     public function counters(): array
     {
+        $record = $this->session($this->currentSessionId());
+        if ($record !== null) {
+            return [
+                'turns' => (int) $record['turns'],
+                'steps' => (int) $record['steps'],
+                'tokens' => (int) $record['tokens'],
+                'tool_calls' => (int) $record['tool_calls'],
+                'state' => (string) $record['state'],
+            ];
+        }
         $s = $this->currentSession();
 
         return [
@@ -611,7 +662,10 @@ final class DesktopData
      */
     public function context(): array
     {
-        $tokens = $this->counters()['tokens'];
+        // What the context holds is the LAST call's prompt — the ledger's `prompt_tokens` — not the session's
+        // total spend; the store's file never knew the difference.
+        $record = $this->session($this->currentSessionId());
+        $tokens = $record !== null ? (int) $record['context_tokens'] : $this->counters()['tokens'];
         $config = $this->container->has(Config::class) ? $this->container->get(Config::class) : null;
         $configured = $config instanceof Config ? $config->get('agent.context_window') : null;
         $window = is_int($configured) && $configured > 0 ? $configured : 32768;
@@ -627,10 +681,16 @@ final class DesktopData
     /**
      * The current session's work board items.
      *
-     * @return list<array{title: string, status: string, origin: string}>
+     * @return list<array{title: string, status: string, origin: string, draggable: bool}>
      */
     public function work(): array
     {
+        // The agent's todos ARE the work board of its session; their status is the agent's fact, so a card
+        // from the ledger is not dragged — the store's own cards still are.
+        $record = $this->session($this->currentSessionId());
+        if ($record !== null) {
+            return array_map(static fn (array $item): array => $item + ['draggable' => false], $record['work']);
+        }
         $items = $this->currentSession()['work'] ?? $this->currentSession()['todo'] ?? null;
         if (!is_array($items)) {
             return [];
@@ -645,6 +705,7 @@ final class DesktopData
                 'title' => $this->str($item['title'] ?? $item['text'] ?? null) ?: '(untitled)',
                 'status' => $this->str($item['status'] ?? null) ?: 'pending',
                 'origin' => $this->str($item['origin'] ?? null) ?: 'planned',
+                'draggable' => true,
             ];
         }
 
@@ -658,6 +719,11 @@ final class DesktopData
      */
     public function audit(): array
     {
+        // The named session's own facts, when the ledger holds it; the shell's log otherwise.
+        $record = $this->session($this->currentSessionId());
+        if ($record !== null) {
+            return $record['activity'];
+        }
         if ($this->log === null) {
             return [];
         }
@@ -781,18 +847,28 @@ final class DesktopData
     /** @return array<string, mixed> */
     private function currentSession(): array
     {
-        $files = $this->sessionFiles();
-        if ($files === []) {
+        $id = $this->currentSessionId();
+        if ($id === '') {
             return [];
         }
-        $id = $this->currentSessionId();
-        foreach ($files as $file) {
+
+        return $this->session($id) ?? $this->storeRecord($id) ?? [];
+    }
+
+    /**
+     * The store's own record for an id, or `null` when it wrote none.
+     *
+     * @return array<string, mixed>|null
+     */
+    private function storeRecord(string $id): ?array
+    {
+        foreach ($this->sessionFiles() as $file) {
             if (basename($file, '.json') === $id) {
                 return $this->readJson($file);
             }
         }
 
-        return $this->readJson($files[0]);
+        return null;
     }
 
     /** @return array<string, mixed> */
