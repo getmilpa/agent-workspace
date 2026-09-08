@@ -3,6 +3,13 @@
 All notable changes to milpa/desktop-app are documented here. This project adheres to
 [Semantic Versioning](https://semver.org/) and [Keep a Changelog](https://keepachangelog.com/).
 
+## [0.58.0](https://github.com/getmilpa/agent-workspace/compare/v0.57.0...v0.58.0) (2026-09-08)
+
+
+### Features
+
+* **session:** every surface reads the named session from the ledger ([#11](https://github.com/getmilpa/agent-workspace/issues/11)) ([8528efe](https://github.com/getmilpa/agent-workspace/commit/8528efebe3854b56c9a4217909d213e67d960e61))
+
 ## [0.57.0](https://github.com/getmilpa/agent-workspace/compare/v0.56.0...v0.57.0) (2026-09-08)
 
 
