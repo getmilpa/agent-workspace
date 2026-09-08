@@ -3,6 +3,13 @@
 All notable changes to milpa/desktop-app are documented here. This project adheres to
 [Semantic Versioning](https://semver.org/) and [Keep a Changelog](https://keepachangelog.com/).
 
+## [0.61.0](https://github.com/getmilpa/agent-workspace/compare/v0.60.0...v0.61.0) (2026-09-08)
+
+
+### Features
+
+* **composer:** declare the type that makes the capability discoverable ([#17](https://github.com/getmilpa/agent-workspace/issues/17)) ([54876d1](https://github.com/getmilpa/agent-workspace/commit/54876d183c63a1687d09019390423660d72f4ce2))
+
 ## [0.60.0](https://github.com/getmilpa/agent-workspace/compare/v0.59.0...v0.60.0) (2026-09-08)
 
 
