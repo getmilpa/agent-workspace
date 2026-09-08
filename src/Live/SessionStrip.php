@@ -15,6 +15,7 @@ declare(strict_types=1);
 namespace Milpa\AgentWorkspace\Live;
 
 use Milpa\AgentWorkspace\Data\DesktopData;
+use Milpa\AgentWorkspace\Event\RenderEvents;
 use Milpa\AgentWorkspace\I18n\Catalog;
 use Milpa\Interfaces\Event\MilpaEventDispatcherInterface;
 use Milpa\Live\Security\HmacStateSigner;
@@ -39,6 +40,9 @@ final class SessionStrip
     public const string BEFORE_RENDER = 'desktop.session_strip.before_render';
     public const string AFTER_RENDER = 'desktop.session_strip.after_render';
 
+    /** The payload key both render events carry their mutable {@see ComposerRender} under. */
+    public const string SUBJECT_KEY = 'sessionStrip';
+
     /** The row's element id, and the picker's — the ids the shell script looks up. */
     public const string ID = 'milpa-session-strip';
     public const string SELECT_ID = 'milpa-embed-session';
@@ -59,6 +63,16 @@ final class SessionStrip
         $this->catalog = $catalog ?? new Catalog();
     }
 
+    /**
+     * The events `render()` dispatches, declared from the same constants it dispatches with (greenhouse decisions/0228).
+     *
+     * @return list<\Milpa\Interfaces\Event\EventDeclaration>
+     */
+    public static function events(): array
+    {
+        return RenderEvents::of(self::class, self::BEFORE_RENDER, self::AFTER_RENDER, self::SUBJECT_KEY, 'the session strip');
+    }
+
     /** The strip's server-rendered HTML — a component with its signed envelope. */
     public function render(): string
     {
@@ -68,13 +82,13 @@ final class SessionStrip
             'activeSession' => $this->data?->currentSessionId() ?? '',
         ];
         $subject = new ComposerRender($props);
-        $this->events?->dispatch(self::BEFORE_RENDER, ['sessionStrip' => $subject]);
+        $this->events?->dispatch(self::BEFORE_RENDER, [self::SUBJECT_KEY => $subject]);
 
         $context = new ComponentContext(componentId: self::COMPONENT_ID);
         $state = $component->mount($subject->props, $context);
         $subject->html = $this->markup($state) . $this->envelope($state);
 
-        $this->events?->dispatch(self::AFTER_RENDER, ['sessionStrip' => $subject]);
+        $this->events?->dispatch(self::AFTER_RENDER, [self::SUBJECT_KEY => $subject]);
 
         return $subject->html;
     }

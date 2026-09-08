@@ -15,6 +15,7 @@ declare(strict_types=1);
 namespace Milpa\AgentWorkspace\Live;
 
 use Milpa\AgentWorkspace\Data\DesktopData;
+use Milpa\AgentWorkspace\Event\RenderEvents;
 use Milpa\AgentWorkspace\I18n\Catalog;
 use Milpa\Interfaces\Event\MilpaEventDispatcherInterface;
 use Milpa\Live\Security\HmacStateSigner;
@@ -41,6 +42,9 @@ final class SettingsScreen
     public const string BEFORE_RENDER = 'desktop.settings.before_render';
     public const string AFTER_RENDER = 'desktop.settings.after_render';
 
+    /** The payload key both render events carry their mutable {@see ComposerRender} under. */
+    public const string SUBJECT_KEY = 'settings';
+
     /** The default endpoint a Desktop with no configuration talks to. */
     private const string DEFAULT_ENDPOINT = 'http://llama.local:11438';
 
@@ -61,6 +65,16 @@ final class SettingsScreen
         $this->catalog = $catalog ?? new Catalog();
     }
 
+    /**
+     * The events `render()` dispatches, declared from the same constants it dispatches with (greenhouse decisions/0228).
+     *
+     * @return list<\Milpa\Interfaces\Event\EventDeclaration>
+     */
+    public static function events(): array
+    {
+        return RenderEvents::of(self::class, self::BEFORE_RENDER, self::AFTER_RENDER, self::SUBJECT_KEY, 'the Settings screen');
+    }
+
     /** The screen's server-rendered HTML — a component with its signed envelope and a signal-bound badge. */
     public function render(): string
     {
@@ -70,13 +84,13 @@ final class SettingsScreen
             'sessionsPath' => '.milpa/sessions/',
             'savedLabel' => $this->catalog->tr('settings.saved'),
         ]);
-        $this->events?->dispatch(self::BEFORE_RENDER, ['settings' => $subject]);
+        $this->events?->dispatch(self::BEFORE_RENDER, [self::SUBJECT_KEY => $subject]);
 
         $context = new ComponentContext(componentId: self::COMPONENT_ID);
         $state = $component->mount($subject->props, $context);
         $subject->html = $this->markup($subject->props) . $this->envelope($state);
 
-        $this->events?->dispatch(self::AFTER_RENDER, ['settings' => $subject]);
+        $this->events?->dispatch(self::AFTER_RENDER, [self::SUBJECT_KEY => $subject]);
 
         return $subject->html;
     }

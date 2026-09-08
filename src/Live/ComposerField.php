@@ -14,6 +14,7 @@ declare(strict_types=1);
 
 namespace Milpa\AgentWorkspace\Live;
 
+use Milpa\AgentWorkspace\Event\RenderEvents;
 use Milpa\AgentWorkspace\I18n\Catalog;
 use Milpa\Interfaces\Event\MilpaEventDispatcherInterface;
 use Milpa\Live\Components\Form\InputComponent;
@@ -52,6 +53,9 @@ final class ComposerField
     /** Dispatched with a mutable {@see ComposerRender} AFTER the render — a subscriber may change its html. */
     public const string AFTER_RENDER = 'desktop.composer.after_render';
 
+    /** The payload key both render events carry their mutable {@see ComposerRender} under. */
+    public const string SUBJECT_KEY = 'composer';
+
     private readonly DesktopComponents $registry;
 
     /** The Desktop's copy in the declared locale — the field's placeholder is a human-facing sentence. */
@@ -74,6 +78,16 @@ final class ComposerField
     }
 
     /**
+     * The events `render()` dispatches, declared from the same constants it dispatches with (greenhouse decisions/0228).
+     *
+     * @return list<\Milpa\Interfaces\Event\EventDeclaration>
+     */
+    public static function events(): array
+    {
+        return RenderEvents::of(self::class, self::BEFORE_RENDER, self::AFTER_RENDER, self::SUBJECT_KEY, 'the composer field');
+    }
+
+    /**
      * The initial server-rendered HTML of the composer field: Alpine-bound, carrying its signed state
      * envelope. The render emits {@see self::BEFORE_RENDER} and {@see self::AFTER_RENDER} — Milpa is
      * event-driven, so another plugin can subscribe to extend the component (change its props, or its HTML).
@@ -81,7 +95,7 @@ final class ComposerField
     public function render(): string
     {
         $subject = new ComposerRender(['name' => 'message', 'placeholder' => $this->catalog->tr('composer.placeholder'), 'rows' => 2]);
-        $this->events?->dispatch(self::BEFORE_RENDER, ['composer' => $subject]);
+        $this->events?->dispatch(self::BEFORE_RENDER, [self::SUBJECT_KEY => $subject]);
 
         $component = new ComposerMessageComponent($this->events);
         $context = new ComponentContext(componentId: self::COMPONENT_ID, route: self::ROUTE);
@@ -96,7 +110,7 @@ final class ComposerField
             target: RenderTarget::HTML,
         ))->output;
 
-        $this->events?->dispatch(self::AFTER_RENDER, ['composer' => $subject]);
+        $this->events?->dispatch(self::AFTER_RENDER, [self::SUBJECT_KEY => $subject]);
 
         return $subject->html;
     }

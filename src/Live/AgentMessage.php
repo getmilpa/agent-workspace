@@ -14,6 +14,7 @@ declare(strict_types=1);
 
 namespace Milpa\AgentWorkspace\Live;
 
+use Milpa\AgentWorkspace\Event\RenderEvents;
 use Milpa\Interfaces\Event\MilpaEventDispatcherInterface;
 use Milpa\Live\Security\HmacStateSigner;
 use Milpa\Live\Security\SignedXhtmlStateTransferCodec;
@@ -34,6 +35,9 @@ final class AgentMessage
     public const string BEFORE_RENDER = 'desktop.agent_message.before_render';
     public const string AFTER_RENDER = 'desktop.agent_message.after_render';
 
+    /** The payload key both render events carry their mutable {@see ComposerRender} under. */
+    public const string SUBJECT_KEY = 'agentMessage';
+
     private readonly SignedXhtmlStateTransferCodec $codec;
 
     public function __construct(
@@ -43,18 +47,28 @@ final class AgentMessage
         $this->codec = new SignedXhtmlStateTransferCodec(new XhtmlStateTransferCodec(), new HmacStateSigner($signingSecret), null);
     }
 
+    /**
+     * The events `render()` dispatches, declared from the same constants it dispatches with (greenhouse decisions/0228).
+     *
+     * @return list<\Milpa\Interfaces\Event\EventDeclaration>
+     */
+    public static function events(): array
+    {
+        return RenderEvents::of(self::class, self::BEFORE_RENDER, self::AFTER_RENDER, self::SUBJECT_KEY, 'the agent-message prototype');
+    }
+
     /** The agent-message component's server-rendered prototype — the answer body and its foot tools. */
     public function render(): string
     {
         $component = new AgentMessageComponent();
         $subject = new ComposerRender([]);
-        $this->events?->dispatch(self::BEFORE_RENDER, ['agentMessage' => $subject]);
+        $this->events?->dispatch(self::BEFORE_RENDER, [self::SUBJECT_KEY => $subject]);
 
         $context = new ComponentContext(componentId: self::COMPONENT_ID);
         $state = $component->mount($subject->props, $context);
         $subject->html = $this->markup() . $this->envelope($state);
 
-        $this->events?->dispatch(self::AFTER_RENDER, ['agentMessage' => $subject]);
+        $this->events?->dispatch(self::AFTER_RENDER, [self::SUBJECT_KEY => $subject]);
 
         return $subject->html;
     }

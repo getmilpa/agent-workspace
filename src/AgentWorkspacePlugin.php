@@ -14,6 +14,7 @@ declare(strict_types=1);
 
 namespace Milpa\AgentWorkspace;
 
+use Milpa\AgentWorkspace\Event\AgentWorkspaceEvents;
 use Milpa\Attributes\PluginMetadata;
 use Milpa\AgentWorkspace\Admin\AdminGuest;
 use Milpa\AgentWorkspace\Admin\AgentView;
@@ -26,6 +27,7 @@ use Milpa\AgentWorkspace\Controllers\MutationController;
 use Milpa\AgentWorkspace\Controllers\ShellController;
 use Milpa\AgentWorkspace\Live\ComposerField;
 use Milpa\AgentWorkspace\Data\DesktopData;
+use Milpa\Interfaces\Event\DeclaredEvents;
 use Milpa\Live\Contracts\Component\DeclaresComponents;
 use Milpa\AgentWorkspace\Data\DesktopStore;
 use Milpa\AgentWorkspace\Http\LoopbackOnlyMiddleware;
@@ -173,6 +175,13 @@ final class AgentWorkspacePlugin implements PluginInterface, RouteProviderInterf
     {
         $events = $this->container->get(MilpaEventDispatcherInterface::class);
         assert($events instanceof MilpaEventDispatcherInterface);
+
+        // Every event this package dispatches, declared HERE — where the dispatcher enters the package — so the
+        // house counts them from the emitter, never from a scan of source (greenhouse decisions/0228). A dispatcher
+        // that keeps no declarations is asked nothing; dispatching stays exactly what it was.
+        if ($events instanceof DeclaredEvents) {
+            $events->declare(...AgentWorkspaceEvents::declarations());
+        }
 
         // The door (greenhouse decisions/0209): the declared gate, judged once; the catalog in the declared
         // locale; and the strict gate registered under its class name so the router can resolve it from the

@@ -16,6 +16,7 @@ namespace Milpa\AgentWorkspace\Live;
 
 use Milpa\AgentWorkspace\Data\DesktopData;
 use Milpa\AgentWorkspace\DesktopSettings;
+use Milpa\AgentWorkspace\Event\RenderEvents;
 use Milpa\AgentWorkspace\I18n\Catalog;
 use Milpa\Interfaces\Event\MilpaEventDispatcherInterface;
 use Milpa\Live\Security\HmacStateSigner;
@@ -40,6 +41,9 @@ final class Topbar
     public const string COMPONENT_ID = 'topbar';
     public const string BEFORE_RENDER = 'desktop.topbar.before_render';
     public const string AFTER_RENDER = 'desktop.topbar.after_render';
+
+    /** The payload key both render events carry their mutable {@see ComposerRender} under. */
+    public const string SUBJECT_KEY = 'topbar';
 
     // The mode's WORDS are the catalog's, through {@see ComposerBar::modeLabel()} — one authority for the
     // chip here, the chip in the composer, the Settings screen and the signal the shell seeds.
@@ -67,6 +71,16 @@ final class Topbar
     }
 
     /**
+     * The events `render()` dispatches, declared from the same constants it dispatches with (greenhouse decisions/0228).
+     *
+     * @return list<\Milpa\Interfaces\Event\EventDeclaration>
+     */
+    public static function events(): array
+    {
+        return RenderEvents::of(self::class, self::BEFORE_RENDER, self::AFTER_RENDER, self::SUBJECT_KEY, 'the topbar');
+    }
+
+    /**
      * The topbar's server-rendered HTML — a component with its signed envelope and signal-bound badges.
      *
      * @param string|null $principal who the gate let in — the authenticated actor's id, never a session id — or null when nobody is signed in
@@ -75,13 +89,13 @@ final class Topbar
     {
         $component = new TopbarComponent();
         $subject = new ComposerRender($this->props($principal));
-        $this->events?->dispatch(self::BEFORE_RENDER, ['topbar' => $subject]);
+        $this->events?->dispatch(self::BEFORE_RENDER, [self::SUBJECT_KEY => $subject]);
 
         $context = new ComponentContext(componentId: self::COMPONENT_ID);
         $state = $component->mount($subject->props, $context);
         $subject->html = $this->markup($subject->props) . $this->envelope($state);
 
-        $this->events?->dispatch(self::AFTER_RENDER, ['topbar' => $subject]);
+        $this->events?->dispatch(self::AFTER_RENDER, [self::SUBJECT_KEY => $subject]);
 
         return $subject->html;
     }

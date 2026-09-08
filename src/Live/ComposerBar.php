@@ -15,6 +15,7 @@ declare(strict_types=1);
 namespace Milpa\AgentWorkspace\Live;
 
 use Milpa\AgentWorkspace\Data\DesktopData;
+use Milpa\AgentWorkspace\Event\RenderEvents;
 use Milpa\AgentWorkspace\I18n\Catalog;
 use Milpa\Interfaces\Event\MilpaEventDispatcherInterface;
 use Milpa\Live\Security\HmacStateSigner;
@@ -57,6 +58,9 @@ final class ComposerBar
     /** Dispatched with a mutable {@see ComposerRender} AFTER the render — a subscriber may change its html. */
     public const string AFTER_RENDER = 'desktop.composer_bar.after_render';
 
+    /** The payload key both render events carry their mutable {@see ComposerRender} under. */
+    public const string SUBJECT_KEY = 'composerBar';
+
     /**
      * The permission modes the chip offers, each naming the CATALOG KEY its words come from — the same
      * key the Settings screen renders, so the two can no longer disagree in any locale.
@@ -84,17 +88,27 @@ final class ComposerBar
         $this->catalog = $catalog ?? new Catalog();
     }
 
+    /**
+     * The events `render()` dispatches, declared from the same constants it dispatches with (greenhouse decisions/0228).
+     *
+     * @return list<\Milpa\Interfaces\Event\EventDeclaration>
+     */
+    public static function events(): array
+    {
+        return RenderEvents::of(self::class, self::BEFORE_RENDER, self::AFTER_RENDER, self::SUBJECT_KEY, 'the composer bar');
+    }
+
     /** The bar, with its signed envelope, after the render events a plugin may extend it through. */
     public function render(): string
     {
         $component = new ComposerBarComponent();
         $subject = new ComposerRender(['mode' => $this->mode()]);
-        $this->events?->dispatch(self::BEFORE_RENDER, ['composerBar' => $subject]);
+        $this->events?->dispatch(self::BEFORE_RENDER, [self::SUBJECT_KEY => $subject]);
 
         $state = $component->mount($subject->props, new ComponentContext(componentId: self::COMPONENT_ID, route: ComposerField::ROUTE));
         $subject->html = $this->markup() . $this->envelope($state);
 
-        $this->events?->dispatch(self::AFTER_RENDER, ['composerBar' => $subject]);
+        $this->events?->dispatch(self::AFTER_RENDER, [self::SUBJECT_KEY => $subject]);
 
         return $subject->html;
     }
