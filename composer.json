@@ -9,7 +9,7 @@
     }
   ],
   "require": {
-    "milpa/core": ">=0.11 <1.0",
+    "milpa/core": ">=0.12 <1.0",
     "milpa/http": ">=0.1.5 <1.0",
     "milpa/live": ">=0.18 <1.0",
     "milpa/live-web": ">=0.14 <1.0",
@@ -46,6 +46,9 @@
   },
   "extra": {
     "milpa": {
+      "events": [
+        "Milpa\\AgentWorkspace\\Event\\AgentWorkspaceEvents"
+      ],
       "capability": {
         "id": "agent-workspace",
         "title": "The room where a human meets the agent \u2014 a section of the panel, not the panel",

@@ -36,6 +36,7 @@ use Milpa\AgentWorkspace\Live\Tabs;
 use Milpa\AgentWorkspace\Live\Thinking;
 use Milpa\AgentWorkspace\Live\Topbar;
 use Milpa\AgentWorkspace\Live\WorkBoard;
+use Milpa\Interfaces\Event\DeclaresEvents;
 use Milpa\Interfaces\Event\EventDeclaration;
 
 /**
@@ -52,8 +53,13 @@ use Milpa\Interfaces\Event\EventDeclaration;
  * `desktop.shell.changed` ({@see \Milpa\AgentWorkspace\AgentWorkspacePlugin::CHANGED_EVENT}) is NOT here:
  * this package names it and subscribes to it, but the plugin that pushes a live update is the one that
  * dispatches it, and a declaration belongs to the emitter.
+ *
+ * As a {@see DeclaresEvents} holder the same list is readable WITHOUT constructing a single surface: the
+ * manifest names this class under `extra.milpa.events`, and a host that never renders a live component —
+ * a CLI process, for one — still learns every name this package dispatches (greenhouse decisions/0228,
+ * second slice; the first measured a CLI answering seven of the family's twenty-four).
  */
-final class AgentWorkspaceEvents
+final class AgentWorkspaceEvents implements DeclaresEvents
 {
     /**
      * One declaration per event name this package dispatches, in the order the shell paints its surfaces.
