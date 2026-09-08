@@ -18,13 +18,11 @@ use Milpa\AgentWorkspace\AgentWorkspacePlugin;
 use Milpa\AgentWorkspace\Controllers\ShellController;
 use Milpa\AgentWorkspace\Event\AgentWorkspaceEvents;
 use Milpa\Container\DIContainer;
-use Milpa\Eventing\EventDispatcher;
 use Milpa\Interfaces\Event\DeclaredEvents;
 use Milpa\Interfaces\Event\EventDeclaration;
 use Milpa\Interfaces\Event\MilpaEventDispatcherInterface;
 use Nyholm\Psr7\ServerRequest;
 use PHPUnit\Framework\TestCase;
-use Psr\Log\NullLogger;
 
 /**
  * The falsifier of greenhouse decisions/0228 for this package: what the workspace DECLARES to the
@@ -143,10 +141,17 @@ final class TheWorkspaceDeclaresEveryEventItDispatchesTest extends TestCase
         self::assertEquals(AgentWorkspaceEvents::declarations(), $spy->declared(), 'the plugin declares the holder\'s list, unchanged');
     }
 
-    /** (d) The control: a dispatcher that keeps no declarations is asked nothing, and the shell renders as before. */
+    /**
+     * (d) The control: a dispatcher that keeps no declarations is asked nothing, and the shell renders as before.
+     *
+     * The control is BUILT rather than borrowed. It used to be `Milpa\Eventing\EventDispatcher`, and the
+     * family's own dispatcher has since implemented `DeclaredEvents` — so naming a concrete class as «the
+     * one without the contract» is a moving target that turns the control green for the wrong reason. An
+     * anonymous class implementing only {@see MilpaEventDispatcherInterface} cannot drift that way.
+     */
     public function testADispatcherThatKeepsNoDeclarationsStillServesTheShell(): void
     {
-        $plain = new EventDispatcher(new NullLogger());
+        $plain = self::plainDispatcher();
         self::assertNotInstanceOf(DeclaredEvents::class, $plain, 'the control is a dispatcher without the contract');
 
         $container = new DIContainer();
@@ -158,6 +163,37 @@ final class TheWorkspaceDeclaresEveryEventItDispatchesTest extends TestCase
         $body = (string) $controller->shell(new ServerRequest('GET', '/desktop'))->getBody();
         self::assertStringContainsString('Milpa Desktop', $body);
         self::assertStringContainsString('data-milpa-component="desktop-sidebar"', $body);
+    }
+
+    /** A dispatcher that implements the dispatch contract and NOTHING else — the control's whole point. */
+    private static function plainDispatcher(): MilpaEventDispatcherInterface
+    {
+        return new class () implements MilpaEventDispatcherInterface {
+            /** @var array<string, list<callable>> */
+            private array $handlers = [];
+
+            public function dispatch(string $eventName, array $payload = [], bool $async = false): void
+            {
+                foreach ($this->handlers[$eventName] ?? [] as $handler) {
+                    $handler($eventName, $payload);
+                }
+            }
+
+            public function subscribe(string $eventName, callable $handler, int $priority = 0): void
+            {
+                $this->handlers[$eventName][] = $handler;
+            }
+
+            public function getSubscribers(string $eventName): array
+            {
+                return $this->handlers[$eventName] ?? [];
+            }
+
+            public function hasSubscribers(string $eventName): bool
+            {
+                return ($this->handlers[$eventName] ?? []) !== [];
+            }
+        };
     }
 
     /**
