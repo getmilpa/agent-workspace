@@ -257,11 +257,16 @@ final class ShellController
         // without one minted a fresh session on each reload and painted nothing of the one that was running.
         $named = self::queryParam($request, 'session');
         $cookie = $request->getCookieParams()['milpa_agent_sid'] ?? null;
-        $agentSid = \is_string($named) && self::isSessionId($named) ? $named
-            : (\is_string($cookie) && self::isSessionId($cookie) ? $cookie : 'desk-' . bin2hex(random_bytes(8)));
-        // The data seam loads that session's counters, context and work when the store holds a record for it
-        // (a session started from a terminal or a sequence has none, and the page still binds to it).
-        $this->data?->select($agentSid);
+        $known = \is_string($named) && self::isSessionId($named) ? $named
+            : (\is_string($cookie) && self::isSessionId($cookie) ? $cookie : null);
+        $agentSid = $known ?? 'desk-' . bin2hex(random_bytes(8));
+        // EVERY SURFACE READS THE SESSION NAMED (greenhouse evidence/0561): header, counters, work, activity —
+        // from the ledger when the agent ran it, from the store's record when the Desktop created it, and
+        // «No session open» when neither knows the id. A freshly minted id selects nothing, so a bare
+        // `/desktop` still opens on the store's own record rather than on an empty session.
+        if ($known !== null) {
+            $this->data?->select($agentSid);
+        }
         // Embed mode (greenhouse decisions/0210): the flag folds the chrome; the DOM and the door are the same.
         $embed = self::queryParam($request, self::EMBED_PARAM) === '1';
 

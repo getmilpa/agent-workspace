@@ -75,7 +75,7 @@ final class WorkBoard
     /** @param array<string, mixed> $props */
     private function markup(array $props): string
     {
-        /** @var list<array{title: string, status: string, origin: string}> $work */
+        /** @var list<array{title: string, status: string, origin: string, draggable?: bool}> $work */
         $work = \is_array($props['work'] ?? null) ? $props['work'] : [];
         $wrap = 'data-milpa-component="desktop-work-board" data-milpa-component-id="' . self::COMPONENT_ID . '"';
 
@@ -89,7 +89,8 @@ final class WorkBoard
         foreach ($work as $i => $item) {
             $status = \array_key_exists($item['status'], self::COLUMNS) ? $item['status'] : 'pending';
             $byStatus[$status] .= sprintf(
-                '<article class="mui-card mui-card--compact work-card" draggable="true" data-index="%d"><div class="mui-card__body"><p class="work-card__title">%s</p><span class="mui-badge">%s</span></div></article>',
+                '<article class="mui-card mui-card--compact work-card" draggable="%s" data-index="%d"><div class="mui-card__body"><p class="work-card__title">%s</p><span class="mui-badge">%s</span></div></article>',
+                ($item['draggable'] ?? true) ? 'true' : 'false',
                 $i,
                 htmlspecialchars($item['title'], ENT_QUOTES),
                 htmlspecialchars($item['origin'], ENT_QUOTES),

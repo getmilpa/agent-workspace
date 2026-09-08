@@ -66,7 +66,13 @@ final class ShellSignals
             // Every counter the UI shows is a SIGNAL — one truth, projected to the composer chips, the
             // status bar and the panels alike (greenhouse decisions/0191, Rod). The live feed and the
             // turn update these; every place that reads them updates at once.
-            'session.state.label' => $catalog->tr($running ? 'session.state.working' : 'session.state.idle'),
+            'session.state.label' => $catalog->tr(match (true) {
+                $running => 'session.state.working',
+                $state === 'waiting' => 'session.state.waiting',
+                $state === 'paused' => 'session.state.paused',
+                $state === 'ended' => 'session.state.ended',
+                default => 'session.state.idle',
+            }),
             'session.turns' => \is_array($counters) ? (int) $counters['turns'] : 0,
             'session.steps' => \is_array($counters) ? (int) $counters['steps'] : 0,
             'session.tokens' => \is_array($counters) ? (int) $counters['tokens'] : 0,

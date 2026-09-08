@@ -695,6 +695,71 @@ final class ShellControllerTest extends TestCase
         rmdir($dir);
     }
 
+    /**
+     * EVERY SURFACE READS THE SESSION NAMED (greenhouse evidence/0561, Rod: «todo sincronizado»): the header,
+     * the sidebar's row, the signal seeds the counters ride on, the status bar, the work board and the
+     * activity stream all come from the ledger of `?session=<sid>` — with no store record at all. And an id
+     * nobody knows shows «No session open», never another session's record.
+     */
+    public function testEverySurfaceOfThePageReadsTheNamedSessionFromTheLedger(): void
+    {
+        $dir = sys_get_temp_dir() . '/milpa-sync-' . uniqid('', true);
+        mkdir($dir);
+        $ledger = $dir . '/agent-sessions.jsonl';
+        $sid = 'desk-e58147eb41103731';
+        $rows = [
+            ['stream_id' => 'agent-session:' . $sid, 'type' => 'session.started', 'payload' => ['goal' => 'run the rollout sequence', 'mode' => 'ask'], 'seq' => 1],
+            ['stream_id' => 'agent-session:' . $sid, 'type' => 'session.turn', 'payload' => ['role' => 'user', 'content' => 'run the rollout sequence'], 'seq' => 2],
+            ['stream_id' => 'agent-session:' . $sid, 'type' => 'session.model_called', 'payload' => [], 'seq' => 3],
+            ['stream_id' => 'agent-session:' . $sid, 'type' => 'session.model_returned', 'payload' => ['usage' => ['prompt_tokens' => 9300, 'total_tokens' => 9500]], 'seq' => 4],
+            ['stream_id' => 'agent-session:' . $sid, 'type' => 'session.tool_called', 'payload' => ['tool' => 'house_context', 'ok' => true, 'result' => '{}'], 'seq' => 5],
+            ['stream_id' => 'agent-session:' . $sid, 'type' => 'session.todo_changed', 'payload' => ['id' => 't1', 'text' => 'Roll it out', 'status' => 'in_progress'], 'seq' => 6],
+            ['stream_id' => 'agent-session:desk-other', 'type' => 'session.started', 'payload' => ['goal' => 'NOT THIS ONE'], 'seq' => 7],
+            ['stream_id' => 'agent-session:' . $sid, 'type' => 'session.question_asked', 'payload' => ['id' => 'perm:sequence:run', 'question' => '¿Lo autorizas?', 'reason' => 'permission'], 'seq' => 8],
+        ];
+        file_put_contents($ledger, implode("\n", array_map(static fn (array $r): string => json_encode($r, JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE), $rows)) . "\n");
+        $controller = new ShellController(new EventDispatcher(new NullLogger()), null, new DesktopData(new DIContainer(), null, '', null, $ledger));
+
+        $body = (string) $controller->shell(new ServerRequest('GET', '/desktop?session=' . $sid))->getBody();
+
+        // The header and the sidebar name THIS session.
+        // (The catalog travels whole in `#milpa-desktop-i18n`, so «No session open» is on EVERY page as copy — the
+        // claim is about the topbar's goal span, not about the body.)
+        self::assertStringContainsString('<span class="milpa-topbar__goal">run the rollout sequence</span>', $body);
+        self::assertStringContainsString('session ' . $sid, $body);
+        self::assertStringNotContainsString('<span class="milpa-topbar__goal">No session open</span>', $body);
+        self::assertMatchesRegularExpression('#data-session-id="' . preg_quote($sid, '#') . '"[^>]*aria-current="page"#', $body);
+        // The OTHER session is listed in the sidebar — every session the ledger holds is — but it is neither the
+        // header nor the thread of this page.
+        self::assertStringContainsString('data-session-id="desk-other"', $body);
+        self::assertStringNotContainsString('<span class="milpa-topbar__goal">NOT THIS ONE</span>', $body);
+        self::assertStringNotContainsString('NOT THIS ONE', (string) preg_replace('#<nav.*?</nav>#s', '', $body), 'outside the sidebar the other session is nowhere');
+        // The counters the surfaces ride on are seeded from the ledger.
+        self::assertSame(1, preg_match('#<script id="milpa-live-signals" type="application/json">(.*?)</script>#s', $body, $m));
+        $signals = json_decode($m[1], true, 512, JSON_THROW_ON_ERROR);
+        self::assertSame(1, $signals['session.turns']);
+        self::assertSame(1, $signals['session.steps']);
+        self::assertSame(9500, $signals['session.tokens']);
+        self::assertSame(1, $signals['session.tool_calls']);
+        self::assertSame('9.30K', $signals['context.used'], 'the last prompt, as the context');
+        self::assertSame('Waiting on you', $signals['session.state.label'], 'a parked question is the state');
+        self::assertStringContainsString('1 turns · 1 steps · 9500 tokens · 1 tool calls', $body, 'the status bar seed');
+        // The work board holds the agent\'s todo, not dragged by hand; the activity stream holds its facts.
+        self::assertStringContainsString('Roll it out', $body);
+        self::assertStringContainsString('draggable="false"', $body);
+        self::assertStringContainsString('data-status="in_progress"', $body);
+        self::assertStringContainsString('session.tool_called', $body);
+
+        // THE CONTROL: an id nobody knows.
+        $nobody = (string) $controller->shell(new ServerRequest('GET', '/desktop?session=desk-nobody'))->getBody();
+        self::assertStringContainsString('<span class="milpa-topbar__goal">No session open</span>', $nobody);
+        self::assertStringNotContainsString('<span class="milpa-topbar__goal">run the rollout sequence</span>', $nobody);
+        self::assertStringContainsString('0 turns · 0 steps · 0 tokens · 0 tool calls', $nobody);
+
+        unlink($ledger);
+        rmdir($dir);
+    }
+
     public function testWithAHubTheShellSetsTheCookieAndSubscribesOverEventSource(): void
     {
         $mercure = new MercureConfig(
