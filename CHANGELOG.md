@@ -3,6 +3,13 @@
 All notable changes to milpa/desktop-app are documented here. This project adheres to
 [Semantic Versioning](https://semver.org/) and [Keep a Changelog](https://keepachangelog.com/).
 
+## [0.56.0](https://github.com/getmilpa/agent-workspace/compare/v0.55.1...v0.56.0) (2026-09-08)
+
+
+### Features
+
+* **decisions:** run a declared sequence from the inbox, and answer its pause in place ([#7](https://github.com/getmilpa/agent-workspace/issues/7)) ([9a4e1e6](https://github.com/getmilpa/agent-workspace/commit/9a4e1e61046c1f58e3fa9ccf28b9fb52b82cb034))
+
 ## [0.55.1](https://github.com/getmilpa/agent-workspace/compare/v0.55.0...v0.55.1) (2026-09-07)
 
 
