@@ -3,6 +3,13 @@
 All notable changes to milpa/desktop-app are documented here. This project adheres to
 [Semantic Versioning](https://semver.org/) and [Keep a Changelog](https://keepachangelog.com/).
 
+## [0.60.0](https://github.com/getmilpa/agent-workspace/compare/v0.59.0...v0.60.0) (2026-09-08)
+
+
+### Features
+
+* **events:** the manifest names the holder, so a process that builds nothing still knows the events ([#15](https://github.com/getmilpa/agent-workspace/issues/15)) ([40a66d1](https://github.com/getmilpa/agent-workspace/commit/40a66d129deead85225d0275a2c366afd8dcfe14))
+
 ## [0.59.0](https://github.com/getmilpa/agent-workspace/compare/v0.58.0...v0.59.0) (2026-09-08)
 
 
