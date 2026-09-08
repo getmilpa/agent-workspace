@@ -1,6 +1,7 @@
 {
   "name": "milpa/agent-workspace",
   "description": "The agent's workspace for the Milpa PHP framework: the conversation, the composer, the gate, the work board and the decisions inbox \u2014 the room where a human meets the agent, declared as a section of the Milpa panel. Opt-in: an app has a panel without it.",
+  "type": "milpa-capability",
   "license": "Apache-2.0",
   "authors": [
     {
