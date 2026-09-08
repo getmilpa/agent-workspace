@@ -3,6 +3,13 @@
 All notable changes to milpa/desktop-app are documented here. This project adheres to
 [Semantic Versioning](https://semver.org/) and [Keep a Changelog](https://keepachangelog.com/).
 
+## [0.61.1](https://github.com/getmilpa/agent-workspace/compare/v0.61.0...v0.61.1) (2026-09-08)
+
+
+### Bug Fixes
+
+* **deps:** the admin constraint declares a family range, not a one-minor ceiling ([#19](https://github.com/getmilpa/agent-workspace/issues/19)) ([f5d91a7](https://github.com/getmilpa/agent-workspace/commit/f5d91a739376436f5349bdd1ecbc80206ef5fbd0))
+
 ## [0.61.0](https://github.com/getmilpa/agent-workspace/compare/v0.60.0...v0.61.0) (2026-09-08)
 
 
