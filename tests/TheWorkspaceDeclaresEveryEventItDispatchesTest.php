@@ -41,6 +41,13 @@ use PHPUnit\Framework\TestCase;
  * around every `mount()` — those are that package's to declare where it holds the dispatcher, not this
  * one's to claim, and the test asserts they come from vendor code so a name that starts being dispatched
  * from `src/` cannot hide among them.
+ *
+ * A DECLARATION is sorted the same way, and for the same reason. One dispatcher receives the declarations
+ * of every emitter built against it, so once milpa/live's `LiveEventEmitter` began declaring its own eight
+ * names (v0.22.0) the spy heard them too — this package's list did not change, the room did. So a
+ * declaration is counted as ours when `dispatchedBy` resolves to a class whose file lives under `src/`,
+ * and each foreign one is asserted to come from `vendor/`. A count is not used to tell them apart: a
+ * dependency may declare one more tomorrow, and that must not turn this package's falsifier red.
  */
 final class TheWorkspaceDeclaresEveryEventItDispatchesTest extends TestCase
 {
@@ -85,7 +92,7 @@ final class TheWorkspaceDeclaresEveryEventItDispatchesTest extends TestCase
         $container->registerService(MilpaEventDispatcherInterface::class, $spy);
         (new AgentWorkspacePlugin($container))->boot();
 
-        $declared = $spy->declared();
+        $declared = self::declaredHere($spy->declared());
         $names = array_map(static fn (EventDeclaration $d): string => $d->name, $declared);
 
         // (b) The declared set is exactly the expected list — no more, no fewer, none twice.
@@ -138,7 +145,36 @@ final class TheWorkspaceDeclaresEveryEventItDispatchesTest extends TestCase
         $container->registerService(MilpaEventDispatcherInterface::class, $spy);
         (new AgentWorkspacePlugin($container))->boot();
 
-        self::assertEquals(AgentWorkspaceEvents::declarations(), $spy->declared(), 'the plugin declares the holder\'s list, unchanged');
+        self::assertEquals(AgentWorkspaceEvents::declarations(), self::declaredHere($spy->declared()), 'the plugin declares the holder\'s list, unchanged');
+    }
+
+    /**
+     * The declarations this package made, told apart from a dependency's by WHERE the declaring class lives.
+     *
+     * The dispatcher is shared, so an emitter a Desktop surface builds declares into the same spy. Sorting
+     * by the file behind `dispatchedBy` — not by a name or a count — keeps that honest in both directions:
+     * a foreign declaration cannot inflate this package's list, and a name that starts being declared from
+     * `src/` cannot hide among the foreign ones.
+     *
+     * @param list<EventDeclaration> $declared
+     *
+     * @return list<EventDeclaration>
+     */
+    private static function declaredHere(array $declared): array
+    {
+        $src = \dirname(__DIR__) . '/src/';
+        $ours = [];
+        foreach ($declared as $declaration) {
+            $file = (new \ReflectionClass($declaration->dispatchedBy))->getFileName();
+            self::assertIsString($file, $declaration->name . ' is declared by a class with a file');
+            if (str_starts_with($file, $src)) {
+                $ours[] = $declaration;
+                continue;
+            }
+            self::assertStringContainsString('/vendor/', $file, $declaration->name . ' is declared by a dependency, not by this package');
+        }
+
+        return $ours;
     }
 
     /**
