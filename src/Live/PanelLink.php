@@ -43,7 +43,9 @@ final readonly class PanelLink
     /** The id of the panel section that reports the backing services — the Stack. */
     public const string STACK = 'stack';
 
-    private function __construct(private string $route) {}
+    private function __construct(private string $route)
+    {
+    }
 
     /**
      * Read the panel's mount point from the app's config, or answer that there is no panel.

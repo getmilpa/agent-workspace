@@ -63,12 +63,12 @@ final class AgentView
      * refuses to compose any of them when nobody is signed in. The other definitions still travel so the
      * panel's composite registry and its live wire can resolve every surface the region painted.
      *
-     * @param DesktopComponents $live     the Desktop's ONE registry — the shell's instances, not copies
-     * @param DesktopSettings   $settings the judged door, for the gate chip and the guard's sign-in path
-     * @param Catalog           $catalog  the Desktop's copy in its declared locale
-     * @param DesktopData|null  $data     the session seam the composed surfaces read
-     * @param string            $open     where «Open the Desktop» goes — the shell's own path
-     * @param string            $signin   the app's sign-in door, for the signed-out state
+     * @param DesktopComponents $live          the Desktop's ONE registry — the shell's instances, not copies
+     * @param DesktopSettings   $settings      the judged door, for the gate chip and the guard's sign-in path
+     * @param Catalog           $catalog       the Desktop's copy in its declared locale
+     * @param DesktopData|null  $data          the session seam the composed surfaces read
+     * @param string            $open          where «Open the Desktop» goes — the shell's own path
+     * @param string            $signin        the app's sign-in door, for the signed-out state
      * @param string            $signingSecret the app's signing secret, for the session ticket the region carries (greenhouse decisions/0256)
      */
     public static function of(
