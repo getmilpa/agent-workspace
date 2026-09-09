@@ -789,7 +789,7 @@ final class ShellControllerTest extends TestCase
         // The connection feeds the component runtime rather than dumping raw text, and a session projection
         // (`kind`) is translated to the shell's own facts — both in the module, neither in the page.
         $connector = self::module('desktop-hub');
-        self::assertStringContainsString('new EventSource(URL, { withCredentials: true })', $connector);
+        self::assertStringContainsString('new EventSource(url, { withCredentials: true })', $connector);
         self::assertStringContainsString('function translate(env)', $connector);
         self::assertStringContainsString("say(env.event, env.data)", $connector);
         // …and it opens only after every DEFERRED script has run (greenhouse decisions/0211): the gate and
@@ -806,7 +806,7 @@ final class ShellControllerTest extends TestCase
 
         self::assertStringContainsString('<script id="milpa-desktop-hub" type="application/json">{}</script>', $body);
         $connector = self::module('desktop-hub');
-        self::assertStringContainsString("if (URL === '' || typeof window.EventSource !== 'function') {", $connector);
+        self::assertStringContainsString("if (url === '' || typeof window.EventSource !== 'function') {", $connector);
         self::assertStringContainsString("b.status('offline');", $connector);
         self::assertSame(1, preg_match("#addEventListener\('DOMContentLoaded', function \(\) \{ open\(\); \}\);#", $connector));
     }

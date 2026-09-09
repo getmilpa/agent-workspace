@@ -54,7 +54,7 @@ final class AgentWorkspacePluginTest extends TestCase
         $plugin = new AgentWorkspacePlugin(new DIContainer());
 
         $routes = $plugin->routes();
-        self::assertCount(14, $routes);
+        self::assertCount(15, $routes);
         foreach ($routes as $route) {
             self::assertInstanceOf(Route::class, $route);
             self::assertNotNull($route->handler);
@@ -62,7 +62,7 @@ final class AgentWorkspacePluginTest extends TestCase
         $paths = array_map(static fn (Route $r): string => $r->path, $routes);
         self::assertSame(
             [
-                '/desktop', '/desktop/events', '/desktop/assets/tokens.css', '/desktop/assets/bundle.css', '/desktop/assets/c/{file}',
+                '/desktop', '/desktop/hub', '/desktop/events', '/desktop/assets/tokens.css', '/desktop/assets/bundle.css', '/desktop/assets/c/{file}',
                 '/desktop/data.json', '/desktop/export', '/desktop/live', '/desktop/assets/milpa-live.js', '/desktop/assets/milpa-live-remote.js',
                 '/desktop/assets/alpine.min.js', '/desktop/settings', '/desktop/sessions', '/desktop/work',
             ],
@@ -75,7 +75,7 @@ final class AgentWorkspacePluginTest extends TestCase
         $plugin = new AgentWorkspacePlugin(new DIContainer());
 
         self::assertSame([LoopbackOnlyMiddleware::class], $plugin->settings()->effectiveMiddleware());
-        self::assertSame(['/desktop', '/desktop/events', '/desktop/data.json', '/desktop/export', '/desktop/live', '/desktop/settings', '/desktop/sessions', '/desktop/work'], self::gatedPaths($plugin->routes()));
+        self::assertSame(['/desktop', '/desktop/hub', '/desktop/events', '/desktop/data.json', '/desktop/export', '/desktop/live', '/desktop/settings', '/desktop/sessions', '/desktop/work'], self::gatedPaths($plugin->routes()));
         foreach ($plugin->routes() as $route) {
             $isAsset = \in_array($route->path, self::ASSETS, true);
             self::assertSame($isAsset ? [] : [LoopbackOnlyMiddleware::class], $route->middleware, $route->path);
@@ -97,7 +97,7 @@ final class AgentWorkspacePluginTest extends TestCase
 
         $typo = self::withConfig(['desktop' => ['middleware' => [AllowAllMiddleware::class, 'Acme\\Nope']]]);
         self::assertSame([LoopbackOnlyMiddleware::class], $typo->routes()[0]->middleware, 'the whole stack falls to loopback-only — never the half that loads');
-        self::assertSame(8, \count(self::gatedPaths($typo->routes())));
+        self::assertSame(9, \count(self::gatedPaths($typo->routes())));
         self::assertSame('fallback', $typo->settings()->gateKind());
     }
 
@@ -238,7 +238,7 @@ final class AgentWorkspacePluginTest extends TestCase
         $plugin->enable();
         $plugin->disable();
 
-        self::assertCount(14, $plugin->routes(), 'the shell, feed, assets (design system + per component), data, export, live + its assets, and the write endpoints');
+        self::assertCount(15, $plugin->routes(), 'the shell, the hub a headerless surface asks, feed, assets (design system + per component), data, export, live + its assets, and the write endpoints');
         $paths = array_map(static fn ($r): string => $r->path, $plugin->routes());
         self::assertContains('/desktop/export', $paths, 'the session export (autopsy/video material)');
     }

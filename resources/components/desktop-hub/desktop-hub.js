@@ -30,6 +30,8 @@
 
   /** Where the server tells the page which hub to open, if any. */
   var HUB_TAG = 'milpa-desktop-hub';
+  /** Where a surface that could not write the payload asks for it (greenhouse decisions/0253). */
+  var ASK = '/desktop/hub';
 
   function desk() { return (live && live.desktop) || null; }
   function tr(key) { var d = desk(); return d ? d.tr.apply(null, arguments) : key; }
@@ -100,15 +102,19 @@
     return 'session';
   }
 
-  /** Open the stream — or, with no hub wired, say so once so the status bar settles. */
-  function open() {
+  /**
+   * Open the stream on a URL — or, with no hub wired, say so once so the status bar settles.
+   *
+   * `url` is the inline payload's when the page carried one, and the asked-for one otherwise.
+   */
+  function openOn(url) {
     var b = bus();
-    if (URL === '' || typeof window.EventSource !== 'function') {
+    if (url === '' || typeof window.EventSource !== 'function') {
       if (b && typeof b.status === 'function') { b.status('offline'); }
 
       return null;
     }
-    var stream = new EventSource(URL, { withCredentials: true });
+    var stream = new EventSource(url, { withCredentials: true });
     stream.onopen = function () { if (b && typeof b.status === 'function') { b.status('live'); } };
     stream.onerror = function () { if (b && typeof b.status === 'function') { b.status('offline'); } };
     stream.onmessage = function (message) {
@@ -118,6 +124,33 @@
     };
 
     return stream;
+  }
+
+  /**
+   * A SURFACE THAT COULD NOT WRITE THE PAYLOAD ASKS FOR IT.
+   *
+   * The Desktop page inlines it — it owns its response, and a request would buy nothing. The workspace
+   * inside the admin panel is a declared view: it contributes markup to somebody else's response and
+   * cannot set the cookie the hub reads, so it found no payload and reported itself offline forever,
+   * with the hub running and the Stack green. Asking `/desktop/hub` is how that surface gets both the
+   * URL and the cookie (greenhouse decisions/0253).
+   *
+   * `{}` is an ANSWER, not a failure: this app wired no hub, the workspace runs on the polled log, and
+   * saying «offline» once is exactly right.
+   */
+  function open() {
+    if (URL !== '') { return openOn(URL); }
+    if (typeof window.fetch !== 'function') { return openOn(''); }
+
+    fetch(ASK, { credentials: 'same-origin', headers: { Accept: 'application/json' } })
+      .then(function (r) { return r.ok ? r.json() : {}; })
+      .then(function (payload) {
+        URL = (payload && typeof payload.url === 'string') ? payload.url : '';
+        openOn(URL);
+      })
+      .catch(function () { openOn(''); });
+
+    return null;
   }
 
   if (live && live.desktop) {

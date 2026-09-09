@@ -22,6 +22,7 @@ use Milpa\AgentWorkspace\Admin\AgentViewComponent;
 use Milpa\AgentWorkspace\Controllers\AssetsController;
 use Milpa\AgentWorkspace\Controllers\DataController;
 use Milpa\AgentWorkspace\Controllers\EventsController;
+use Milpa\AgentWorkspace\Controllers\HubController;
 use Milpa\AgentWorkspace\Controllers\LiveController;
 use Milpa\AgentWorkspace\Controllers\MutationController;
 use Milpa\AgentWorkspace\Controllers\ShellController;
@@ -303,6 +304,8 @@ final class AgentWorkspacePlugin implements PluginInterface, RouteProviderInterf
 
         [$windowMs, $pollMs] = $this->feedTiming();
         $this->container->registerService(EventsController::class, new EventsController($log, new SseFormatter(), $windowMs, $pollMs));
+        // The same wiring the shell page uses, offered to the surfaces that cannot write headers.
+        $this->container->registerService(HubController::class, new HubController($this->mercure()));
 
         $publisher = $mercure !== null ? new MercurePublisher($mercure->service(), $mercure->topic) : null;
         $recorder = new ShellChangeRecorder($log, $publisher);
@@ -333,6 +336,16 @@ final class AgentWorkspacePlugin implements PluginInterface, RouteProviderInterf
                 name: 'desktop.shell',
                 middleware: $middleware,
                 handler: new HandlerReference(ShellController::class, 'shell'),
+            ),
+            // WHERE A SURFACE THAT CANNOT SET COOKIES ASKS FOR ITS CONNECTION. The workspace inside the
+            // panel is a DeclaredView: it contributes markup to somebody else's response and never owns
+            // the headers, so it cannot mint the cookie the hub reads (greenhouse decisions/0253).
+            new Route(
+                path: '/desktop/hub',
+                methods: HttpMethod::GET,
+                name: 'desktop.hub',
+                middleware: $middleware,
+                handler: new HandlerReference(HubController::class, 'connect'),
             ),
             new Route(
                 path: '/desktop/events',
