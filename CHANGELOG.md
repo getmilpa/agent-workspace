@@ -3,6 +3,18 @@
 All notable changes to milpa/desktop-app are documented here. This project adheres to
 [Semantic Versioning](https://semver.org/) and [Keep a Changelog](https://keepachangelog.com/).
 
+## [0.62.0](https://github.com/getmilpa/agent-workspace/compare/v0.61.1...v0.62.0) (2026-09-09)
+
+
+### Features
+
+* declare the plugin in the manifest, so enabling the capability wires it ([#23](https://github.com/getmilpa/agent-workspace/issues/23)) ([feebdd9](https://github.com/getmilpa/agent-workspace/commit/feebdd9a37f17c875a95793befbd97b9f334cfa1))
+
+
+### Bug Fixes
+
+* the enrollment line sent every reader into a 403 on Approve ([#21](https://github.com/getmilpa/agent-workspace/issues/21)) ([98a0dbc](https://github.com/getmilpa/agent-workspace/commit/98a0dbc5cdd2ad7be7de078c09c7a8ba6646ae6c))
+
 ## [0.61.1](https://github.com/getmilpa/agent-workspace/compare/v0.61.0...v0.61.1) (2026-09-08)
 
 
