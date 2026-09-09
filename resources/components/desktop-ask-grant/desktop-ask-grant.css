@@ -14,6 +14,7 @@
  */
 
 .msg--grant {
+  min-width: 0;
   border: 1px solid var(--accent-border, var(--border));
   border-inline-start-width: 3px;
   border-radius: var(--radius-md, 8px);
@@ -34,9 +35,9 @@
   color: var(--accent-text);
 }
 
-.msg__grant-question { margin: 0; font-size: var(--text-sm); line-height: var(--leading-normal); color: var(--text-primary); }
+.msg__grant-question { margin: 0; font-size: var(--text-sm); line-height: var(--leading-normal); color: var(--text-primary); overflow-wrap: anywhere; }
 /* The why is secondary and often absent — `[hidden]` is set by the fill so it costs no space when it is. */
-.msg__grant-why { margin: 0; font-size: var(--text-xs); line-height: var(--leading-relaxed); color: var(--text-muted); }
+.msg__grant-why { margin: 0; font-size: var(--text-xs); line-height: var(--leading-relaxed); color: var(--text-muted); overflow-wrap: anywhere; }
 .msg__grant-why[hidden] { display: none; }
 
 /* The options wrap: the agent proposes them, so there may be two or there may be six, and a row that
@@ -47,6 +48,37 @@
 .msg__grant-option:disabled { opacity: .45; cursor: default; }
 /* The one that was actually chosen stays legible after the rest dim — the record of what was decided. */
 .msg__grant-option--chosen { opacity: 1; border-color: var(--accent-border, var(--border)); color: var(--accent-text); }
+
+/* ── WHAT IS BEING AUTHORIZED, PAINTED (greenhouse decisions/0259) ─────────────────────────────
+   This used to be 500 characters of raw JSON in a paragraph — unreadable, and it overflowed its own
+   container because a JSON string has nowhere to break. The claim is structured data with meaning, so
+   it gets a shape: what runs, what it runs OVER, and the ceiling's axes as chips. */
+.msg__claim { display: flex; flex-direction: column; gap: var(--space-2); }
+.msg__claim-what { margin: 0; font-size: var(--text-xs); color: var(--text-secondary); }
+.msg__claim-op { font-family: var(--font-mono); font-size: var(--text-xs); color: var(--text-primary); background: var(--surface-2, transparent); padding: 1px 6px; border-radius: var(--radius-sm, 4px); }
+.msg__claim-over { color: var(--text-muted); }
+
+/* The arguments: what enters the house, first and in clear — the TUI's rule, because a map buried
+   behind the effect profiles is not understood at a glance, and this is the moment to decide. */
+.msg__claim-args { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 2px; }
+.msg__claim-args:empty, .msg__claim-axes:empty { display: none; }
+.msg__claim-arg { display: flex; gap: var(--space-2); font-family: var(--font-mono); font-size: var(--text-2xs); }
+.msg__claim-arg[hidden] { display: none; }
+.msg__claim-arg-name { color: var(--text-muted); flex: none; }
+/* A long value wraps ANYWHERE rather than pushing the thread sideways: a path or a hash has no spaces. */
+.msg__claim-arg-value { color: var(--text-primary); overflow-wrap: anywhere; min-width: 0; }
+
+/* The five axes as chips, in the TUI's order: authority · undo · changes · reaches · subject. */
+.msg__claim-axes { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: var(--space-1); }
+.msg__claim-axis { display: inline-flex; align-items: baseline; gap: 4px; padding: 1px 7px; border: 1px solid var(--border); border-radius: 999px; font-size: var(--text-2xs); }
+.msg__claim-axis[hidden] { display: none; }
+.msg__claim-axis-name { color: var(--text-muted); font-family: var(--font-mono); }
+.msg__claim-axis-value { color: var(--text-secondary); }
+
+/* The honest fallback — a claim nobody could parse is shown whole, and scrolls INSIDE itself so it
+   can never blow the thread's width the way the dump did. */
+.msg__claim-raw { margin: 0; max-height: 9rem; overflow: auto; font-family: var(--font-mono); font-size: var(--text-2xs); color: var(--text-muted); white-space: pre-wrap; overflow-wrap: anywhere; }
+.msg__claim-raw[hidden], .msg__claim[hidden] { display: none; }
 
 .msg__grant-status { margin: 0; font-size: var(--text-2xs); color: var(--text-muted); min-height: 1em; }
 .msg__grant-status:empty { display: none; }

@@ -149,6 +149,30 @@
     };
   }
 
+  /**
+   * Is this agent text the SAME FACT as that parked question?
+   *
+   * The house answers a parked turn with the question as its `answer`, sometimes with the arguments
+   * appended — so the ledger holds the assistant's turn AND the question, and a thread that painted
+   * both said one thing twice: once as the request with its buttons, once as an agent bubble repeating
+   * it word for word. What makes them the same fact is that the answer OPENS WITH the question.
+   *
+   * The rule lives HERE and the turn module asks for it, because two copies of one predicate are two
+   * chances to disagree about whether a thing was already said.
+   */
+  function echoesQuestion(text, question) {
+    if (!text || !question) { return false; }
+
+    return String(text).trim().indexOf(String(question).trim()) === 0;
+  }
+
+  /** Close a replayed request whose decision the ledger already holds. */
+  function settled(row) {
+    var spec = (messages() || {})['ask-grant'];
+
+    return (spec && typeof spec.decided === 'function') ? spec.decided(row) : null;
+  }
+
   /** Stream reasoning into the live thinking block — the thinking component's own lifecycle. */
   function reasoning(text) {
     var spec = (messages() || {}).thinking;
@@ -280,11 +304,28 @@
       var row = rows[i] || {};
       switch (row.kind) {
         case 'user': append('user', { text: row.text || '' }); break;
-        case 'agent': append('agent', { text: row.text || '' }); break;
+        case 'agent':
+          // The echo of a question the row before already painted as a request is not a second thing
+          // the agent said.
+          if (!echoesQuestion(row.text, (rows[i - 1] || {}).kind === 'question' ? (rows[i - 1] || {}).text : '')) {
+            append('agent', { text: row.text || '' });
+          }
+          break;
         case 'tool': append('tool', { name: row.name || 'tool', result: row.result || '' }); break;
         case 'question': append('ask-grant', parked(row)); break;
         case 'compacted': append('compacted', { through: row.through || 0, summary: row.summary || '' }); break;
-        case 'answered': append('system', { text: tr('conversation.answered', row.answer || '', row.by || '') }); break;
+        case 'answered':
+          // THE DECISION IS SAID ONCE, and the request it settled is the best place to say it: it holds
+          // the question, what was being authorized, and now the answer and who gave it. A separate
+          // «ANSWERED …» line under it repeated all of that (Rod: «toda esa info ya está en la primera
+          // burbuja»).
+          //
+          // The standalone line survives for the case that needs it: a decision whose request is not on
+          // this page — an older thread, a pruned question. Then it is the only record there is.
+          if (settled(row) === null) {
+            append('system', { text: tr('conversation.answered', row.answer || '', row.by || '') });
+          }
+          break;
         case 'sequence_paused': append('system', { text: tr('conversation.sequence_paused', row.sequence || '') }); break;
         case 'sequence_resumed': append('system', { text: tr('conversation.sequence_resumed', row.sequence || '') }); break;
         default: continue;
@@ -330,6 +371,7 @@
       endReasoning: endReasoning,
       verdict: verdict,
       click: dispatch,
+      echoesQuestion: echoesQuestion,
       tip: tip,
       label: label,
       aria: aria,

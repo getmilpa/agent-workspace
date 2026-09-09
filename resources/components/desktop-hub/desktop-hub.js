@@ -89,7 +89,16 @@
     var detail = env.activity || {};
     var state = detail.state || '';
     if (state === 'thinking') { say('session.state', { state: 'working' }); return; }
-    if (state === 'ready') { say('session.state', { state: 'idle' }); return; }
+    if (state === 'ready') {
+      say('session.state', { state: 'idle' });
+      // THE ANSWER REACHES EVERY SURFACE, not only the one that asked (greenhouse decisions/0258).
+      // The turn used to project its STATE and nothing else, so the agent's answer travelled only on
+      // the `POST /agent` response — fine while whoever asked and whoever watches are the same person,
+      // and wrong the moment a session is open on two devices.
+      if (detail.role === 'assistant' && detail.text) { say('agent.message', { text: detail.text, turn: env.seq || null }); }
+
+      return;
+    }
     if (state === 'tool') {
       // A tool ran: show it in the conversation and count it into the shared tool_calls signal.
       say('tool.call', { name: detail.detail || 'tool', result: detail.result || '' });
@@ -108,6 +117,21 @@
     if (env.kind === 'activity') { activity(env); return 'session'; }
     if (env.kind === 'message') { say('agent.message', { text: (env.message && env.message.content) || '' }); return 'session'; }
     if (env.kind === 'reasoning') { say('agent.reasoning', { text: (env.reasoning && (env.reasoning.delta || env.reasoning.text)) || '' }); return 'session'; }
+    // A DECISION TAKEN ANYWHERE REACHES EVERY SURFACE (greenhouse decisions/0258). Somebody answered
+    // — here, on another device, or from a terminal — and every open request for that question must
+    // stop offering buttons. Without this the room showed a live gate for something already decided.
+    if (env.kind === 'answered') {
+      var decided = env.answered || {};
+      say('agent.answered', {
+        id: decided.id || '',
+        answer: decided.answer || '',
+        // Two identities, both already in the fact: who authorized, and what process materialised it.
+        by: (decided.by && decided.by.id) || '',
+        executor: decided.executor || '',
+      });
+
+      return 'session';
+    }
     if (env.kind === 'waiting') {
       var ended = env.ended || {};
       var question = ended.question || '';

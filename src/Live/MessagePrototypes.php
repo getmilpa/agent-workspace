@@ -154,7 +154,36 @@ final class MessagePrototypes
             . '<div class="msg__grant-head"><span class="msg__grant-mark" aria-hidden="true">⏸</span>'
             . '<span class="msg__grant-kind" data-grant-kind></span></div>'
             . '<p class="msg__grant-question" data-grant-question></p>'
+            // WHAT IS BEING AUTHORIZED, as a painted claim and not a JSON dump (greenhouse decisions/0259).
+            //
+            // The gate stores this `why` as machine data ON PURPOSE — `SessionToolGate` re-reads it to
+            // hold a consent to these exact arguments — so it is not the emitter being sloppy: it is the
+            // surface's job to paint it. *«Pintar el dato es trabajo de la superficie»*, says the TUI,
+            // which has painted it for a while; the web was dumping 500 characters of JSON at a human and
+            // overflowing its own container doing it.
+            //
+            // The axes are the TUI's, in the TUI's order — most-commonly-tightened first — because two
+            // surfaces of one fact must not teach two vocabularies. The `[data-claim-axis]` row and the
+            // `[data-claim-arg]` row are TEMPLATES the fill clones: how many axes a ceiling declares is
+            // the ceiling's business, not the prototype's.
             . '<p class="msg__grant-why" data-grant-why></p>'
+            . '<div class="msg__claim" data-grant-claim hidden>'
+            . '<p class="msg__claim-what"><code class="msg__claim-op" data-claim-operation></code>'
+            . '<span class="msg__claim-over" data-claim-over></span></p>'
+            . '<ul class="msg__claim-args" data-claim-args>'
+            . '<li class="msg__claim-arg" data-claim-arg hidden><span class="msg__claim-arg-name" data-claim-arg-name></span>'
+            . '<span class="msg__claim-arg-value" data-claim-arg-value></span></li>'
+            . '</ul>'
+            . '<ul class="msg__claim-axes" data-claim-axes>'
+            . '<li class="msg__claim-axis" data-claim-axis hidden><span class="msg__claim-axis-name" data-claim-axis-name></span>'
+            . '<span class="msg__claim-axis-value" data-claim-axis-value></span></li>'
+            . '</ul>'
+            // THE HONEST FALLBACK, and it is the TUI's rule: «si no parsea, se enseña tal cual —
+            // inventar una frase sobre algo que no se entendió sería peor que el JSON, porque el JSON
+            // al menos es cierto». It scrolls inside itself so an unparseable claim never blows the
+            // thread's width, which is what the raw dump was doing.
+            . '<pre class="msg__claim-raw" data-claim-raw hidden></pre>'
+            . '</div>'
             . '<div class="msg__grant-options" data-grant-options role="group">'
             . '<button type="button" class="mui-btn msg__grant-option" data-grant-option hidden></button>'
             . '</div>'

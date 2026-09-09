@@ -521,3 +521,78 @@ test('F8b · the control: a pause the hub did NOT announce is still painted by t
 
   assert.equal(chat.children.filter((m) => m.classList.contains('msg--grant')).length, 1, 'with no hub, the response is the only announcement there is');
 });
+
+test('F5/F6 · the answer reaches every surface, and whoever asked sees it ONCE', async () => {
+  // The hub now says the agent's turn to every surface watching the session — that is the point, so a
+  // second device sees it too — and the POST response still carries it for whoever asked.
+  const { p, chat } = composerPage();
+
+  // A surface that did NOT ask: the hub's fact alone paints the answer.
+  p.bus().emit('agent.message', { text: 'Tienes nueve capacidades instaladas.' });
+  assert.equal(chat.children.filter((m) => m.classList.contains('msg--agent')).length, 1, 'a watching device sees it');
+
+  // And the one that DID ask does not paint it a second time when its response comes back.
+  stubFetch(p, [response(201, { ok: true, answer: 'Tienes nueve capacidades instaladas.', steps: 1 })]);
+  await p.desktop().turn.run('¿qué capacidades tengo?');
+
+  assert.equal(chat.children.filter((m) => m.classList.contains('msg--agent')).length, 1, 'said once, from two correct sources');
+});
+
+test('F6b · the control: a DIFFERENT answer is still said', async () => {
+  const { p, chat } = composerPage();
+  p.bus().emit('agent.message', { text: 'primera respuesta' });
+  stubFetch(p, [response(201, { ok: true, answer: 'segunda respuesta', steps: 1 })]);
+
+  await p.desktop().turn.run('otra cosa');
+
+  // The claim is about how many answers landed, not how one renders: an agent bubble fills its body as
+  // markdown, so reading text back out of it would be testing the markdown, not the dedupe.
+  assert.equal(
+    chat.children.filter((m) => m.classList.contains('msg--agent')).length,
+    2,
+    'la deduplicación no puede tragarse una respuesta distinta',
+  );
+});
+
+test('F7 · a parked turn whose answer merely OPENS with the question is still said once', async () => {
+  // The house answers a parked turn with the question as its `answer`, sometimes with the arguments
+  // appended. An exact-string compare let that through and the same question painted twice — once as
+  // the request with its buttons, once as an agent bubble repeating it. Found in a screenshot.
+  const { p, chat } = composerPage();
+  const asked = { id: 'q-7', text: '¿Autorizas «capabilities:enable»?', options: ['sí', 'no'], reason: 'permission' };
+  stubFetch(p, [response(201, {
+    ok: true, paused: true,
+    answer: '¿Autorizas «capabilities:enable»?\n  con: {"capability":"milpa/devtools"}',
+    question: asked, steps: 1,
+  })]);
+
+  await p.desktop().turn.run('instala devtools');
+
+  assert.equal(chat.children.filter((m) => m.classList.contains('msg--grant')).length, 1, 'la petición, una vez');
+  assert.equal(chat.children.filter((m) => m.classList.contains('msg--agent')).length, 0, 'y NO otra vez como burbuja del agente');
+});
+
+test('F7b · the control: something the agent said BEFORE stopping is still said', async () => {
+  const { p, chat } = composerPage();
+  const asked = { id: 'q-7', text: '¿Autorizas esto?', options: ['sí', 'no'] };
+  stubFetch(p, [response(201, { ok: true, paused: true, answer: 'Revisé el catálogo y encontré 42 operaciones.', question: asked, steps: 1 })]);
+
+  await p.desktop().turn.run('revisa');
+
+  assert.equal(chat.children.filter((m) => m.classList.contains('msg--agent')).length, 1, 'habló antes de parar: eso se dice');
+  assert.equal(chat.children.filter((m) => m.classList.contains('msg--grant')).length, 1);
+});
+
+test('F8c · an ANSWERED bubble with the same id does not swallow a new request', async () => {
+  // The id is stable (`perm:<operation>`), so «already painted» has to mean «still waiting» — otherwise
+  // asking the same permission a second time paints nothing at all.
+  const { p, chat } = composerPage();
+  const asked = { id: 'perm:capabilities:enable', text: '¿Autorizas?', options: ['sí', 'no'] };
+  p.bus().emit('agent.parked', asked);
+  p.bus().emit('agent.answered', { id: asked.id, answer: 'no', by: 'actor:rod' });
+
+  stubFetch(p, [response(201, { ok: true, paused: true, answer: '¿Autorizas?', question: asked, steps: 1 })]);
+  await p.desktop().turn.run('otra vez');
+
+  assert.equal(chat.children.filter((m) => m.classList.contains('msg--grant')).length, 2, 'la segunda petición se pinta');
+});

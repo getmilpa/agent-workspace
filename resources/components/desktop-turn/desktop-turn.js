@@ -124,7 +124,12 @@
       // the request would show one fact twice — the duplication that runtime already warns about. The
       // answer is only said when it is something OTHER than the question: an agent that spoke before it
       // stopped to ask said two things, and both belong in the thread.
-      if (result.answer && (!asked || result.answer !== asked.text)) { conv.append('agent', { text: result.answer }); }
+      // The same fact is not said twice. The rule — «the answer OPENS WITH the question» — belongs to
+      // the conversation, which also applies it when replaying a thread; two copies of one predicate
+      // are two chances to disagree about whether something was already said.
+      if (result.answer && !(asked && conv.echoesQuestion(result.answer, asked.text))) {
+        conv.append('agent', { text: result.answer });
+      }
       if (asked) {
         // ONE bubble per parked question, though TWO sources announce it. The hub says `agent.parked` the
         // moment the backend parks; this response comes back saying the same pause. Both are right — the
@@ -140,7 +145,11 @@
         conv.append('system', { text: tr('turn.paused') });
       }
     } else if (result && result.ok && result.answer) {
-      conv.append('agent', { text: result.answer });
+      // ONE ANSWER, THOUGH TWO SOURCES CARRY IT (greenhouse decisions/0258). The hub now says the
+      // agent's turn to every surface watching the session — which is the point, so a second device
+      // sees it too — and this response still carries it for whoever asked. Both are right; painting
+      // both would say one thing twice to the only person who cannot miss it.
+      if (!said(result.answer)) { conv.append('agent', { text: result.answer }); }
     } else if (result && result.error) {
       conv.append('system', { text: result.error });
     }
@@ -153,11 +162,36 @@
     }
   }
 
-  /** Whether a parked question with this id is already on the page — the hub may have said it first. */
+  /**
+   * The last answer the HUB delivered — how this module knows not to say it twice.
+   *
+   * Compared here and not in the DOM on purpose: an agent bubble renders its body as markdown, so the
+   * text that comes back out of the element is not the text that went in, and a comparison against it
+   * would be a guess that looks like a check.
+   */
+  var heard = null;
+
+  /** Whether the hub already delivered this exact answer, so the response must not repeat it. */
+  function said(text) {
+    return heard !== null && String(heard).trim() === String(text).trim();
+  }
+
+  /**
+   * Whether a request for this question is already on the page and still WAITING — the hub may have
+   * said it first.
+   *
+   * 🚨 It asks for a WAITING one, not for any one. A question id is `perm:<operation>` and stable by
+   * design, so a thread that asked the same permission before holds an answered bubble with the same
+   * id — and treating that as «already painted» would swallow the new request entirely.
+   */
   function painted(id) {
     if (!id) { return false; }
+    var all = document.querySelectorAll('.msg--grant[data-grant-id="' + String(id).replace(/["\\]/g, '') + '"]');
+    for (var i = 0; i < all.length; i++) {
+      if (all[i].getAttribute('data-grant-state') !== 'answered') { return true; }
+    }
 
-    return document.querySelector('.msg--grant[data-grant-id="' + String(id).replace(/["\\]/g, '') + '"]') !== null;
+    return false;
   }
 
   /** Start a governed turn. The mode is the chip's VALUE, asked of the composer, never assumed. */
@@ -201,6 +235,10 @@
     var shell = window.MilpaShell;
     if (subscribed || !shell || typeof shell.on !== 'function') { return false; }
     subscribed = true;
+    // The agent's answer now reaches every surface watching the session (greenhouse decisions/0258).
+    // The thread paints it; this module only REMEMBERS it, so the response of the turn that produced
+    // it does not say the same thing a second time to the one person who cannot miss it.
+    shell.on('agent.message', function (fact) { heard = (fact && typeof fact.text === 'string') ? fact.text : null; });
     shell.on('session.state', function (fact) {
       var conv = conversation();
       if (conv && !(fact && fact.state === 'working')) { conv.endReasoning(); }

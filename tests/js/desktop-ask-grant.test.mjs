@@ -153,3 +153,155 @@ test('F7 · the CONTROL: with no steps region in the prototype, a step falls bac
   assert.equal(chat.children.length, 2, 'with nowhere to nest it, the step is SHOWN — never dropped');
   assert.equal(chat.children[1].classList.contains('msg--tool'), true);
 });
+
+// ── what is being authorized, painted (greenhouse decisions/0259) ──────────────────────────────────
+
+const CLAIM = JSON.stringify({
+  operation: 'capabilities:enable',
+  arguments: { capability: 'milpa/devtools' },
+  base: { mutation: 'persistent', externality: 'third_party', reversibility: 'manual_recovery', authority: 'privileged', subject: 'executable' },
+  composed: { mutation: 'persistent' },
+});
+
+test('F1 · a machine claim is PAINTED, never dumped', () => {
+  const { chat, conv } = thread();
+  conv.append('ask-grant', { ...QUESTION, why: CLAIM });
+  const box = chat.children[0].querySelector('[data-grant-claim]');
+
+  assert.equal(box.hidden, false);
+  assert.equal(box.querySelector('[data-claim-operation]').textContent, 'capabilities:enable');
+  // what it is OVER, first and in clear — the TUI's rule
+  const args = box.querySelectorAll('[data-claim-arg]').filter((r) => r.hidden !== true);
+  assert.deepEqual(args.map((r) => r.querySelector('[data-claim-arg-name]').textContent), ['capability']);
+  assert.deepEqual(args.map((r) => r.querySelector('[data-claim-arg-value]').textContent), ['milpa/devtools']);
+  // the five axes, in the TUI's order — most-commonly-tightened first
+  const axes = box.querySelectorAll('[data-claim-axis]').filter((r) => r.hidden !== true);
+  assert.deepEqual(axes.map((r) => r.querySelector('[data-claim-axis-name]').textContent), ['authority', 'undo', 'changes', 'reaches', 'subject']);
+  assert.deepEqual(axes.map((r) => r.querySelector('[data-claim-axis-value]').textContent), ["other people's resources", 'by hand', 'persistent', 'a third party', 'what runs']);
+  // and no JSON anywhere a human reads
+  assert.equal(chat.children[0].querySelector('[data-grant-why]').hidden, true);
+  assert.equal(box.querySelector('[data-claim-raw]').hidden, true, 'it parsed, so the raw fallback stays down');
+});
+
+test('F1b · only the DECLARED ceiling is painted, never the composed one', () => {
+  // `base` is the trusted declared ceiling; `composed` is what the run worked out. Showing both asks a
+  // human to adjudicate between two numbers at the worst possible moment.
+  const { chat, conv } = thread();
+  conv.append('ask-grant', { ...QUESTION, why: CLAIM });
+  const axes = chat.children[0].querySelectorAll('[data-claim-axis]').filter((r) => r.hidden !== true);
+
+  assert.equal(axes.length, 5, 'five axes, not the composed set on top');
+});
+
+test('F2 · prose stays prose — a why somebody wrote for a human reads as one', () => {
+  const { chat, conv } = thread();
+  conv.append('ask-grant', { ...QUESTION, why: 'publicar es irreversible' });
+
+  assert.equal(chat.children[0].querySelector('[data-grant-why]').textContent, 'publicar es irreversible');
+  assert.equal(chat.children[0].querySelector('[data-grant-claim]').hidden, true);
+});
+
+test('F3 · THE HONEST FALLBACK: a claim this surface cannot read is shown WHOLE', () => {
+  // The TUI's rule: inventing a sentence about something nobody understood would be worse than the
+  // JSON, because the JSON is at least true.
+  const { chat, conv } = thread();
+  conv.append('ask-grant', { ...QUESTION, why: '{"some":"future shape"}' });
+  const box = chat.children[0].querySelector('[data-grant-claim]');
+
+  assert.equal(box.hidden, false);
+  assert.equal(box.querySelector('[data-claim-raw]').hidden, false, 'shown, not swallowed');
+  assert.equal(box.querySelector('[data-claim-raw]').textContent, '{"some":"future shape"}');
+});
+
+test('F4 · an axis code this surface does not know yet is shown as the code, not hidden', () => {
+  const { chat, conv } = thread();
+  conv.append('ask-grant', { ...QUESTION, why: JSON.stringify({ operation: 'x', base: { authority: 'some_future_tier' } }) });
+  const axes = chat.children[0].querySelectorAll('[data-claim-axis]').filter((r) => r.hidden !== true);
+
+  assert.deepEqual(axes.map((r) => r.querySelector('[data-claim-axis-value]').textContent), ['some_future_tier']);
+});
+
+test('F5 · with no claim region at all the why is still SAID, as text', () => {
+  // A prototype a plugin re-rendered, or an older one. Losing the why because its nicer rendering is
+  // missing would be worse than plain text.
+  const tags = prototypeTags();
+  const grantProto = tags['milpa-ask-grant-proto'].content.children[0];
+  grantProto.children = grantProto.children.filter((c) => c.attrs['data-grant-claim'] === undefined);
+  const html = new El('html');
+  const chat = html.appendChild(new El('section', { id: 'milpa-chat' }));
+  const p = page({ tree: html, elements: tags, bus: true, modules: ['desktop-conversation', 'desktop-thinking', 'desktop-ask-grant'] });
+  p.desktop().turn = { session: () => 'desk-1' };
+
+  p.desktop().conversation.append('ask-grant', { ...QUESTION, why: 'publicar es irreversible' });
+
+  assert.equal(chat.children[0].querySelector('[data-grant-why]').textContent, 'publicar es irreversible');
+});
+
+test('F6 · a decision taken ANYWHERE closes this request, and says who took it', async () => {
+  // Rod, looking at a panel whose gate was still live after someone answered from elsewhere: «no se
+  // ve/actualiza lo que presionó el humano, debe aparecer disabled o desaparecer cuando la acción ya
+  // se tomó». The answer had come from another surface, and this one never learned.
+  const { p, chat, conv } = thread();
+  const calls = stubFetch(p, [response(200, { ok: true })]);
+  conv.append('ask-grant', QUESTION);
+  const grant = chat.children[0];
+
+  p.bus().emit('agent.answered', { id: QUESTION.id, answer: 'no', by: 'actor:rod', executor: 'cli' });
+
+  assert.equal(grant.getAttribute('data-grant-state'), 'answered', 'the offer is over');
+  assert.equal(grant.querySelectorAll('[data-grant-option]').every((b) => b.disabled), true, 'no button still offers to decide it again');
+  assert.equal(grant.querySelector('[data-grant-status]').textContent, 'Answered «no» by actor:rod.', 'quién decidió se dice, no se deriva');
+  assert.equal(calls.length, 0, 'this surface answered nothing: it was told');
+});
+
+test('F6b · the bubble STAYS — the decision is part of the story, not something to erase', () => {
+  const { chat, conv, p } = thread();
+  conv.append('ask-grant', QUESTION);
+  p.bus().emit('agent.answered', { id: QUESTION.id, answer: 'sí', by: 'actor:rod' });
+
+  assert.equal(chat.children.filter((m) => m.classList.contains('msg--grant')).length, 1);
+  assert.equal(chat.children[0].querySelector('[data-grant-question]').textContent, QUESTION.text);
+});
+
+test('F6c · a decision for ANOTHER question leaves this one alone', () => {
+  const { chat, conv, p } = thread();
+  conv.append('ask-grant', QUESTION);
+  p.bus().emit('agent.answered', { id: 'some-other-question', answer: 'sí', by: 'actor:rod' });
+
+  assert.equal(chat.children[0].getAttribute('data-grant-state'), 'open', 'sigue esperando: no era la suya');
+});
+
+test('F6d · answering HERE and the hub saying it back do not fight', async () => {
+  const { p, chat, view, conv } = thread();
+  stubFetch(p, [response(200, { ok: true })]);
+  conv.append('ask-grant', QUESTION);
+  const grant = chat.children[0];
+
+  choose(view, grant, 'yes');
+  await settle();
+  const saidLocally = grant.querySelector('[data-grant-status]').textContent;
+  p.bus().emit('agent.answered', { id: QUESTION.id, answer: 'yes', by: 'actor:rod' });
+
+  assert.equal(grant.getAttribute('data-grant-state'), 'answered');
+  assert.equal(grant.querySelector('[data-grant-status]').textContent, saidLocally, 'la segunda noticia no reescribe la primera');
+});
+
+test('F7 · a question id repeats across turns, so the decision closes the one still WAITING', () => {
+  // 🚨 A question id is `perm:<operation>` and stable by design — the gate matches a standing consent
+  // by it — so a thread that asked the same permission twice holds two bubbles with the same id.
+  // Taking the first match found the old answered one and left the live request open. Measured in a
+  // browser against a real model, not reasoned about.
+  const { chat, conv, p } = thread();
+  conv.append('ask-grant', QUESTION);
+  p.bus().emit('agent.answered', { id: QUESTION.id, answer: 'no', by: 'actor:rod' });
+  conv.append('ask-grant', QUESTION);
+
+  const bubbles = chat.children.filter((m) => m.classList.contains('msg--grant'));
+  assert.equal(bubbles.length, 2, 'la misma pregunta, pedida otra vez, es otra petición');
+  assert.equal(bubbles[0].getAttribute('data-grant-state'), 'answered', 'la vieja siguió contestada');
+  assert.equal(bubbles[1].getAttribute('data-grant-state'), 'open', 'y la nueva está esperando');
+
+  p.bus().emit('agent.answered', { id: QUESTION.id, answer: 'sí', by: 'actor:rod' });
+
+  assert.equal(bubbles[1].getAttribute('data-grant-state'), 'answered', 'la decisión cierra la que esperaba');
+});
