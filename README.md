@@ -135,11 +135,24 @@ To put it behind a passkey, name `milpa/app-runtime`'s gate — the Desktop does
 ```
 
 `PasskeyPlugin` must be declared in `config/plugins.php`, `'passkey' => ['rpId' => 'localhost']` set in
-`config/app.php`, and the key enrolled with the scope the gate checks plus the one the turns need:
+`config/app.php`, the credential declared in the out-of-band root (`config/identity.php` as
+`['rooted' => ['<credential id>']]` — enrollment *consumes* a root, it never mints one), and the key
+enrolled with **every** scope the shell uses:
 
 ```bash
-php bin/coa identity:enroll --fingerprint=<credential id> --scopes=milpa.admin --scopes=agent:run --sign
+php bin/coa identity:enroll --fingerprint=<credential id> \
+  --scopes=milpa.admin --scopes=agent:run --scopes=agent:read --scopes=agent:answer --sign
 ```
+
+**All four, and `agent:answer` is the one that is easy to miss.** The gate checks `milpa.admin`, and turns
+take `agent:run` — but answering a parked decision is a different authority and the runtime declares it
+separately (`agent:answer`; the session reads take `agent:read`). Enrol with only the first two and the
+Desktop signs you in perfectly and then refuses the **Approve** button with a `403` — authenticated,
+unauthorized. Measured in a browser with a real key (greenhouse `decisions/0238`, `evidence/0578`), where
+this README's earlier two-scope line was what produced the refusal.
+
+A session bakes its scopes when it is minted, so **re-enrolling does not widen a session that is already
+open**: sign out and in again after changing scopes, or the old ones keep deciding.
 
 From then on identity replaces the address. A browser loading `/desktop` without a session is sent to
 `/webauthn/signin?next=/desktop`; every `fetch()` the shell makes passes through one guard, so a gated call that
