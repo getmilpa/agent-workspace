@@ -3,6 +3,13 @@
 All notable changes to milpa/desktop-app are documented here. This project adheres to
 [Semantic Versioning](https://semver.org/) and [Keep a Changelog](https://keepachangelog.com/).
 
+## [0.63.0](https://github.com/getmilpa/agent-workspace/compare/v0.62.1...v0.63.0) (2026-09-09)
+
+
+### Features
+
+* the room says when it is running degraded ([#26](https://github.com/getmilpa/agent-workspace/issues/26)) ([8a95b47](https://github.com/getmilpa/agent-workspace/commit/8a95b47f107133943f2adfe6f4796c3b41543141))
+
 ## [0.62.1](https://github.com/getmilpa/agent-workspace/compare/v0.62.0...v0.62.1) (2026-09-09)
 
 
