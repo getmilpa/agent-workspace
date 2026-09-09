@@ -311,7 +311,7 @@ final class AgentWorkspacePlugin implements PluginInterface, RouteProviderInterf
         [$windowMs, $pollMs] = $this->feedTiming();
         $this->container->registerService(EventsController::class, new EventsController($log, new SseFormatter(), $windowMs, $pollMs));
         // The same wiring the shell page uses, offered to the surfaces that cannot write headers.
-        $this->container->registerService(HubController::class, new HubController($this->mercure()));
+        $this->container->registerService(HubController::class, new HubController($this->mercure(), $this->liveSecret('signing')));
 
         $publisher = $mercure !== null ? new MercurePublisher($mercure->service(), $mercure->topic) : null;
         $recorder = new ShellChangeRecorder($log, $publisher);
@@ -482,6 +482,7 @@ final class AgentWorkspacePlugin implements PluginInterface, RouteProviderInterf
                     $data instanceof DesktopData ? $data : null,
                     self::SHELL_PATH,
                     self::SIGNIN_PATH,
+                    $this->liveSecret('signing'),
                 ),
                 order: 60,
                 group: 'agent',

@@ -32,6 +32,25 @@
   var HUB_TAG = 'milpa-desktop-hub';
   /** Where a surface that could not write the payload asks for it (greenhouse decisions/0253). */
   var ASK = '/desktop/hub';
+  /** Where the server sealed WHICH SESSION this surface inhabits (greenhouse decisions/0256). */
+  var TICKET_TAG = 'milpa-desktop-ticket';
+
+  /**
+   * The house's sealed decision, read as DATA and handed back untouched.
+   *
+   * This module never names a session. It could not if it wanted to: the id lives inside a signature it
+   * cannot produce, and the route it asks has no session parameter of any kind. Before this, the hub
+   * route rebuilt identity from a cookie — and the panel, whose page cannot set that cookie, ended up
+   * subscribed to a session nobody was driving while reporting itself live.
+   */
+  function ticket() {
+    var tag = document.getElementById(TICKET_TAG);
+    try {
+      var read = tag ? JSON.parse(tag.textContent || '{}') : {};
+
+      return (read && typeof read.ticket === 'string') ? read.ticket : '';
+    } catch (e) { return ''; }
+  }
 
   function desk() { return (live && live.desktop) || null; }
   function tr(key) { var d = desk(); return d ? d.tr.apply(null, arguments) : key; }
@@ -153,7 +172,7 @@
     if (URL !== '') { return openOn(URL); }
     if (typeof window.fetch !== 'function') { return openOn(''); }
 
-    fetch(ASK, { credentials: 'same-origin', headers: { Accept: 'application/json' } })
+    fetch(ASK, { credentials: 'same-origin', headers: { Accept: 'application/json', 'X-Milpa-Session-Ticket': ticket() } })
       .then(function (r) { return r.ok ? r.json() : {}; })
       .then(function (payload) {
         URL = (payload && typeof payload.url === 'string') ? payload.url : '';

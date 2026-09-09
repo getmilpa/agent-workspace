@@ -69,6 +69,7 @@ final class AgentView
      * @param DesktopData|null  $data     the session seam the composed surfaces read
      * @param string            $open     where «Open the Desktop» goes — the shell's own path
      * @param string            $signin   the app's sign-in door, for the signed-out state
+     * @param string            $signingSecret the app's signing secret, for the session ticket the region carries (greenhouse decisions/0256)
      */
     public static function of(
         DesktopComponents $live,
@@ -77,9 +78,10 @@ final class AgentView
         ?DesktopData $data,
         string $open,
         string $signin,
+        string $signingSecret = '',
     ): DeclaredView {
         $definitions = [AgentViewComponent::NAME => new AgentViewComponent()];
-        $renderers = [AgentViewComponent::NAME => new AgentViewRenderer($live, $data, $catalog)];
+        $renderers = [AgentViewComponent::NAME => new AgentViewRenderer($live, $data, $catalog, $signingSecret)];
 
         foreach (self::surfaces($live) as $name => [$definition, $renderer]) {
             $definitions[$name] = $definition;
