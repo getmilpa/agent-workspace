@@ -635,8 +635,19 @@ final class DesktopData
 
     /**
      * The current session's addressable id — the selected one when a sidebar click chose it, else the first
-     * in the store, or '' when there is none. The file name is what the write side addresses
-     * ({@see DesktopStore::updateWorkStatus()}), so it is the id the UI posts back, not the display id.
+     * in the store, else the last the LEDGER started, or '' when there is none. The file name is what the
+     * write side addresses ({@see DesktopStore::updateWorkStatus()}), so it is the id the UI posts back,
+     * not the display id.
+     *
+     * ONE SESSION, TWO STORES (greenhouse decisions/0258, third time in this family). `session()` reads the
+     * AGENT's ledger, and `hasSession()` already accepts an id that only the ledger knows — but naming the
+     * current one asked the SHELL's file store alone. A host that never writes that store (the admin's Agent
+     * section is one: it has no sidebar to select from) got `''` back, so the counters seeded zero while the
+     * ledger held nine turns and a hundred and fifty thousand tokens. This is not a new source: it is the
+     * source the class already reads, asked the question it could always answer.
+     *
+     * The write side fails closed on an id with no file ({@see DesktopStore::updateWorkStatus()} returns
+     * false), so naming a ledger-only session costs nothing it was not already costing.
      */
     public function currentSessionId(): string
     {
@@ -644,8 +655,14 @@ final class DesktopData
             return $this->selectedId;
         }
         $files = $this->sessionFiles();
+        if ($files !== []) {
+            return basename($files[0], '.json');
+        }
+        // The ledger folds each stream in the order the file first names it, so the LAST key is the session
+        // most recently started — which is the one a person opening the page means by «the session».
+        $ledger = $this->ledgerSessions();
 
-        return $files === [] ? '' : basename($files[0], '.json');
+        return $ledger === [] ? '' : (string) array_key_last($ledger);
     }
 
     /**

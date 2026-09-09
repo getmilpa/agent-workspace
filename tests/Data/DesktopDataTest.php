@@ -291,4 +291,51 @@ final class DesktopDataTest extends TestCase
         unlink($ledger);
         rmdir($dir);
     }
+
+    public function testWithNoShellStoreTheCurrentSessionIsTheLastTheLedgerStarted(): void
+    {
+        // THE DEFECT THIS PINS (greenhouse decisions/0258, third time in this family): a host that never
+        // writes the shell's file store — the admin's Agent section is one, it has no sidebar to select
+        // from — named NO session, so the counters seeded zero while the ledger held the real figures.
+        $ledger = tempnam(sys_get_temp_dir(), 'ledger');
+        $rows = [
+            ['stream_id' => 'agent-session:desk-old', 'type' => 'session.started', 'payload' => ['goal' => 'the older one'], 'seq' => 1],
+            ['stream_id' => 'agent-session:desk-live', 'type' => 'session.started', 'payload' => ['goal' => 'the one on screen'], 'seq' => 2],
+            ['stream_id' => 'agent-session:desk-live', 'type' => 'session.turn', 'payload' => ['role' => 'user', 'content' => 'hi'], 'seq' => 3],
+            ['stream_id' => 'agent-session:desk-live', 'type' => 'session.turn', 'payload' => ['role' => 'assistant', 'content' => 'hello'], 'seq' => 4],
+            ['stream_id' => 'agent-session:desk-live', 'type' => 'session.tool_called', 'payload' => ['name' => 'plugins_list'], 'seq' => 5],
+            ['stream_id' => 'agent-session:desk-live', 'type' => 'session.model_returned', 'payload' => ['usage' => ['total_tokens' => 154737, 'prompt_tokens' => 9001]], 'seq' => 6],
+        ];
+        file_put_contents($ledger, implode("\n", array_map(static fn (array $r): string => json_encode($r, \JSON_THROW_ON_ERROR), $rows)));
+
+        // No shell store at all: sessionsPath is '' — exactly what the admin's Agent section runs with.
+        $data = new DesktopData(new DIContainer(), null, '', null, $ledger);
+
+        self::assertSame('desk-live', $data->currentSessionId(), 'the LAST session the ledger started');
+        self::assertTrue($data->hasSession());
+        $counters = $data->counters();
+        self::assertSame(1, $counters['turns'], 'the user turn — the assistant answer is not a second one');
+        self::assertSame(1, $counters['tool_calls']);
+        self::assertSame(154737, $counters['tokens']);
+        self::assertSame(9001, $data->context()['tokens'], 'the context is the LAST call prompt, not the spend');
+
+        // THE CONTROL, and it is the one that can say no: a SELECTION still wins over the ledger, so this
+        // is a fallback and not a new authority over which session is open.
+        $data->select('desk-old');
+        self::assertSame('desk-old', $data->currentSessionId());
+        self::assertSame(0, $data->counters()['turns']);
+
+        unlink($ledger);
+    }
+
+    public function testWithNeitherStoreNorLedgerThereIsNoSession(): void
+    {
+        // THE CONTROL for the fallback itself: an empty ledger names nothing rather than inventing an id,
+        // so «no session open» stays a state the page can reach.
+        $data = new DesktopData(new DIContainer(), null, '', null, tempnam(sys_get_temp_dir(), 'empty'));
+
+        self::assertSame('', $data->currentSessionId());
+        self::assertFalse($data->hasSession());
+        self::assertSame(0, $data->counters()['turns']);
+    }
 }
