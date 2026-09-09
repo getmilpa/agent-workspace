@@ -155,6 +155,7 @@ final class ComposerBar
 
     private function markup(): string
     {
+        $degraded = $this->tr('conn.degraded');
         $ctx = $this->data?->context() ?? ['tokens' => 0, 'window' => 32768, 'used_pct' => 0, 'free' => 32768];
         $c = $this->data?->counters() ?? ['turns' => 0, 'steps' => 0, 'tokens' => 0, 'tool_calls' => 0, 'state' => 'idle'];
         $model = htmlspecialchars($this->data?->model()['model'] ?? 'qwen3.8-27b', ENT_QUOTES);
@@ -236,6 +237,15 @@ final class ComposerBar
     </div>
   </div>
   <p class="composer-model">Model: {$model} · panels open on their figures, close as you type.</p>
+  <!-- THE ROOM SAYS WHEN IT IS RUNNING DEGRADED. Without the Mercure hub the workspace still works —
+       the browser polls the shared log instead of being pushed to — and it looked identical to the
+       pushed version, so somebody read a working screen and had no way to know their live feed was a
+       poll. It binds `conn.state`, which the transport already publishes, rather than probing a port:
+       the Stack reports the PORT, this reports THIS CONNECTION, and they are different facts about
+       one service instead of two truths that can disagree.
+       Shown only when it is not live. A permanent notice is noise, and noise is how a warning stops
+       being read (greenhouse decisions/0252). -->
+  <p class="composer-degraded" x-show="\$store.milpa['conn.state'] !== 'live'" x-cloak>{$degraded}</p>
 </div>
 HTML;
     }
