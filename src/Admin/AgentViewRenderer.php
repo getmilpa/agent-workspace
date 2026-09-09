@@ -21,6 +21,7 @@ use Milpa\AgentWorkspace\Live\CommandListView;
 use Milpa\AgentWorkspace\Live\ComposerField;
 use Milpa\AgentWorkspace\Live\DesktopAssets;
 use Milpa\AgentWorkspace\Live\DesktopComponents;
+use Milpa\AgentWorkspace\Live\SessionTicket;
 use Milpa\Live\Contracts\Component\ComponentDefinitionInterface;
 use Milpa\Live\Contracts\Rendering\ComponentRendererInterface;
 use Milpa\Live\Contracts\Rendering\DeclaresClientAssets;
@@ -100,6 +101,8 @@ final class AgentViewRenderer implements ComponentRendererInterface, DeclaresCli
         'desktop-task',
         'desktop-system-notice',
         'desktop-result-claim',
+        'desktop-ask-grant',
+        'desktop-compacted',
     ];
 
     /**
@@ -116,6 +119,11 @@ final class AgentViewRenderer implements ComponentRendererInterface, DeclaresCli
         'desktop-task' => 'milpa-task-msg-proto',
         'desktop-system-notice' => 'milpa-system-msg-proto',
         'desktop-result-claim' => 'milpa-result-msg-proto',
+        // The embedded region paints the SAME prototypes the standalone shell does. A kind missing here
+        // is a kind that works at /desktop and silently does not inside the panel — the surface split in
+        // half, which is exactly the shape this house keeps paying for.
+        'desktop-ask-grant' => 'milpa-ask-grant-proto',
+        'desktop-compacted' => 'milpa-compacted-proto',
     ];
 
     /**
@@ -131,6 +139,8 @@ final class AgentViewRenderer implements ComponentRendererInterface, DeclaresCli
         private readonly DesktopComponents $live,
         private readonly ?DesktopData $data = null,
         private readonly ?Catalog $catalog = null,
+        /** The app's signing secret — what seals this region's session ticket (greenhouse decisions/0256). */
+        private readonly string $signingSecret = '',
     ) {
     }
 
@@ -320,7 +330,14 @@ final class AgentViewRenderer implements ComponentRendererInterface, DeclaresCli
         return '<script id="milpa-commands" type="application/json">' . CommandListView::json($this->data?->commands() ?? DesktopData::houseCommands()) . '</script>'
             . '<script id="milpa-desktop-i18n" type="application/json">' . $json($catalog->all()) . '</script>'
             . '<script id="milpa-desktop-guard" type="application/json">' . $json(['signin' => $gate === DesktopSettings::GATE_PASSKEY ? self::meta($state, 'signin', AgentViewComponent::DEFAULT_SIGNIN) : '']) . '</script>'
-            . '<script id="milpa-desktop-session" type="application/json">' . $json(['agent' => self::agentSession($state)]) . '</script>';
+            . '<script id="milpa-desktop-session" type="application/json">' . $json(['agent' => self::agentSession($state)]) . '</script>'
+            // THE HOUSE'S DECISION, SEALED (greenhouse decisions/0256). This region cannot set a cookie, so
+            // the session it inhabits travels as a signed ticket the connector returns in a header. It is
+            // not a session id a client may change: the id inside is covered by the signature, and the
+            // ticket names the principal it was issued to, so one lifted from another browser is inert.
+            . '<script id="' . SessionTicket::TAG . '" type="application/json">'
+            . $json(['ticket' => SessionTicket::issue($this->signingSecret, self::agentSession($state), \is_string($state->meta['principal'] ?? null) ? $state->meta['principal'] : '')])
+            . '</script>';
     }
 
     /**

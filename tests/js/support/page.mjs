@@ -96,8 +96,21 @@ export const CATALOG = {
   'cap.no_token': 'the house issued no confirm token',
   'decisions.just_now': 'just now · open the conversation to answer',
   'decisions.unnamed': 'A question is waiting for you.',
-  'hub.waiting': 'Waiting on you: %s',
   'conversation.answered': 'Answered «%s» by %s',
+  'conversation.compacted': 'context compacted',
+  'conversation.compacted.through': 'context compacted through turn %s',
+  'grant.kind.permission': 'Permission needed',
+  'grant.kind.signature': 'Signature needed',
+  'grant.kind.target': 'Target not named',
+  'grant.kind.default': 'Waiting on you',
+  'grant.unnamed': 'The agent is waiting on a decision.',
+  'grant.sending': 'Sending your answer…',
+  'grant.answered': 'You answered «%s».',
+  'grant.failed': 'That answer did not go through: %s',
+  'grant.refused': 'the door refused it',
+  'grant.no_session': 'This page is not driving an agent session, so there is nothing to answer.',
+  'grant.no_token': 'The confirmation gate did not hand back a token.',
+  'grant.no_options': 'The agent proposed no options — answer with «coa agent:answer».',
   'conversation.sequence_paused': 'Sequence «%s» paused — answer it in Decisions',
   'conversation.sequence_resumed': 'Sequence «%s» resumed',
 };
@@ -180,7 +193,16 @@ export class El {
     this.hidden = attrs.hidden !== undefined && attrs.hidden !== false;
     this.id = attrs.id || '';
     this.checked = attrs.checked === true;
+    // A real property, like `checked` and `hidden`: a module reads `button.disabled` to decide whether a
+    // click counts, and an `undefined` would let a test assert nothing while looking like it asserted.
+    this.disabled = attrs.disabled !== undefined && attrs.disabled !== false;
     this.value = attrs.value === undefined ? '' : attrs.value;
+    // The SCROLL surface, so «it scrolls itself, not the page» is a thing a test can measure rather than
+    // a claim it has to take on faith (greenhouse decisions/0254). `scrollHeight` is what a test sets to
+    // stand for overflowing content; `scrolledIntoView` counts the times the page was dragged.
+    this.scrollTop = 0;
+    this.scrollHeight = 0;
+    this.scrolledIntoView = 0;
     const self = this;
     this.classList = {
       contains: (c) => (self.attrs.class || '').split(/\s+/).includes(c),
@@ -189,6 +211,9 @@ export class El {
       toggle(c, on) { if (on === undefined ? !self.classList.contains(c) : on) { self.classList.add(c); } else { self.classList.remove(c); } },
     };
   }
+
+  /** The page being dragged to this element — counted, never performed. */
+  scrollIntoView() { this.scrolledIntoView += 1; }
 
   /** Whether this element matches one simple selector — what a module's `region()` asks of a clone. */
   matches(selector) { return matches(this, selector); }

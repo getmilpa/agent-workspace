@@ -54,13 +54,32 @@ export function prototypes() {
   result.appendChild(new El('span', { 'data-result-text': '', text: 'verified' }));
   result.appendChild(new El('span', { class: 'msg__result-tip', 'data-result-tip': '' }));
 
-  const thinking = new El('div', { class: 'msg msg--thinking milpa-think', 'data-open': '1', 'data-thinking-active': '1' });
+  const thinking = new El('div', { class: 'msg msg--thinking milpa-think', 'data-open': '1', 'data-thinking-active': '1', 'data-thinking-view': 'tail' });
   const toggle = thinking.appendChild(new El('button', { class: 'milpa-think__toggle', 'data-thinking-toggle': '', 'data-thinking-head': '' }));
   // The spark and the dots are the component's own — the elapsed replaces the LABEL and must not eat them.
   toggle.appendChild(new El('span', { class: 'milpa-think__spark', 'data-thinking-spark': '', text: '◈' }));
   toggle.appendChild(new El('span', { class: 'milpa-think__label', 'data-thinking-label': '', text: 'thinking' }));
   toggle.appendChild(new El('span', { class: 'milpa-think__dots' }));
   thinking.appendChild(new El('div', { class: 'milpa-think__body', 'data-thinking-body': '' }));
+  // The turn's STEPS hang here (greenhouse decisions/0254): the tools it ran, the question it parked.
+  thinking.appendChild(new El('div', { class: 'milpa-think__steps', 'data-thinking-steps': '' }));
+
+  // The parked question. The single option button is the TEMPLATE the fill clones per option the agent
+  // proposed — the prototype cannot know how many forks a question has.
+  const grant = new El('div', { class: 'msg msg--grant', 'data-grant-state': 'open', 'data-grant-id': '' });
+  const grantHead = grant.appendChild(new El('div', { class: 'msg__grant-head' }));
+  grantHead.appendChild(new El('span', { class: 'msg__grant-mark', text: '⏸' }));
+  grantHead.appendChild(new El('span', { class: 'msg__grant-kind', 'data-grant-kind': '' }));
+  grant.appendChild(new El('p', { class: 'msg__grant-question', 'data-grant-question': '' }));
+  grant.appendChild(new El('p', { class: 'msg__grant-why', 'data-grant-why': '' }));
+  const grantOptions = grant.appendChild(new El('div', { class: 'msg__grant-options', 'data-grant-options': '' }));
+  grantOptions.appendChild(new El('button', { class: 'mui-btn msg__grant-option', 'data-grant-option': '', hidden: true }));
+  grant.appendChild(new El('p', { class: 'msg__grant-status', 'data-grant-status': '' }));
+
+  const compacted = new El('div', { class: 'msg msg--compacted' });
+  compacted.appendChild(new El('span', { class: 'msg__compacted-line' }));
+  compacted.appendChild(new El('span', { class: 'msg__compacted-text', 'data-compacted-text': '' }));
+  compacted.appendChild(new El('span', { class: 'msg__compacted-line' }));
 
   return {
     'milpa-user-msg-proto': user,
@@ -70,6 +89,8 @@ export function prototypes() {
     'milpa-system-msg-proto': system,
     'milpa-result-msg-proto': result,
     'milpa-thinking-proto': thinking,
+    'milpa-ask-grant-proto': grant,
+    'milpa-compacted-proto': compacted,
   };
 }
 

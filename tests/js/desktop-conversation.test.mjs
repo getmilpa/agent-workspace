@@ -22,7 +22,7 @@ function thread(extra = {}) {
     tree: html,
     elements: prototypeTags(),
     bus: true,
-    modules: ['desktop-conversation', 'desktop-thinking', 'desktop-agent-message', 'desktop-tool-call', 'desktop-result-claim'],
+    modules: ['desktop-conversation', 'desktop-thinking', 'desktop-agent-message', 'desktop-tool-call', 'desktop-result-claim', 'desktop-ask-grant'],
     ...extra,
   });
 
@@ -44,21 +44,27 @@ test('the thread the server printed is replayed on load, each row with the proto
     { kind: 'user', text: 'run the rollout sequence' },
     { kind: 'tool', name: 'house_context', result: '{"ok":true}' },
     { kind: 'agent', text: 'On it.' },
-    { kind: 'question', text: 'El agente quiere correr «sequence:run». ¿Lo autorizas?' },
+    { kind: 'question', text: 'El agente quiere correr «sequence:run». ¿Lo autorizas?', reason: 'permission', options: ['sí', 'no'] },
     { kind: 'answered', answer: 'sí', by: 'actor:passkey:abc' },
     { kind: 'sequence_paused', sequence: 'rollout' },
     { kind: 'nonsense' },
   ];
-  const p = page({ tree: html, elements: { ...prototypeTags(), 'milpa-desktop-transcript': transcriptTag(rows) }, bus: true, modules: ['desktop-conversation', 'desktop-thinking', 'desktop-agent-message', 'desktop-tool-call', 'desktop-result-claim'] });
+  const p = page({ tree: html, elements: { ...prototypeTags(), 'milpa-desktop-transcript': transcriptTag(rows) }, bus: true, modules: ['desktop-conversation', 'desktop-thinking', 'desktop-agent-message', 'desktop-tool-call', 'desktop-result-claim', 'desktop-ask-grant'] });
   assert.equal(chat.children.length, 0, 'nothing is painted at module load: the fills of the other message modules are not registered yet');
   p.mount('desktopConversation', undefined, chat);
 
-  const kinds = chat.children.map((m) => ['user', 'tool', 'agent', 'system'].find((k) => m.classList.contains('msg--' + k)));
-  assert.deepEqual(kinds, ['user', 'tool', 'agent', 'system', 'system', 'system'], 'six rows painted, in order; the unknown one skipped');
+  const kinds = chat.children.map((m) => ['user', 'tool', 'agent', 'grant', 'system'].find((k) => m.classList.contains('msg--' + k)));
+  assert.deepEqual(kinds, ['user', 'tool', 'agent', 'grant', 'system', 'system'], 'six rows painted, in order; the unknown one skipped');
   assert.equal(chat.children[0].querySelector('[data-user-body]').textContent, 'run the rollout sequence');
+  // No turn is open in a replay, so a tool lands in the THREAD rather than nested (greenhouse decisions/0254).
   assert.equal(chat.children[1].querySelector('[data-tool-name]').textContent, 'house_context');
   const systemText = (m) => (m.getAttribute('data-system-body') !== null ? m : m.querySelector('[data-system-body]')).textContent;
-  assert.equal(systemText(chat.children[3]), 'Waiting on you: El agente quiere correr «sequence:run». ¿Lo autorizas?');
+  // The parked question is REPLAYED as the request it is, with the agent's own options as buttons — so a
+  // question raised before a reload is still answerable from the conversation it was raised in.
+  const grant = chat.children[3];
+  assert.equal(grant.querySelector('[data-grant-question]').textContent, 'El agente quiere correr «sequence:run». ¿Lo autorizas?');
+  assert.deepEqual(grant.querySelectorAll('[data-grant-option]').filter((b) => b.hidden !== true).map((b) => b.textContent), ['sí', 'no']);
+  assert.equal(grant.querySelector('[data-grant-kind]').textContent, 'Permission needed', 'the STABLE reason code names the halt');
   assert.equal(systemText(chat.children[4]), 'Answered «sí» by actor:passkey:abc');
   assert.equal(systemText(chat.children[5]), 'Sequence «rollout» paused — answer it in Decisions');
   assert.equal(p.desktop().conversation.replay(), 0, 'a second replay paints nothing — once, like the subscriptions');
@@ -179,10 +185,20 @@ test('ONE delegated click serves every message component: the collapses, Copy an
   const block = chat.children[0];
   const view = p.mount('desktopConversation', undefined, chat);
 
+  // WHILE the model reasons the body is showing its TAIL, so the toggle opens the rest of the reasoning;
+  // `data-open` is untouched, because there is nothing folded away yet (greenhouse decisions/0254).
+  assert.equal(block.getAttribute('data-thinking-view'), 'tail', 'a live block starts on its tail');
   view.onClick({ target: block.querySelector('[data-thinking-toggle]') });
-  assert.equal(block.getAttribute('data-open'), '0', 'the thinking block collapses');
+  assert.equal(block.getAttribute('data-thinking-view'), 'full', 'the toggle opens the whole reasoning');
+  assert.equal(block.getAttribute('data-open'), '1', 'and folds nothing: the block is still alive');
   view.onClick({ target: block.querySelector('[data-thinking-toggle]') });
-  assert.equal(block.getAttribute('data-open'), '1');
+  assert.equal(block.getAttribute('data-thinking-view'), 'tail');
+  // Once the turn ends the SAME control folds the reasoning away, which is what it meant before.
+  conv.endReasoning();
+  view.onClick({ target: block.querySelector('[data-thinking-toggle]') });
+  assert.equal(block.getAttribute('data-open'), '1', 'a finished block unfolds');
+  view.onClick({ target: block.querySelector('[data-thinking-toggle]') });
+  assert.equal(block.getAttribute('data-open'), '0', 'and folds again');
 
   conv.append('tool', { name: 't', result: 'x' });
   const tool = chat.children[1];
@@ -225,4 +241,98 @@ test('the verdict RIDES the last answer, and falls back to a standalone claim wh
     'The ledger backs this turn: every completed step carries evidence, nothing was left open, and no artifact\'s latest check is red.',
   );
   assert.equal(chat.children[0].querySelector('[data-agent-verdict]').hidden, true, 'the earlier answer is untouched');
+});
+
+// ── the turn as the unit of the thread (greenhouse decisions/0254) ──────────────────────────────────
+
+test('F1 · while it reasons the body keeps ALL the words and scrolls ITSELF — the page is never dragged', () => {
+  const { p, chat } = thread();
+  const conv = conversation(p);
+
+  conv.reasoning('one\n');
+  const block = chat.children[0];
+  const body = block.querySelector('[data-thinking-body]');
+  body.scrollHeight = 400;
+  conv.reasoning('two\n');
+  conv.reasoning('three\n');
+  conv.reasoning('four');
+
+  assert.equal(block.getAttribute('data-thinking-view'), 'tail', 'the body shows its tail while the model reasons');
+  assert.equal(body.textContent, 'one\ntwo\nthree\nfour', 'nothing is dropped — the tail CLIPS, it does not truncate');
+  assert.equal(body.scrollTop, 400, 'the body scrolled itself to its own bottom');
+  // The one that matters: this used to be `block.scrollIntoView()` on EVERY token, which yanked the page
+  // out from under anyone who had scrolled up to read something.
+  assert.equal(block.scrolledIntoView, 0, 'the page is never dragged by a reasoning token');
+});
+
+test('F2 · a tool run DURING a turn hangs inside that turn; one with no turn open lands in the thread', () => {
+  const { p, chat } = thread();
+  const conv = conversation(p);
+
+  // No turn open yet: the step has nothing to belong to, and is shown rather than dropped.
+  conv.append('tool', { name: 'orphan', result: 'x' });
+  assert.equal(chat.children.length, 1, 'a tool with no turn open lands in the thread');
+  assert.equal(chat.children[0].classList.contains('msg--tool'), true);
+
+  conv.reasoning('deciding…');
+  const block = chat.children[1];
+  conv.append('tool', { name: 'house_context', result: '{"ok":true}' });
+  conv.append('tool', { name: 'read_file', result: 'contents' });
+
+  assert.equal(chat.children.length, 2, 'the two tools of the turn did NOT land as siblings');
+  const steps = block.querySelector('[data-thinking-steps]');
+  assert.deepEqual(steps.children.map((s) => s.querySelector('[data-tool-name]').textContent), ['house_context', 'read_file'], 'they hang under the reasoning that ran them, in order');
+});
+
+test('F3 · when the reasoning folds away, what the turn DID stays visible', () => {
+  const { p, chat } = thread();
+  const conv = conversation(p);
+
+  conv.reasoning('thinking about it');
+  const block = chat.children[0];
+  conv.append('tool', { name: 'write_file', result: 'ok' });
+  conv.endReasoning();
+
+  assert.equal(block.getAttribute('data-open'), '0', 'the private reasoning folds — it is not the answer');
+  const steps = block.querySelector('[data-thinking-steps]');
+  assert.equal(steps.children.length, 1, 'the record of what happened is NOT folded with it');
+  assert.equal(steps.children[0].querySelector('[data-tool-name]').textContent, 'write_file');
+});
+
+test('F2b · a question parked mid-turn hangs under the reasoning that led to it', () => {
+  const { p, chat } = thread();
+  const conv = conversation(p);
+
+  conv.reasoning('this one needs a human');
+  const block = chat.children[0];
+  p.bus().emit('agent.parked', { id: 'q-3', text: 'May I write outside the project?', reason: 'permission', why: 'the path is above the root', options: ['yes', 'no'] });
+
+  assert.equal(chat.children.length, 1, 'the request is not a sibling of the reasoning');
+  const grant = block.querySelector('[data-thinking-steps]').children[0];
+  assert.equal(grant.classList.contains('msg--grant'), true);
+  assert.equal(grant.querySelector('[data-grant-question]').textContent, 'May I write outside the project?');
+  assert.equal(grant.querySelector('[data-grant-why]').textContent, 'the path is above the root');
+  assert.deepEqual(grant.querySelectorAll('[data-grant-option]').filter((b) => b.hidden !== true).map((b) => b.textContent), ['yes', 'no']);
+});
+
+test('F6 · a compaction draws its boundary across the thread — and a session without one draws none', () => {
+  const { p, chat } = thread();
+
+  p.bus().emit('agent.message', { text: 'first answer' });
+  assert.equal(chat.children.filter((m) => m.classList.contains('msg--compacted')).length, 0, 'the positive control: no compaction, no separator');
+
+  p.bus().emit('session.compacted', { through: 12, summary: 'the first twelve turns' });
+  p.bus().emit('agent.message', { text: 'second answer' });
+
+  const kinds = chat.children.map((m) => (m.classList.contains('msg--compacted') ? 'rule' : 'msg'));
+  assert.deepEqual(kinds, ['msg', 'rule', 'msg'], 'the boundary sits BETWEEN the turns, where it happened');
+  assert.equal(chat.children[1].querySelector('[data-compacted-text]').textContent, 'context compacted through turn 12');
+});
+
+test('F6b · a compaction that says nothing about how far it reached still says it happened', () => {
+  const { p, chat } = thread();
+
+  p.bus().emit('session.compacted', {});
+
+  assert.equal(chat.children[0].querySelector('[data-compacted-text]').textContent, 'context compacted');
 });

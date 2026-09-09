@@ -109,9 +109,36 @@
   function report(result) {
     var conv = conversation();
     if (!conv) { return; }
+    // THE WINDOW COMPACTED, SAID FIRST — because that is when it happened: the run compacts BEFORE it
+    // asks the model, so the boundary belongs above this turn's answer, not after it.
+    //
+    // `compacted` has been in the turn's result all along, and its own comment in `AgentOperations` says
+    // what it is for: «una sesión que empieza a contestar distinto sin que nadie sepa por qué es la clase
+    // de cosa que se depura durante una hora». No surface was reading it (greenhouse decisions/0254).
+    // How far the summary reaches is not in the result — the replayed ledger has it, a live turn does
+    // not — so the boundary says the thing that happened rather than inventing a number.
+    if (result && result.compacted) { conv.append('compacted', {}); }
     if (result && result.paused) {
-      if (result.answer) { conv.append('agent', { text: result.answer }); }
-      conv.append('system', { text: result.hint || tr('turn.paused') });
+      var asked = result.question || null;
+      // THE PAUSE TEXT IS THE QUESTION (`AgentOperations` says so), so echoing the answer AND painting
+      // the request would show one fact twice — the duplication that runtime already warns about. The
+      // answer is only said when it is something OTHER than the question: an agent that spoke before it
+      // stopped to ask said two things, and both belong in the thread.
+      if (result.answer && (!asked || result.answer !== asked.text)) { conv.append('agent', { text: result.answer }); }
+      if (asked) {
+        // ONE bubble per parked question, though TWO sources announce it. The hub says `agent.parked` the
+        // moment the backend parks; this response comes back saying the same pause. Both are right — the
+        // hub is faster, this is authoritative — and painting both would ask the human the same thing
+        // twice, with two sets of buttons either of which answers it. `id` is what makes them the same
+        // question, which is what that field is for; a question with no id cannot be matched and lands,
+        // because a duplicate is better than a real question nobody sees.
+        if (!painted(asked.id)) { conv.append('ask-grant', asked); }
+      } else {
+        // No structured question came back — an older runtime, or a pause with nothing to decide. The
+        // house's own words, NOT `result.hint`: that hint is the CLI's line for a surface with nowhere to
+        // type, and this one has buttons.
+        conv.append('system', { text: tr('turn.paused') });
+      }
     } else if (result && result.ok && result.answer) {
       conv.append('agent', { text: result.answer });
     } else if (result && result.error) {
@@ -124,6 +151,13 @@
       var why = (result.closure.reasons || []).join('; ');
       if (!conv.verdict(verified, why)) { conv.append('result', { verified: verified, reasons: why }); }
     }
+  }
+
+  /** Whether a parked question with this id is already on the page — the hub may have said it first. */
+  function painted(id) {
+    if (!id) { return false; }
+
+    return document.querySelector('.msg--grant[data-grant-id="' + String(id).replace(/["\\]/g, '') + '"]') !== null;
   }
 
   /** Start a governed turn. The mode is the chip's VALUE, asked of the composer, never assumed. */

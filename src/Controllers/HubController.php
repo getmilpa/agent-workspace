@@ -14,8 +14,10 @@ declare(strict_types=1);
 
 namespace Milpa\AgentWorkspace\Controllers;
 
+use Milpa\AgentWorkspace\Http\RequestPrincipal;
 use Milpa\AgentWorkspace\Live\HubConnection;
 use Milpa\AgentWorkspace\Live\MercureConfig;
+use Milpa\AgentWorkspace\Live\SessionTicket;
 use Nyholm\Psr7\Response;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
@@ -39,24 +41,35 @@ use Psr\Http\Message\ServerRequestInterface;
  */
 final class HubController
 {
-    public function __construct(private readonly ?MercureConfig $mercure = null)
-    {
+    public function __construct(
+        private readonly ?MercureConfig $mercure = null,
+        /** The app's signing secret — what tells this house's own sealed decision from a forgery. */
+        private readonly string $signingSecret = '',
+    ) {
     }
 
     /**
      * `GET {route}/hub` — the subscribe URL as JSON, and the cookies that let the browser in.
+     *
+     * ── ESTE TRANSPORTE NO DECIDE IDENTIDAD (greenhouse decisions/0256) ──────────────────────────
+     *
+     * It used to: it read a cookie, matched it against `/^desk-[0-9a-f]{16}$/`, and MINTED a fresh id
+     * when that failed. The panel's region is `desk-admin-<hash>`, which cannot match that pattern and
+     * whose page cannot set that cookie — so the room connected, reported itself live, and subscribed to
+     * a session nobody was driving. Measured: fourteen facts published for the page's own session
+     * reached nothing at all.
+     *
+     * Now it opens the sealed decision the house already made and projects it. It mints nothing, and
+     * there is no session parameter for a client to name — not a validated one, none. The capability was
+     * removed rather than defended.
      */
     public function connect(ServerRequestInterface $request): ResponseInterface
     {
-        $cookie = $request->getCookieParams()[HubConnection::SESSION_COOKIE] ?? null;
-        // THE SESSION THE BROWSER ALREADY HAS, or a fresh one. Minting a new id on every call would
-        // give the same person a different stream on every reload, and the room would never see the
-        // events its own turn published.
-        $sessionId = \is_string($cookie) && preg_match('/^desk-[0-9a-f]{16}$/', $cookie) === 1
-            ? $cookie
-            : 'desk-' . bin2hex(random_bytes(8));
-
-        $connection = HubConnection::of($this->mercure, $sessionId);
+        $ticket = SessionTicket::open($this->signingSecret, $request->getHeaderLine(SessionTicket::HEADER));
+        // A ticket lifted from another browser is inert: it was sealed for a principal, and this request
+        // has to be that principal. `RequestPrincipal` is the house's ONE reader of who a request is.
+        $sessionId = $ticket !== null && $ticket->belongsTo(RequestPrincipal::of($request)) ? $ticket->sessionId : '';
+        $connection = $sessionId === '' ? null : HubConnection::of($this->mercure, $sessionId);
 
         if ($connection === null) {
             return new Response(200, ['Content-Type' => 'application/json', 'Cache-Control' => 'no-store'], '{}');

@@ -1,0 +1,68 @@
+/*!
+ * desktop-ask-grant — the agent's parked question, waiting for a human (greenhouse decisions/0254).
+ *
+ * (c) Rodrigo Vicente - TeamX Agency — https://teamx.agency <hola@teamx.agency>
+ * @license Apache-2.0
+ *
+ * Declared by the ask-grant prototype's renderer through DeclaresClientAssets and served at
+ * /desktop/assets/c/desktop-ask-grant.css.
+ *
+ * It reads as a HALT, not an alarm. A parked turn is the governed path working — the agent hit something
+ * it is not allowed to decide alone and stopped — so red would teach the reader to fear the mechanism
+ * that protects them, and red is what this house saves for a thing that broke (greenhouse decisions/0252).
+ * What it must do is be impossible to scroll past: a warm edge, a mark, and the buttons in the bubble.
+ */
+
+.msg--grant {
+  border: 1px solid var(--accent-border, var(--border));
+  border-inline-start-width: 3px;
+  border-radius: var(--radius-md, 8px);
+  background: var(--accent-soft, var(--surface-2, transparent));
+  padding: var(--space-3);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.msg__grant-head { display: flex; align-items: center; gap: var(--space-2); }
+.msg__grant-mark { color: var(--accent-text); font-size: var(--text-sm); line-height: 1; }
+.msg__grant-kind {
+  font-family: var(--font-mono);
+  font-size: var(--text-2xs);
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  color: var(--accent-text);
+}
+
+.msg__grant-question { margin: 0; font-size: var(--text-sm); line-height: var(--leading-normal); color: var(--text-primary); }
+/* The why is secondary and often absent — `[hidden]` is set by the fill so it costs no space when it is. */
+.msg__grant-why { margin: 0; font-size: var(--text-xs); line-height: var(--leading-relaxed); color: var(--text-muted); }
+.msg__grant-why[hidden] { display: none; }
+
+/* The options wrap: the agent proposes them, so there may be two or there may be six, and a row that
+   overflows would push the buttons out of a narrow panel — this surface is embedded in one. */
+.msg__grant-options { display: flex; flex-wrap: wrap; gap: var(--space-2); margin-top: var(--space-1); }
+.msg__grant-option { font-size: var(--text-xs); }
+.msg__grant-option[hidden] { display: none; }
+.msg__grant-option:disabled { opacity: .45; cursor: default; }
+/* The one that was actually chosen stays legible after the rest dim — the record of what was decided. */
+.msg__grant-option--chosen { opacity: 1; border-color: var(--accent-border, var(--border)); color: var(--accent-text); }
+
+.msg__grant-status { margin: 0; font-size: var(--text-2xs); color: var(--text-muted); min-height: 1em; }
+.msg__grant-status:empty { display: none; }
+
+/* Answered: the halt is over, so the edge goes quiet. The bubble stays — it is the record of the
+   question and of the answer it got, and deleting it would erase the decision from the story. */
+.msg--grant[data-grant-state="answered"] { border-inline-start-color: var(--border); background: transparent; }
+.msg--grant[data-grant-state="answered"] .msg__grant-mark,
+.msg--grant[data-grant-state="answered"] .msg__grant-kind { color: var(--text-muted); }
+
+/* Waiting breathes, once — enough to catch the eye of someone whose turn just stopped, not enough to
+   pulse forever in the corner of a room somebody works in. */
+@media (prefers-reduced-motion: no-preference) {
+  .msg--grant[data-grant-state="open"] { animation: milpa-grant-arrive .5s ease-out; }
+}
+@keyframes milpa-grant-arrive {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: none; }
+}

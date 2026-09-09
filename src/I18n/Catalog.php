@@ -127,6 +127,22 @@ final class Catalog
             // The conversation's interrupted-run notice (greenhouse decisions/0196), rendered by the
             // thread's own renderer — the last user-facing sentence the shell hand-wrote in English.
             'conversation.answered' => 'Answered «%s» by %s',
+            // The turn's own contents (greenhouse decisions/0254): the request the agent parked, and the
+            // boundary a compaction left in the thread.
+            'conversation.compacted' => 'context compacted',
+            'conversation.compacted.through' => 'context compacted through turn %s',
+            'grant.kind.permission' => 'Permission needed',
+            'grant.kind.signature' => 'Signature needed',
+            'grant.kind.target' => 'Target not named',
+            'grant.kind.default' => 'Waiting on you',
+            'grant.unnamed' => 'The agent is waiting on a decision.',
+            'grant.sending' => 'Sending your answer…',
+            'grant.answered' => 'You answered «%s».',
+            'grant.failed' => 'That answer did not go through: %s',
+            'grant.refused' => 'the door refused it',
+            'grant.no_session' => 'This page is not driving an agent session, so there is nothing to answer.',
+            'grant.no_token' => 'The confirmation gate did not hand back a token.',
+            'grant.no_options' => 'The agent proposed no options — answer with «coa agent:answer».',
             'conversation.sequence_paused' => 'Sequence «%s» paused — answer it in Decisions',
             'conversation.sequence_resumed' => 'Sequence «%s» resumed',
             'conversation.interrupted' => 'A prior run was interrupted — it was left mid-turn and did not finish. Send again to continue; nothing was auto-resumed.',
@@ -157,7 +173,10 @@ final class Catalog
             // The last inline behaviours to become declared views (greenhouse decisions/0211, phase D):
             // the transport's state, the capabilities two-step, the cross-session inbox, the preview and
             // the screens that used to be raw HTML in the shell's template.
-            'conn.degraded' => 'The live hub is not connected — updates arrive on a poll instead of instantly. The panel\'s Stack section says how to start it.',
+            'conn.degraded' => 'The live hub is not connected — updates arrive on a poll instead of instantly.',
+            // Its own key so a translator moves WORDS, never an anchor tag: the renderer wraps this half
+            // in the link when this app has a panel to link to (greenhouse decisions/0255).
+            'conn.degraded.where' => 'Open the Stack section to start it',
             'conn.live' => '◉ live',
             'conn.offline' => '○ offline',
             'conn.connecting' => '○ connecting…',
@@ -283,6 +302,20 @@ final class Catalog
             'session.state.paused' => 'Pausada',
             'session.state.ended' => 'Terminada',
             'conversation.answered' => 'Contestada «%s» por %s',
+            'conversation.compacted' => 'contexto compactado',
+            'conversation.compacted.through' => 'contexto compactado hasta el turno %s',
+            'grant.kind.permission' => 'Necesita permiso',
+            'grant.kind.signature' => 'Necesita firma',
+            'grant.kind.target' => 'No nombró el objetivo',
+            'grant.kind.default' => 'Te esperan',
+            'grant.unnamed' => 'El agente está esperando una decisión.',
+            'grant.sending' => 'Enviando tu respuesta…',
+            'grant.answered' => 'Contestaste «%s».',
+            'grant.failed' => 'Esa respuesta no pasó: %s',
+            'grant.refused' => 'la puerta la rechazó',
+            'grant.no_session' => 'Esta página no está manejando una sesión del agente, así que no hay qué contestar.',
+            'grant.no_token' => 'La compuerta de confirmación no devolvió un token.',
+            'grant.no_options' => 'El agente no propuso opciones — contesta con «coa agent:answer».',
             'conversation.sequence_paused' => 'Secuencia «%s» pausada — contéstala en Decisiones',
             'conversation.sequence_resumed' => 'Secuencia «%s» retomada',
             'conversation.interrupted' => 'Una corrida previa quedó interrumpida — se quedó a media vuelta y no terminó. Vuelve a enviar para continuar; nada se retomó solo.',
@@ -309,7 +342,8 @@ final class Catalog
             'op.hint.confirm' => '%s pide confirmación — la puerta de la casa sigue en pie; un comando no la confirma',
             'op.hint.unreachable' => 'no se pudo alcanzar la operación',
             'op.hint.failed' => 'la operación falló',
-            'conn.degraded' => 'El hub en vivo no está conectado — las actualizaciones llegan por sondeo, no al instante. La sección Stack del panel dice cómo levantarlo.',
+            'conn.degraded' => 'El hub en vivo no está conectado — las actualizaciones llegan por sondeo, no al instante.',
+            'conn.degraded.where' => 'Abre la sección Stack para levantarlo',
             'conn.live' => '◉ en vivo',
             'conn.offline' => '○ sin conexión',
             'conn.connecting' => '○ conectando…',

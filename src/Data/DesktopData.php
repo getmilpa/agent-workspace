@@ -46,7 +46,8 @@ final class DesktopData
      * A reload used to paint nothing: the thread lived in the page's memory, and the ledger — the one truth,
      * `var/agent-sessions.jsonl` — was never read into it. This reads that stream by its format (one JSON
      * line per event: `stream_id`, `type`, `payload`, `seq`) and keeps what a human reads as a conversation:
-     * the turns, the tool calls, the questions parked and answered, a sequence pausing and resuming. The
+     * the turns, the tool calls, the questions parked and answered, a sequence pausing and resuming, and the
+     * point where the window compacted. The
      * client paints each row with the same prototypes a live turn uses, so a replayed thread and a live one
      * are the same markup.
      *
@@ -76,7 +77,24 @@ final class DesktopData
                     ? ['kind' => 'agent', 'text' => $this->str($p['content'] ?? null)]
                     : ['kind' => 'user', 'text' => $this->str($p['content'] ?? null)],
                 'session.tool_called' => ['kind' => 'tool', 'name' => $this->str($p['tool'] ?? null) ?: 'tool', 'result' => $this->str($p['result'] ?? null)],
-                'session.question_asked' => ['kind' => 'question', 'text' => $this->str($p['question'] ?? null), 'id' => $this->str($p['id'] ?? null), 'reason' => $this->str($p['reason'] ?? null)],
+                // The parked question carries its OPTIONS and its why (greenhouse decisions/0254): a
+                // reloaded thread renders the request with the same buttons a live one has, so a question
+                // raised before the reload is still answerable from where it was asked.
+                'session.question_asked' => [
+                    'kind' => 'question',
+                    'text' => $this->str($p['question'] ?? null),
+                    'id' => $this->str($p['id'] ?? null),
+                    'reason' => $this->str($p['reason'] ?? null),
+                    'why' => $this->str($p['why'] ?? null),
+                    'options' => array_values(array_filter(
+                        \is_array($p['options'] ?? null) ? $p['options'] : [],
+                        static fn (mixed $option): bool => \is_string($option) && $option !== '',
+                    )),
+                ],
+                // The window compacted here. Declared in milpa/agent since it existed and, until this
+                // slice, read by nobody: a thread would lose its earlier turns to a summary and read as
+                // though they had never happened.
+                'session.compacted' => ['kind' => 'compacted', 'through' => (int) ($p['through'] ?? 0), 'summary' => $this->str($p['summary'] ?? null)],
                 'session.question_answered' => ['kind' => 'answered', 'answer' => $this->str($p['answer'] ?? null), 'by' => $this->str(\is_array($p['by'] ?? null) ? ($p['by']['id'] ?? null) : null)],
                 'session.sequence_paused' => ['kind' => 'sequence_paused', 'sequence' => $this->str($p['sequenceId'] ?? null)],
                 'session.sequence_resumed' => ['kind' => 'sequence_resumed', 'sequence' => $this->str($p['sequenceId'] ?? null)],

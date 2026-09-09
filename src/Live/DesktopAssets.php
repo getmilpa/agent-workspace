@@ -112,6 +112,11 @@ final class DesktopAssets
         'desktop-task' => ['css'],
         'desktop-system-notice' => ['css'],
         'desktop-result-claim' => ['css', 'js'],
+        // The turn's two newest contents (greenhouse decisions/0254): the parked question, which has a
+        // module because answering it is a POST through a governed door; the compaction boundary, which
+        // has none because a separator does nothing.
+        'desktop-ask-grant' => ['css', 'js'],
+        'desktop-compacted' => ['css'],
         // The screens the shell's template used to carry as raw HTML with their behaviour in its inline
         // script (greenhouse decisions/0211, phase D). `desktop-skills` and `desktop-statusbar` declare a
         // stylesheet and nothing else: they are read-only projections, so they have no module to ship.

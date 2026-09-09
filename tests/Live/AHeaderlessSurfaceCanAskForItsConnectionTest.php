@@ -17,6 +17,7 @@ namespace Milpa\AgentWorkspace\Tests\Live;
 use Milpa\AgentWorkspace\Controllers\HubController;
 use Milpa\AgentWorkspace\Live\HubConnection;
 use Milpa\AgentWorkspace\Live\MercureConfig;
+use Milpa\AgentWorkspace\Live\SessionTicket;
 use Nyholm\Psr7\ServerRequest;
 use PHPUnit\Framework\TestCase;
 
@@ -27,6 +28,12 @@ use PHPUnit\Framework\TestCase;
  * response and never owns the headers, so it cannot mint the cookie the hub reads. It loaded the
  * connector, found no payload, and reported itself offline FOREVER — with the hub running and the
  * Stack green (greenhouse decisions/0253).
+ *
+ * 🚨 AND THEN IT CONNECTED TO THE WRONG SESSION (greenhouse decisions/0256). Closing the first half
+ * opened a worse one: this route rebuilt identity from a cookie, so the panel — whose page cannot set
+ * that cookie — got a session nobody was driving, while the room reported itself live. The test below
+ * named `testItKeepsTheSessionTheBrowserAlreadyHas` PINNED that as the contract, and was green through
+ * the whole defect. A transport does not decide identity; it carries the decision the house sealed.
  */
 final class AHeaderlessSurfaceCanAskForItsConnectionTest extends TestCase
 {
@@ -41,12 +48,25 @@ final class AHeaderlessSurfaceCanAskForItsConnectionTest extends TestCase
         );
     }
 
+    private const string SECRET = 'the-apps-signing-secret-32-chars';
+
+    /** A request carrying the house's sealed decision, which is the only way to name a session at all. */
+    private function withTicket(string $sessionId, string $principal = ''): ServerRequest
+    {
+        return new ServerRequest('GET', '/desktop/hub', [SessionTicket::HEADER => SessionTicket::issue(self::SECRET, $sessionId, $principal)]);
+    }
+
+    private function hub(): HubController
+    {
+        return new HubController($this->mercure(), self::SECRET);
+    }
+
     /**
      * It answers with the URL AND the cookie, which is the pair that was impossible from a view.
      */
     public function testItAnswersWithTheUrlAndTheCookieTheHubReads(): void
     {
-        $response = (new HubController($this->mercure()))->connect(new ServerRequest('GET', '/desktop/hub'));
+        $response = $this->hub()->connect($this->withTicket('desk-0123456789abcdef'));
         /** @var array{url?: string} $payload */
         $payload = json_decode((string) $response->getBody(), true);
         $cookies = $response->getHeader('Set-Cookie');
@@ -59,32 +79,32 @@ final class AHeaderlessSurfaceCanAskForItsConnectionTest extends TestCase
     }
 
     /**
-     * It keeps the session the browser already has.
+     * It carries the session the HOUSE sealed — the id the page was rendered for, not one it read back.
      *
-     * Minting a new id on every call would give one person a different stream on every reload, and the
-     * room would never see the events its own turn published.
+     * This replaces `testItKeepsTheSessionTheBrowserAlreadyHas`, which asserted the opposite and was
+     * green while the panel subscribed to a session nobody was driving.
      */
-    public function testItKeepsTheSessionTheBrowserAlreadyHas(): void
+    public function testItCarriesTheSessionTheHouseSealed(): void
     {
-        $request = (new ServerRequest('GET', '/desktop/hub'))
-            ->withCookieParams([HubConnection::SESSION_COOKIE => 'desk-0123456789abcdef']);
-
-        $payload = json_decode((string) (new HubController($this->mercure()))->connect($request)->getBody(), true);
+        $payload = json_decode((string) $this->hub()->connect($this->withTicket('desk-0123456789abcdef'))->getBody(), true);
 
         self::assertStringContainsString(rawurlencode(MercureConfig::sessionTopic('desk-0123456789abcdef')), $payload['url'] ?? '');
     }
 
     /**
-     * A cookie that is not a session id is not one, and a fresh id is minted instead of trusted.
+     * A COOKIE IS NOT AN IDENTITY HERE ANY MORE — not even a well-formed one.
+     *
+     * The cookie the browser happens to carry from a `/desktop` visit is exactly what used to win, and
+     * that is how the panel ended up on somebody else's stream. With no sealed ticket there is no
+     * session connection at all.
      */
-    public function testAForgedSessionCookieIsNotHonoured(): void
+    public function testACookieNoLongerNamesTheSession(): void
     {
-        $request = (new ServerRequest('GET', '/desktop/hub'))
-            ->withCookieParams([HubConnection::SESSION_COOKIE => '../../etc/passwd']);
+        foreach (['desk-0123456789abcdef', '../../etc/passwd'] as $cookie) {
+            $request = (new ServerRequest('GET', '/desktop/hub'))->withCookieParams([HubConnection::SESSION_COOKIE => $cookie]);
 
-        $payload = json_decode((string) (new HubController($this->mercure()))->connect($request)->getBody(), true);
-
-        self::assertStringNotContainsString('passwd', $payload['url'] ?? '');
+            self::assertSame('{}', (string) $this->hub()->connect($request)->getBody(), 'a cookie decides nothing');
+        }
     }
 
     /**
@@ -96,7 +116,7 @@ final class AHeaderlessSurfaceCanAskForItsConnectionTest extends TestCase
      */
     public function testWithNoHubItAnswersAnEmptyObjectAndSetsNoCookie(): void
     {
-        $response = (new HubController(null))->connect(new ServerRequest('GET', '/desktop/hub'));
+        $response = (new HubController(null, self::SECRET))->connect($this->withTicket('desk-0123456789abcdef'));
 
         self::assertSame(200, $response->getStatusCode());
         self::assertSame('{}', (string) $response->getBody());

@@ -32,6 +32,25 @@
   var HUB_TAG = 'milpa-desktop-hub';
   /** Where a surface that could not write the payload asks for it (greenhouse decisions/0253). */
   var ASK = '/desktop/hub';
+  /** Where the server sealed WHICH SESSION this surface inhabits (greenhouse decisions/0256). */
+  var TICKET_TAG = 'milpa-desktop-ticket';
+
+  /**
+   * The house's sealed decision, read as DATA and handed back untouched.
+   *
+   * This module never names a session. It could not if it wanted to: the id lives inside a signature it
+   * cannot produce, and the route it asks has no session parameter of any kind. Before this, the hub
+   * route rebuilt identity from a cookie — and the panel, whose page cannot set that cookie, ended up
+   * subscribed to a session nobody was driving while reporting itself live.
+   */
+  function ticket() {
+    var tag = document.getElementById(TICKET_TAG);
+    try {
+      var read = tag ? JSON.parse(tag.textContent || '{}') : {};
+
+      return (read && typeof read.ticket === 'string') ? read.ticket : '';
+    } catch (e) { return ''; }
+  }
 
   function desk() { return (live && live.desktop) || null; }
   function tr(key) { var d = desk(); return d ? d.tr.apply(null, arguments) : key; }
@@ -90,8 +109,19 @@
     if (env.kind === 'message') { say('agent.message', { text: (env.message && env.message.content) || '' }); return 'session'; }
     if (env.kind === 'reasoning') { say('agent.reasoning', { text: (env.reasoning && (env.reasoning.delta || env.reasoning.text)) || '' }); return 'session'; }
     if (env.kind === 'waiting') {
-      var question = (env.ended && env.ended.question) || '';
-      say('system.notice', { text: tr('hub.waiting', question) });
+      var ended = env.ended || {};
+      var question = ended.question || '';
+      // The parked question, with everything the envelope carried (greenhouse decisions/0254): the
+      // conversation renders it as a REQUEST — its options as buttons — instead of a grey line of prose.
+      // It used to also `say('system.notice', …)` here, and that was the same fact told twice: once as a
+      // notice and once to the inbox, which is exactly what `AgentOperations` already warns about.
+      say('agent.parked', {
+        id: ended.id || '',
+        text: question,
+        why: ended.why || ended.reason_text || '',
+        reason: ended.reason || '',
+        options: (ended.options && ended.options.length) ? ended.options : [],
+      });
       // The inbox and the sidebar badge each consume this (greenhouse decisions/0196): a parked question
       // shows up without a reload, and the transport touches neither of their elements.
       say('decision.parked', { question: question });
@@ -142,7 +172,7 @@
     if (URL !== '') { return openOn(URL); }
     if (typeof window.fetch !== 'function') { return openOn(''); }
 
-    fetch(ASK, { credentials: 'same-origin', headers: { Accept: 'application/json' } })
+    fetch(ASK, { credentials: 'same-origin', headers: { Accept: 'application/json', 'X-Milpa-Session-Ticket': ticket() } })
       .then(function (r) { return r.ok ? r.json() : {}; })
       .then(function (payload) {
         URL = (payload && typeof payload.url === 'string') ? payload.url : '';

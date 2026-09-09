@@ -23,7 +23,7 @@ function composerPage({ doors = null } = {}) {
     modules: [
       'desktop-turn', 'desktop-commands',
       'desktop-conversation', 'desktop-composer',
-      'desktop-thinking', 'desktop-agent-message', 'desktop-tool-call', 'desktop-result-claim',
+      'desktop-thinking', 'desktop-agent-message', 'desktop-tool-call', 'desktop-result-claim', 'desktop-ask-grant',
     ],
   });
   const composer = p.mount('desktopComposer', undefined, bar.wrap);
@@ -225,15 +225,26 @@ test('a PARKED turn is said as a pause, not as a finished answer — and it does
   // the `ok && answer` branch it read as an ordinary answer and the session looked finished.
   const { p, chat } = composerPage();
   p.signal('session.turns', 3);
+  const asked = 'El agente quiere correr «agent_spawn». ¿Autorizas?';
   stubFetch(p, [response(201, {
-    ok: true, paused: true, answer: 'El agente quiere correr «agent_spawn». ¿Autorizas?',
-    hint: 'contesta con: coa agent:answer --session=desk-1 --answer=<sí|no>', steps: 2, tokens: 17709,
+    ok: true, paused: true, answer: asked,
+    hint: 'contesta con: coa agent:answer --session=desk-1 --answer=<sí|no>',
+    question: { id: 'q-9', text: asked, options: ['sí', 'no'], why: 'spawns a sub-agent', reason: 'permission' },
+    steps: 2, tokens: 17709,
   })]);
 
   await p.desktop().turn.run('create a file');
 
-  assert.equal(chat.children[0].classList.contains('msg--agent'), true, 'what the agent asked is still said');
-  assert.equal(chat.children[1].textContent, 'contesta con: coa agent:answer --session=desk-1 --answer=<sí|no>', 'and the pause with it');
+  // THE PAUSE TEXT IS THE QUESTION, so echoing the answer AND painting the request would say one fact
+  // twice. Only the request lands (greenhouse decisions/0254).
+  assert.equal(chat.children.length, 1, 'the question is said once, as the request');
+  const grant = chat.children[0];
+  assert.equal(grant.classList.contains('msg--grant'), true, 'a parked turn renders its REQUEST');
+  assert.equal(grant.querySelector('[data-grant-question]').textContent, asked);
+  assert.deepEqual(grant.querySelectorAll('[data-grant-option]').filter((b) => b.hidden !== true).map((b) => b.textContent), ['sí', 'no'], 'the agent\'s own options, as buttons');
+  assert.equal(grant.querySelector('[data-grant-why]').textContent, 'spawns a sub-agent');
+  // F4, the falsifier that can say no: the CLI's line must not reach a surface that has buttons.
+  assert.equal(chat.textContent.includes('coa agent:answer'), false, 'the CLI hint never reaches a surface with somewhere to answer');
   assert.equal(p.signal('session.turns'), 3, 'a parked turn has not closed, so it is not a completed turn');
   assert.equal(p.signal('session.steps'), 2, 'but the steps it really ran are real');
   assert.equal(p.signal('session.tokens'), '17.71K', 'and so are the tokens it really spent');
@@ -463,4 +474,50 @@ test('a click on an option fills it, and the guard\'s ONE click-away closes the 
 
   p.listeners.click.forEach((fn) => fn({ target: popup }));
   assert.equal(popup.getAttribute('data-open'), '0', 'a click anywhere else dismisses it');
+});
+
+test('F6c · a turn that compacted its window SAYS so, above the answer it then gave', async () => {
+  // `compacted` was in the turn's result before this slice and no surface read it — the silent change to
+  // what the model sees, which is exactly the thing its own comment says it exists to stop being silent.
+  const { p, chat } = composerPage();
+  stubFetch(p, [response(201, { ok: true, compacted: true, answer: 'Listo.', steps: 1 })]);
+
+  await p.desktop().turn.run('sigue');
+
+  const kinds = chat.children.map((m) => (m.classList.contains('msg--compacted') ? 'rule' : 'msg'));
+  assert.deepEqual(kinds, ['rule', 'msg'], 'the boundary is said BEFORE the answer — the run compacts before it asks');
+  assert.equal(chat.children[0].querySelector('[data-compacted-text]').textContent, 'context compacted');
+  assert.equal(chat.children[1].classList.contains('msg--agent'), true);
+});
+
+test('F6d · the control: a turn that did NOT compact draws no boundary', async () => {
+  const { p, chat } = composerPage();
+  stubFetch(p, [response(201, { ok: true, answer: 'Listo.', steps: 1 })]);
+
+  await p.desktop().turn.run('sigue');
+
+  assert.equal(chat.children.filter((m) => m.classList.contains('msg--compacted')).length, 0);
+});
+
+test('F8 · a pause the hub already announced is not asked a SECOND time by the turn\'s response', async () => {
+  // Both sources are right — the hub is faster, the response is authoritative — so the turn must not
+  // repaint what is already on the page, or the human gets one question with two sets of buttons.
+  const { p, chat } = composerPage();
+  const asked = { id: 'q-9', text: '¿Publico?', options: ['sí', 'no'], reason: 'permission' };
+  p.bus().emit('agent.parked', asked);
+  assert.equal(chat.children.filter((m) => m.classList.contains('msg--grant')).length, 1, 'the hub got there first');
+
+  stubFetch(p, [response(201, { ok: true, paused: true, answer: '¿Publico?', question: asked, steps: 1 })]);
+  await p.desktop().turn.run('publica');
+
+  assert.equal(chat.children.filter((m) => m.classList.contains('msg--grant')).length, 1, 'and the response does not ask it again');
+});
+
+test('F8b · the control: a pause the hub did NOT announce is still painted by the response', async () => {
+  const { p, chat } = composerPage();
+  stubFetch(p, [response(201, { ok: true, paused: true, answer: '¿Publico?', question: { id: 'q-9', text: '¿Publico?', options: ['sí', 'no'] }, steps: 1 })]);
+
+  await p.desktop().turn.run('publica');
+
+  assert.equal(chat.children.filter((m) => m.classList.contains('msg--grant')).length, 1, 'with no hub, the response is the only announcement there is');
 });
