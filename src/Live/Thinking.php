@@ -89,13 +89,27 @@ final class Thinking
         // an accent edge): the model is still reasoning. `endReasoning` flips it to "0" and the block settles.
         // The label lives in its OWN span so the elapsed («thought for Ns») replaces only the words, never the
         // animated spark/dots — those are the component's, not the feed's.
-        return '<div class="msg msg--thinking milpa-think" data-milpa-component="desktop-thinking" data-milpa-component-id="' . self::COMPONENT_ID . '" data-open="1" data-thinking-active="1">'
+        //
+        // THE BLOCK IS ALSO THE TURN (greenhouse decisions/0254). Its life already spanned one — it opens on
+        // the first reasoning token and closes when the turn ends — so the turn's STEPS (the tools it ran, the
+        // permission it is waiting on) hang from it, under the reasoning, instead of landing as siblings in
+        // the thread. Two regions, two lifetimes: `[data-thinking-body]` is the private reasoning and folds
+        // away when the turn ends; `[data-thinking-steps]` is the record of what happened and STAYS.
+        //
+        // `data-thinking-view` is how MUCH of the reasoning shows — `tail` (the last lines, while it thinks)
+        // or `full`. It is deliberately NOT folded into `data-open`, which says WHETHER it shows at all: one
+        // attribute carrying two independent facts is an attribute nobody can read.
+        //
+        // The steps region hides itself with `:empty` rather than a `hidden` attribute the client must
+        // remember to remove — a marker that has to be remembered fails open (greenhouse decisions/0215).
+        return '<div class="msg msg--thinking milpa-think" data-milpa-component="desktop-thinking" data-milpa-component-id="' . self::COMPONENT_ID . '" data-open="1" data-thinking-active="1" data-thinking-view="tail">'
             . '<button type="button" class="milpa-think__toggle" data-thinking-toggle data-thinking-head>'
             . '<span class="milpa-think__spark" data-thinking-spark aria-hidden="true">◈</span>'
             . '<span class="milpa-think__label" data-thinking-label>thinking</span>'
             . '<span class="milpa-think__dots" aria-hidden="true"><i></i><i></i><i></i></span>'
             . '</button>'
             . '<div class="milpa-think__body" data-thinking-body></div>'
+            . '<div class="milpa-think__steps" data-thinking-steps></div>'
             . '</div>';
     }
 

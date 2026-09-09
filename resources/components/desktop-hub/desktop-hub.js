@@ -90,8 +90,19 @@
     if (env.kind === 'message') { say('agent.message', { text: (env.message && env.message.content) || '' }); return 'session'; }
     if (env.kind === 'reasoning') { say('agent.reasoning', { text: (env.reasoning && (env.reasoning.delta || env.reasoning.text)) || '' }); return 'session'; }
     if (env.kind === 'waiting') {
-      var question = (env.ended && env.ended.question) || '';
-      say('system.notice', { text: tr('hub.waiting', question) });
+      var ended = env.ended || {};
+      var question = ended.question || '';
+      // The parked question, with everything the envelope carried (greenhouse decisions/0254): the
+      // conversation renders it as a REQUEST — its options as buttons — instead of a grey line of prose.
+      // It used to also `say('system.notice', …)` here, and that was the same fact told twice: once as a
+      // notice and once to the inbox, which is exactly what `AgentOperations` already warns about.
+      say('agent.parked', {
+        id: ended.id || '',
+        text: question,
+        why: ended.why || ended.reason_text || '',
+        reason: ended.reason || '',
+        options: (ended.options && ended.options.length) ? ended.options : [],
+      });
       // The inbox and the sidebar badge each consume this (greenhouse decisions/0196): a parked question
       // shows up without a reload, and the transport touches neither of their elements.
       say('decision.parked', { question: question });

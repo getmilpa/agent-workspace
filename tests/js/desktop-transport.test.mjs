@@ -101,15 +101,36 @@ test("a governed turn's projection is translated into the facts the shell alread
   assert.equal(p.signal('session.tool_calls'), 3, 'a tool that ran is counted into the shared signal');
 });
 
-test('a parked question becomes TWO facts — a notice and decision.parked — and touches no DOM', () => {
+test('a parked question becomes TWO facts — the request and decision.parked — and touches no DOM', () => {
+  // It used to say `system.notice` here as well, which was ONE fact told twice: a grey line in the thread
+  // and a card in the inbox. The thread now renders the REQUEST, with everything the envelope carried, so
+  // the notice was the duplicate and it is gone (greenhouse decisions/0254).
   const p = transport();
   const facts = [];
   p.sandbox.MilpaShell.onAny((type, data) => facts.push([type, data]));
 
-  assert.equal(p.desktop().hub.translate({ kind: 'waiting', ended: { question: 'May I write?' } }), 'session');
+  assert.equal(p.desktop().hub.translate({
+    kind: 'waiting',
+    ended: { id: 'q-1', question: 'May I write?', reason: 'permission', why: 'it writes outside the project', options: ['yes', 'no'] },
+  }), 'session');
 
   sameShape(facts, [
-    ['system.notice', { text: 'Waiting on you: May I write?' }],
+    ['agent.parked', { id: 'q-1', text: 'May I write?', why: 'it writes outside the project', reason: 'permission', options: ['yes', 'no'] }],
+    ['decision.parked', { question: 'May I write?' }],
+  ]);
+});
+
+test('a waiting envelope that carries only the question still parks it — the options are the agent\'s to give', () => {
+  // An older runtime, or a question with nothing to choose between: the request still lands, because a
+  // question nobody can see is worse than one nobody can click.
+  const p = transport();
+  const facts = [];
+  p.sandbox.MilpaShell.onAny((type, data) => facts.push([type, data]));
+
+  p.desktop().hub.translate({ kind: 'waiting', ended: { question: 'May I write?' } });
+
+  sameShape(facts, [
+    ['agent.parked', { id: '', text: 'May I write?', why: '', reason: '', options: [] }],
     ['decision.parked', { question: 'May I write?' }],
   ]);
 });

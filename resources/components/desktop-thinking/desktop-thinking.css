@@ -30,12 +30,37 @@
 .milpa-think__dots i:nth-child(3) { animation-delay: .36s; }
 @keyframes milpa-think-pulse { 0%, 100% { opacity: .5; transform: scale(.88); } 50% { opacity: 1; transform: scale(1.18); } }
 @keyframes milpa-think-dot { 0%, 100% { opacity: .25; transform: translateY(0); } 50% { opacity: 1; transform: translateY(-1.5px); } }
-/* The caret shows only once the block is done (active=0): no collapse chevron competes with the live dots. */
+/* The caret says what the toggle will do — and it now has something to say WHILE the model reasons too:
+   the body is showing its tail, and there is more of it to open. It used to be hidden while active so no
+   chevron competed with the live dots; with a tail there is a hidden affordance to advertise, and an
+   affordance nobody can see is one nobody uses (greenhouse decisions/0213, in the UI). */
 .milpa-think[data-thinking-active="0"][data-open="1"] .milpa-think__toggle::after { content: ' ▾'; opacity: .6; }
 .milpa-think[data-thinking-active="0"][data-open="0"] .milpa-think__toggle::after { content: ' ▸'; opacity: .6; }
+.milpa-think[data-thinking-active="1"][data-thinking-view="tail"] .milpa-think__toggle::after { content: ' ▸'; opacity: .45; }
+.milpa-think[data-thinking-active="1"][data-thinking-view="full"] .milpa-think__toggle::after { content: ' ▾'; opacity: .45; }
 /* Collapse animates (max-height), never a hard cut. */
 .milpa-think__body { margin-top: var(--space-2); max-height: 16rem; overflow-y: auto; font-family: var(--font-mono); font-size: var(--text-2xs); line-height: var(--leading-relaxed); color: var(--text-muted); white-space: pre-wrap; transition: max-height .3s ease, opacity .22s ease, margin-top .3s ease; }
 .milpa-think[data-open="0"] .milpa-think__body { max-height: 0; margin-top: 0; opacity: 0; overflow: hidden; }
+/* THE TAIL (greenhouse decisions/0254): while the model reasons you want to see that it is ADVANCING, not
+   read the whole transcript — so the body shows its last three lines and the module keeps IT scrolled to its
+   own bottom. Scrolling the body instead of the page is what stops the block fighting a reader who scrolled
+   up. Expanding (`view="full"`) gives back the scrollable 16rem with everything in it: nothing was dropped,
+   only clipped. The height is computed from the same tokens the body is set in, so a type change carries. */
+.milpa-think { --think-tail-lines: 3; }
+.milpa-think[data-open="1"][data-thinking-view="tail"] .milpa-think__body { max-height: calc(var(--think-tail-lines) * 1em * var(--leading-relaxed)); overflow: hidden; }
+/* THE TAIL IS SCOPED TO AN OPEN BLOCK on purpose. Both rules target `.milpa-think[…] .milpa-think__body`,
+   so they carry the SAME specificity and the later one wins — which meant a FOLDED block kept three lines
+   of height at opacity 0, an invisible gap between the label and the steps below it. Saying `data-open="1"`
+   makes the two mutually exclusive instead of racing: `data-open` decides WHETHER, `view` decides HOW MUCH. */
+/* The tail fades at its top edge: the clipped line reads as "there is more above", not as a cut-off glyph. */
+.milpa-think[data-open="1"][data-thinking-view="tail"][data-thinking-active="1"] .milpa-think__body { -webkit-mask-image: linear-gradient(to bottom, transparent, #000 1.4em); mask-image: linear-gradient(to bottom, transparent, #000 1.4em); }
+/* THE STEPS: what the turn DID (tools, a parked question), under the reasoning. They outlive the fold —
+   the reasoning is private and collapses, the record of what happened stays. `:empty` keeps a turn that ran
+   no steps from paying for a margin, without any marker the client has to remember to clear. */
+.milpa-think__steps { display: flex; flex-direction: column; gap: var(--space-1); margin-top: var(--space-2); }
+.milpa-think__steps:empty { display: none; }
+/* Nested messages sit closer and lose the thread's own indent — they are inside a block, not beside it. */
+.milpa-think__steps > .msg { margin: 0; }
 @media (prefers-reduced-motion: reduce) {
   .milpa-think[data-thinking-active="1"] .milpa-think__spark { animation: none; }
   .milpa-think__dots i { animation: none; opacity: .8; }

@@ -75,6 +75,9 @@ final class TheWorkspaceDeclaresEveryEventItDispatchesTest extends TestCase
         'desktop.task.before_render', 'desktop.task.after_render',
         'desktop.system_notice.before_render', 'desktop.system_notice.after_render',
         'desktop.result_claim.before_render', 'desktop.result_claim.after_render',
+        // The turn's own contents (greenhouse decisions/0254).
+        'desktop.ask_grant.before_render', 'desktop.ask_grant.after_render',
+        'desktop.compacted.before_render', 'desktop.compacted.after_render',
         'desktop.settings.before_render', 'desktop.settings.after_render',
         'desktop.capabilities.before_render', 'desktop.capabilities.after_render',
         'desktop.skills.before_render', 'desktop.skills.after_render',

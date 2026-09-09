@@ -74,8 +74,14 @@
       }
       if (block) {
         var body = block.querySelector('[data-thinking-body]');
-        if (body) { body.textContent += (text || ''); }
-        if (typeof block.scrollIntoView === 'function') { block.scrollIntoView({ block: 'end' }); }
+        if (body) {
+          body.textContent += (text || '');
+          // Keep the TAIL on screen by scrolling the BODY to its own bottom (greenhouse decisions/0254).
+          // This used to be `block.scrollIntoView()` on every single token, which dragged the whole page
+          // down mid-read: a reader who scrolled up to check something was yanked back by the next token.
+          // The body scrolls itself; the page is the reader's.
+          body.scrollTop = body.scrollHeight;
+        }
       }
 
       return block;
@@ -94,6 +100,9 @@
       }
       block.setAttribute('data-thinking-active', '0');
       block.setAttribute('data-open', '0');
+      // The view returns to `tail` so re-opening a finished block starts where every other one does, and
+      // `full` never leaks from one turn into how the next reads.
+      block.setAttribute('data-thinking-view', 'tail');
       var closed = block;
       block = null;
 
@@ -105,14 +114,48 @@
 
       return this.end();
     },
-    /** The collapse: the component's own CSS state, flipped by the conversation's delegated handler. */
+    /**
+     * The toggle, flipped through the conversation's delegated handler — the component's own CSS state.
+     *
+     * It means two different things at two different moments, and that is the point: WHILE the model
+     * reasons the body is showing its tail, so the toggle opens the rest of the reasoning (`view`); once
+     * the turn is done the reasoning is folded away, so the toggle unfolds it (`open`). One control, the
+     * affordance the caret advertises at each moment.
+     */
     click: function (event) {
       var toggle = event.target.closest('[data-thinking-toggle]');
       if (!toggle) { return false; }
       var open = toggle.closest('.milpa-think');
-      if (open) { open.setAttribute('data-open', open.getAttribute('data-open') === '1' ? '0' : '1'); }
+      if (!open) { return true; }
+      if (open.getAttribute('data-thinking-active') === '1') {
+        var tail = open.getAttribute('data-thinking-view') !== 'full';
+        open.setAttribute('data-thinking-view', tail ? 'full' : 'tail');
+        if (tail === false) {
+          var body = open.querySelector('[data-thinking-body]');
+          if (body) { body.scrollTop = body.scrollHeight; }
+        }
+
+        return true;
+      }
+      open.setAttribute('data-open', open.getAttribute('data-open') === '1' ? '0' : '1');
 
       return true;
     },
+    /**
+     * Hang one STEP of this turn — a tool call, a parked question — under the reasoning.
+     *
+     * Returns false when no block is open, and the caller lands the node in the thread instead: a step
+     * with no turn to belong to is still a fact, and a fact nobody can nest is shown, never dropped.
+     */
+    step: function (node) {
+      if (!block || !node) { return false; }
+      var steps = block.querySelector('[data-thinking-steps]');
+      if (!steps) { return false; }
+      steps.appendChild(node);
+
+      return true;
+    },
+    /** The block this turn is writing into, if any — how the conversation asks whether a turn is open. */
+    open: function () { return block; },
   };
 })();

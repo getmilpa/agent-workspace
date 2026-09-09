@@ -141,7 +141,7 @@ final class DeclaredViewsTest extends TestCase
             self::assertInstanceOf(DeclaresClientAssets::class, $renderer, $name . ' declares its client assets');
             self::assertEquals(DesktopAssets::of($name), $renderer->clientAssets(), $name . ' declares exactly its own files');
         }
-        self::assertSame(24, $painted, 'every shell surface is a declared view');
+        self::assertSame(26, $painted, 'every shell surface is a declared view');
     }
 
     public function testThePageEmitsOneRuntimeThroughLiveBootInTheDocumentedOrder(): void
@@ -201,7 +201,8 @@ final class DeclaredViewsTest extends TestCase
                     '/desktop/assets/c/desktop-agent-message.js',
                     '/desktop/assets/c/desktop-tool-call.js',
                     '/desktop/assets/c/desktop-result-claim.js',
-                    '/desktop/assets/c/desktop-settings.js',
+                    '/desktop/assets/c/desktop-ask-grant.js',
+            '/desktop/assets/c/desktop-settings.js',
                     '/desktop/assets/c/desktop-capabilities.js',
                     '/desktop/assets/c/desktop-screens.js',
                     '/desktop/assets/c/desktop-decisions.js',

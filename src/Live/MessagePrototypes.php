@@ -25,7 +25,7 @@ use Milpa\Live\ValueObjects\StateSnapshot;
 
 /**
  * Renders the plainer conversation message components as PROTOTYPES (greenhouse decisions/0191): the user's
- * message, a tool call, a task row, a system notice. Each is mounted + rendered once (server-side) with a
+ * message, a tool call, a task row, a system notice, a parked question, a compaction boundary. Each is mounted + rendered once (server-side) with a
  * signed envelope, and each fires its own `before_render` / `after_render` event carrying a mutable subject so
  * a plugin can extend that message type once, at its prototype. The conversation clones each per message and
  * fills its data regions. One service because each of these is small; the richer types (agent message,
@@ -43,6 +43,10 @@ final class MessagePrototypes
     public const string SYSTEM_AFTER = 'desktop.system_notice.after_render';
     public const string RESULT_BEFORE = 'desktop.result_claim.before_render';
     public const string RESULT_AFTER = 'desktop.result_claim.after_render';
+    public const string GRANT_BEFORE = 'desktop.ask_grant.before_render';
+    public const string GRANT_AFTER = 'desktop.ask_grant.after_render';
+    public const string COMPACTED_BEFORE = 'desktop.compacted.before_render';
+    public const string COMPACTED_AFTER = 'desktop.compacted.after_render';
 
     /** The payload keys each prototype's render events carry their mutable {@see ComposerRender} under. */
     public const string USER_KEY = 'userMessage';
@@ -50,6 +54,8 @@ final class MessagePrototypes
     public const string TASK_KEY = 'task';
     public const string SYSTEM_KEY = 'systemNotice';
     public const string RESULT_KEY = 'resultClaim';
+    public const string GRANT_KEY = 'askGrant';
+    public const string COMPACTED_KEY = 'compacted';
 
     private readonly SignedXhtmlStateTransferCodec $codec;
 
@@ -61,7 +67,7 @@ final class MessagePrototypes
     }
 
     /**
-     * The ten events the prototypes dispatch — five render pairs — declared from the same constants
+     * The fourteen events the prototypes dispatch — seven render pairs — declared from the same constants
      * each prototype hands `wrap()` (greenhouse decisions/0228). `wrap()` computes nothing: the names
      * it dispatches are these constants, one pair per public prototype.
      *
@@ -75,6 +81,8 @@ final class MessagePrototypes
             ...RenderEvents::of(self::class, self::TASK_BEFORE, self::TASK_AFTER, self::TASK_KEY, 'the task prototype'),
             ...RenderEvents::of(self::class, self::SYSTEM_BEFORE, self::SYSTEM_AFTER, self::SYSTEM_KEY, 'the system-notice prototype'),
             ...RenderEvents::of(self::class, self::RESULT_BEFORE, self::RESULT_AFTER, self::RESULT_KEY, 'the result-claim prototype'),
+            ...RenderEvents::of(self::class, self::GRANT_BEFORE, self::GRANT_AFTER, self::GRANT_KEY, 'the ask-grant prototype'),
+            ...RenderEvents::of(self::class, self::COMPACTED_BEFORE, self::COMPACTED_AFTER, self::COMPACTED_KEY, 'the compaction-boundary prototype'),
         ];
     }
 
@@ -131,6 +139,39 @@ final class MessagePrototypes
             . '</div>';
 
         return $this->wrap(new ResultClaimComponent(), 'result-claim', $markup, self::RESULT_BEFORE, self::RESULT_AFTER, self::RESULT_KEY);
+    }
+
+    /**
+     * The ask-grant prototype (`desktop-ask-grant`) — the agent's parked question, answerable in place.
+     *
+     * The options are NOT in the prototype: the agent proposes them per question, so the client clones one
+     * `[data-grant-option]` button per option it was actually given. Baking a yes and a no in here would be
+     * this surface inventing a fork the agent never offered (greenhouse decisions/0254).
+     */
+    public function askGrant(): string
+    {
+        $markup = '<div class="msg msg--grant" data-milpa-component="desktop-ask-grant" data-milpa-component-id="ask-grant" data-grant-state="open" data-grant-id="">'
+            . '<div class="msg__grant-head"><span class="msg__grant-mark" aria-hidden="true">⏸</span>'
+            . '<span class="msg__grant-kind" data-grant-kind></span></div>'
+            . '<p class="msg__grant-question" data-grant-question></p>'
+            . '<p class="msg__grant-why" data-grant-why></p>'
+            . '<div class="msg__grant-options" data-grant-options role="group">'
+            . '<button type="button" class="mui-btn msg__grant-option" data-grant-option hidden></button>'
+            . '</div>'
+            . '<p class="msg__grant-status" data-grant-status role="status"></p></div>';
+
+        return $this->wrap(new AskGrantComponent(), 'ask-grant', $markup, self::GRANT_BEFORE, self::GRANT_AFTER, self::GRANT_KEY);
+    }
+
+    /** The compaction prototype (`desktop-compacted`) — a boundary across the thread, not a message. */
+    public function compacted(): string
+    {
+        $markup = '<div class="msg msg--compacted" data-milpa-component="desktop-compacted" data-milpa-component-id="compacted" role="separator">'
+            . '<span class="msg__compacted-line" aria-hidden="true"></span>'
+            . '<span class="msg__compacted-text" data-compacted-text></span>'
+            . '<span class="msg__compacted-line" aria-hidden="true"></span></div>';
+
+        return $this->wrap(new CompactedComponent(), 'compacted', $markup, self::COMPACTED_BEFORE, self::COMPACTED_AFTER, self::COMPACTED_KEY);
     }
 
     /** Mount the component, fire before/after render with a mutable subject, and cap with the signed envelope. */

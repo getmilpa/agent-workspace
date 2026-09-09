@@ -108,10 +108,45 @@
     var frag = proto.content.cloneNode(true);
     var root = frag.querySelector('.msg');
     if (root && typeof spec.fill === 'function') { spec.fill(root, opts, region); }
-    thread.appendChild(frag);
+    // A STEP of the current turn hangs inside the turn's own block (greenhouse decisions/0254). With no
+    // block open it lands in the thread like any other message: a step with no turn to belong to is still
+    // a fact, and a fact nobody can nest is shown, never dropped.
+    if (!(NESTED[kind] === true && nest(frag))) { thread.appendChild(frag); }
     if (root && typeof root.scrollIntoView === 'function') { root.scrollIntoView({ block: 'end' }); }
 
     return root;
+  }
+
+  /**
+   * The kinds that belong to a TURN rather than to the thread: what the agent did while reasoning, and
+   * what it stopped to ask. The answer, the user's message and a compaction boundary are not steps —
+   * they are the thread's, and nesting them would bury the answer inside the reasoning that produced it.
+   */
+  var NESTED = { tool: true, 'ask-grant': true };
+
+  /** Hand a built node to the open turn's block. False when no turn is open. */
+  function nest(node) {
+    var spec = (messages() || {}).thinking;
+
+    return !!(spec && typeof spec.step === 'function' && spec.step(node) === true);
+  }
+
+  /**
+   * One reading of a parked question, whether it came from the stream or from the replayed transcript.
+   *
+   * Two readers would be two chances to disagree about the same fact — and the two sources genuinely do
+   * carry different key names for it, which is exactly why the normalising belongs in one place.
+   */
+  function parked(row) {
+    row = row || {};
+
+    return {
+      id: row.id || '',
+      text: row.text || row.question || '',
+      why: row.why || row.reason_text || '',
+      reason: row.reason || '',
+      options: (row.options && row.options.length) ? row.options : [],
+    };
   }
 
   /** Stream reasoning into the live thinking block — the thinking component's own lifecycle. */
@@ -175,6 +210,18 @@
       proto: 'milpa-system-msg-proto',
       fill: function (root, opts, at) { var body = at(root, '[data-system-body]'); if (body) { body.textContent = opts.text || ''; } },
     };
+    // The compaction boundary (greenhouse decisions/0254): one region, one text, no interaction — a
+    // separator does nothing, so like the other plain kinds it needs no module of its own.
+    registry.compacted = {
+      proto: 'milpa-compacted-proto',
+      fill: function (root, opts, at) {
+        var body = at(root, '[data-compacted-text]');
+        if (!body) { return; }
+        // How far the summary reaches is the only figure that means anything to a reader; absent, the
+        // boundary still says that one happened, which is the whole point of painting it.
+        body.textContent = opts.through ? tr('conversation.compacted.through', String(opts.through)) : tr('conversation.compacted');
+      },
+    };
   }
 
   /**
@@ -197,6 +244,14 @@
     shell.on('tool.call', function (fact) { append('tool', { name: (fact && fact.name) || 'tool', result: (fact && fact.result) || '' }); });
     shell.on('task.added', function (fact) { append('task', { title: (fact && fact.title) || '', status: (fact && fact.status) || 'todo' }); });
     shell.on('system.notice', function (fact) { append('system', { text: (fact && fact.text) || '' }); });
+    // The turn stopped to ask (greenhouse decisions/0254). It lands INSIDE the turn's block, under the
+    // reasoning that led to it, with the agent's own options as buttons.
+    shell.on('agent.parked', function (fact) { append('ask-grant', parked(fact)); });
+    // The window compacted. `session.compacted` has been declared in milpa/agent all along and painted
+    // by nobody; it reaches the bus through the transport's generic `event` envelope.
+    shell.on('session.compacted', function (fact) {
+      append('compacted', { through: (fact && fact.through) || 0, summary: (fact && fact.summary) || '' });
+    });
 
     return true;
   }
@@ -227,7 +282,8 @@
         case 'user': append('user', { text: row.text || '' }); break;
         case 'agent': append('agent', { text: row.text || '' }); break;
         case 'tool': append('tool', { name: row.name || 'tool', result: row.result || '' }); break;
-        case 'question': append('system', { text: tr('hub.waiting', row.text || '') }); break;
+        case 'question': append('ask-grant', parked(row)); break;
+        case 'compacted': append('compacted', { through: row.through || 0, summary: row.summary || '' }); break;
         case 'answered': append('system', { text: tr('conversation.answered', row.answer || '', row.by || '') }); break;
         case 'sequence_paused': append('system', { text: tr('conversation.sequence_paused', row.sequence || '') }); break;
         case 'sequence_resumed': append('system', { text: tr('conversation.sequence_resumed', row.sequence || '') }); break;

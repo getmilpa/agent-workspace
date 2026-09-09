@@ -111,6 +111,8 @@ final class AgentWorkspacePlugin implements PluginInterface, RouteProviderInterf
         Live\ComposerBarComponent::class,
         Live\ComposerMessageComponent::class,
         Live\ContextComponent::class,
+        Live\AskGrantComponent::class,
+        Live\CompactedComponent::class,
         Live\ConversationComponent::class,
         Live\DecisionsInboxComponent::class,
         Live\GateComponent::class,

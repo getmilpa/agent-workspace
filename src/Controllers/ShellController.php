@@ -37,6 +37,8 @@ use Milpa\AgentWorkspace\Live\DesktopAssets;
 use Milpa\AgentWorkspace\Live\DesktopComponents;
 use Milpa\AgentWorkspace\Live\GateComponent;
 use Milpa\AgentWorkspace\Live\MercureConfig;
+use Milpa\AgentWorkspace\Live\AskGrantComponent;
+use Milpa\AgentWorkspace\Live\CompactedComponent;
 use Milpa\AgentWorkspace\Live\ResultClaimComponent;
 use Milpa\AgentWorkspace\Live\ScreenPreview;
 use Milpa\AgentWorkspace\Live\ScreenPreviewComponent;
@@ -188,6 +190,10 @@ final class ShellController
         $this->live->declare(new TaskComponent(), fn (array $props): string => $this->messages()->task());
         $this->live->declare(new SystemNoticeComponent(), fn (array $props): string => $this->messages()->system());
         $this->live->declare(new ResultClaimComponent(), fn (array $props): string => $this->messages()->resultClaim());
+        // The turn's own contents (greenhouse decisions/0254): the question it parked, and the boundary a
+        // compaction left behind.
+        $this->live->declare(new AskGrantComponent(), fn (array $props): string => $this->messages()->askGrant());
+        $this->live->declare(new CompactedComponent(), fn (array $props): string => $this->messages()->compacted());
         // The two screens phase B took out of the template (greenhouse decisions/0211): the Settings screen
         // and the entry overlay were the last raw HTML the shell hand-wrote.
         $this->live->declare(new SettingsScreenComponent(), fn (array $props): string => $this->settingsScreenOf()->render());
@@ -388,6 +394,8 @@ final class ShellController
         $taskMessage = $paint('desktop-task');
         $systemMessage = $paint('desktop-system-notice');
         $resultMessage = $paint('desktop-result-claim');
+        $grantMessage = $paint('desktop-ask-grant');
+        $compactedMessage = $paint('desktop-compacted');
         $settings = $paint('desktop-settings');
         $capabilities = $paint('desktop-capabilities');
         $skills = $paint('desktop-skills');
@@ -399,12 +407,12 @@ final class ShellController
         return str_replace(
             [
                 '<!--CONTEXT-->', '<!--CAPABILITIES-->', '<!--SKILLS-->', '<!--SCREENS-->', '<!--DECISIONS-->', '<!--SETTINGS-->',
-                '<!--SIDEBAR-->', '<!--STATUSBAR-->', '<!--WORK-->', '<!--ACTIVITY-->', '<!--COMPOSER-->', '<!--AUTH-->', '<!--TOPBAR-->', '<!--TABS-->', '<!--GATE-->', '<!--CONVERSATION-->', '<!--THINKING-->', '<!--AGENTMSG-->', '<!--USERMSG-->', '<!--TOOLMSG-->', '<!--TASKMSG-->', '<!--SYSMSG-->', '<!--RESULTMSG-->', '<!--LIVERUNTIME-->', '<!--AGENTSID-->', '<!--HUB-->', '<!--COMMANDS-->',
+                '<!--SIDEBAR-->', '<!--STATUSBAR-->', '<!--WORK-->', '<!--ACTIVITY-->', '<!--COMPOSER-->', '<!--AUTH-->', '<!--TOPBAR-->', '<!--TABS-->', '<!--GATE-->', '<!--CONVERSATION-->', '<!--THINKING-->', '<!--AGENTMSG-->', '<!--USERMSG-->', '<!--TOOLMSG-->', '<!--TASKMSG-->', '<!--SYSMSG-->', '<!--RESULTMSG-->', '<!--GRANTMSG-->', '<!--COMPACTEDMSG-->', '<!--LIVERUNTIME-->', '<!--AGENTSID-->', '<!--HUB-->', '<!--COMMANDS-->',
                 '<!--I18N-->', '<!--GUARD-->', '<!--EMBED-->', '<!--SESSIONSTRIP-->',
             ],
             [
                 $context, $capabilities, $skills, $screens, $decisions, $settings,
-                $sidebar, $statusbar, $work, $activity, $composer, $auth, $topbar, $tabs, $gate, $conversation, $thinking, $agentMessage, $userMessage, $toolMessage, $taskMessage, $systemMessage, $resultMessage, $this->liveRuntime($boot, $assets), $this->sessionJson($agentSid), $this->hubJson($agentSid), $this->commandsJson(),
+                $sidebar, $statusbar, $work, $activity, $composer, $auth, $topbar, $tabs, $gate, $conversation, $thinking, $agentMessage, $userMessage, $toolMessage, $taskMessage, $systemMessage, $resultMessage, $grantMessage, $compactedMessage, $this->liveRuntime($boot, $assets), $this->sessionJson($agentSid), $this->hubJson($agentSid), $this->commandsJson(),
                 $this->i18nJson(), $this->guardJson(), $embed ? ' data-embed="1"' : '', $sessionStrip,
             ],
             $this->template(),
@@ -745,6 +753,12 @@ final class ShellController
       <template id="milpa-task-msg-proto"><!--TASKMSG--></template>
       <template id="milpa-system-msg-proto"><!--SYSMSG--></template>
       <template id="milpa-result-msg-proto"><!--RESULTMSG--></template>
+
+      <!-- The turn's own contents (greenhouse decisions/0254). The parked question is cloned INTO the open
+           thinking block, under the reasoning that led to it, and answered right there through
+           `POST /agent/answer`; the compaction boundary lands across the thread, between two turns. -->
+      <template id="milpa-ask-grant-proto"><!--GRANTMSG--></template>
+      <template id="milpa-compacted-proto"><!--COMPACTEDMSG--></template>
 
       <!-- Every OTHER view of the main is a declared component now (greenhouse decisions/0211, phases B and
            D): each renders its own `.view` root with its own `data-view` key, so the sidebar swaps between

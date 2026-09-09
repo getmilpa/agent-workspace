@@ -100,6 +100,8 @@ final class AgentViewRenderer implements ComponentRendererInterface, DeclaresCli
         'desktop-task',
         'desktop-system-notice',
         'desktop-result-claim',
+        'desktop-ask-grant',
+        'desktop-compacted',
     ];
 
     /**
@@ -116,6 +118,11 @@ final class AgentViewRenderer implements ComponentRendererInterface, DeclaresCli
         'desktop-task' => 'milpa-task-msg-proto',
         'desktop-system-notice' => 'milpa-system-msg-proto',
         'desktop-result-claim' => 'milpa-result-msg-proto',
+        // The embedded region paints the SAME prototypes the standalone shell does. A kind missing here
+        // is a kind that works at /desktop and silently does not inside the panel — the surface split in
+        // half, which is exactly the shape this house keeps paying for.
+        'desktop-ask-grant' => 'milpa-ask-grant-proto',
+        'desktop-compacted' => 'milpa-compacted-proto',
     ];
 
     /**
