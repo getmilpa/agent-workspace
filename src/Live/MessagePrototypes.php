@@ -1,13 +1,13 @@
 <?php
 
 /**
- * This file is part of milpa/desktop-app — a Milpa app hosts itself as a desktop app.
+ * This file is part of milpa/agent-workspace — the agent's workspace inside a Milpa app.
  *
  * (c) Rodrigo Vicente - TeamX Agency — https://teamx.agency <hola@teamx.agency>
  *
  * @license Apache-2.0
  *
- * @link    https://github.com/getmilpa/desktop-app
+ * @link    https://github.com/getmilpa/agent-workspace
  */
 
 declare(strict_types=1);
