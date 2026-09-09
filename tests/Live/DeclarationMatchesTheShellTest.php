@@ -7,7 +7,7 @@
  *
  * @license Apache-2.0
  *
- * @link    https://github.com/getmilpa/desktop-app
+ * @link    https://github.com/getmilpa/agent-workspace
  */
 
 declare(strict_types=1);
