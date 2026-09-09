@@ -220,8 +220,8 @@ final class AgentViewRenderer implements ComponentRendererInterface, DeclaresCli
         $gate = self::meta($state, 'gate', DesktopSettings::GATE_LOOPBACK);
         // A closure that captures `$assets` BY REFERENCE: an arrow function captures by value, and the
         // files every surface declared would be merged into a copy the page never sees.
-        $paint = function (string $component) use ($context, $catalog, &$assets): string {
-            return $this->paint($component, $context, $catalog, $assets);
+        $paint = function (string $component) use ($context, $catalog, &$assets, $state): string {
+            return $this->paint($component, $context, $catalog, $assets, $state);
         };
 
         $panes = '<section class="tabpane milpa-chat" data-pane="chat" id="milpa-chat" data-milpa-component="desktop-conversation" data-milpa-component-id="conversation"'
@@ -275,10 +275,10 @@ final class AgentViewRenderer implements ComponentRendererInterface, DeclaresCli
      * to — not the panel's URL. The locale is the region's ONE catalog, never the request's ({@see
      * self::catalogFor()}).
      */
-    private function paint(string $component, ComponentContext $context, Catalog $catalog, ClientAssets &$assets): string
+    private function paint(string $component, ComponentContext $context, Catalog $catalog, ClientAssets &$assets, ?StateSnapshot $state = null): string
     {
         try {
-            $compiled = $this->live->compiler($this->propsFor())->compileFragment(
+            $compiled = $this->live->compiler($this->propsFor($state))->compileFragment(
                 '<milpa-' . $component . '/>',
                 new ComponentContext(
                     componentId: 'agent-' . $component,
@@ -306,21 +306,31 @@ final class AgentViewRenderer implements ComponentRendererInterface, DeclaresCli
      *
      * @return array<string, array<string, mixed>>
      */
-    private function propsFor(): array
+    private function propsFor(?StateSnapshot $state = null): array
     {
-        return ['desktop-context' => ['sections' => []]];
+        return [
+            'desktop-context' => ['sections' => []],
+            // THE CONVERSATION IS THE SESSION'S, NOT THE DEVICE'S (greenhouse decisions/0258).
+            //
+            // The seam was always here — `ConversationComponent` takes an `agent` prop and replays that
+            // session's thread from the ledger — and this region never used it, so the panel handed an
+            // EMPTY transcript while the ledger held every turn. A surface that knows which session it
+            // inhabits and does not tell the thing that paints the session is the same shape as
+            // decisions/0256, one surface further along.
+            'desktop-conversation' => ['agent' => $state !== null ? self::agentSession($state) : ''],
+        ];
     }
 
     /**
      * The DATA the Desktop's modules read on this page — the same four tags `/desktop` writes, minus the
      * hub's.
      *
-     * The hub is deliberately absent (greenhouse decisions/0211, slice 3): the browser presents the
-     * Mercure subscriber JWT as a COOKIE, and only `GET /desktop` can set it — a component rendered inside
-     * somebody else's response sets no cookie. `desktop-hub.js` reads no tag, says «offline» once and
-     * opens nothing; a governed turn still answers, because the answer, the pause and the closure verdict
-     * come back on the `POST /agent` response. What does NOT reach the panel is what only the hub carries:
-     * the live reasoning of a turn in flight, and the activity stream. Named, not papered over.
+     * The hub PAYLOAD is absent and the hub is not: this region cannot set the cookie the browser would
+     * present, so the connector asks `GET /desktop/hub` for it and returns the sealed ticket written
+     * below (greenhouse decisions/0253, 0256). What used to be named here as «does not reach the panel»
+     * — the live reasoning of a turn in flight, and the activity stream — does reach it now, and so does
+     * the agent's answer (decisions/0258): the answer no longer travels only on the `POST /agent`
+     * response, which assumed whoever asked and whoever watches are the same person.
      */
     private function dataTags(StateSnapshot $state, Catalog $catalog): string
     {

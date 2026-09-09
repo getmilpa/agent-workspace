@@ -336,3 +336,107 @@ test('F6b · a compaction that says nothing about how far it reached still says 
 
   assert.equal(chat.children[0].querySelector('[data-compacted-text]').textContent, 'context compacted');
 });
+
+test('F9 · arriving later, a question the ledger says was ANSWERED does not offer its buttons', () => {
+  // Rod's scenario: start on Desktop, arrive on mobile. The thread replays the question AND its answer,
+  // and painting live buttons for something decided days ago is the room lying about what is open.
+  const html = new El('html');
+  const chat = html.appendChild(new El('section', { id: 'milpa-chat' }));
+  const rows = [
+    { kind: 'question', text: '¿Autorizas «capabilities:enable»?', id: 'perm:capabilities:enable', reason: 'permission', options: ['sí', 'no'] },
+    { kind: 'answered', id: 'perm:capabilities:enable', answer: 'no', by: 'actor:rod' },
+  ];
+  const p = page({ tree: html, elements: { ...prototypeTags(), 'milpa-desktop-transcript': transcriptTag(rows) }, bus: true,
+    modules: ['desktop-conversation', 'desktop-thinking', 'desktop-agent-message', 'desktop-tool-call', 'desktop-result-claim', 'desktop-ask-grant'] });
+  p.mount('desktopConversation', undefined, chat);
+
+  const grant = chat.children.find((m) => m.classList.contains('msg--grant'));
+  assert.ok(grant, 'la pregunta se revive');
+  assert.equal(grant.getAttribute('data-grant-state'), 'answered', 'y llega ya cerrada');
+  assert.equal(grant.querySelectorAll('[data-grant-option]').filter((b) => b.hidden !== true && b.disabled !== true).length, 0, 'sin botones que ofrezcan decidir lo decidido');
+  assert.equal(grant.querySelector('[data-grant-question]').textContent, '¿Autorizas «capabilities:enable»?', 'y la pregunta se conserva: es el registro');
+});
+
+test('F9b · the control: a question the ledger shows UNANSWERED still offers its buttons', () => {
+  const html = new El('html');
+  const chat = html.appendChild(new El('section', { id: 'milpa-chat' }));
+  const rows = [{ kind: 'question', text: '¿Autorizas?', id: 'perm:x', reason: 'permission', options: ['sí', 'no'] }];
+  const p = page({ tree: html, elements: { ...prototypeTags(), 'milpa-desktop-transcript': transcriptTag(rows) }, bus: true,
+    modules: ['desktop-conversation', 'desktop-thinking', 'desktop-ask-grant'] });
+  p.desktop().turn = { session: () => 'desk-1' };
+  p.mount('desktopConversation', undefined, chat);
+
+  const grant = chat.children.find((m) => m.classList.contains('msg--grant'));
+  assert.equal(grant.getAttribute('data-grant-state'), 'open', 'sigue esperando, porque nadie la contestó');
+  assert.equal(grant.querySelectorAll('[data-grant-option]').filter((b) => b.hidden !== true).length, 2);
+});
+
+test('F10 · a replayed thread does not paint the question twice', () => {
+  // The ledger holds the assistant's turn AND the question, because the house answers a parked turn
+  // with the question as its answer. Rod saw both painted in a screenshot: the request with its
+  // buttons, and right under it an agent bubble repeating it word for word.
+  const html = new El('html');
+  const chat = html.appendChild(new El('section', { id: 'milpa-chat' }));
+  const asked = 'El agente quiere correr «capabilities:enable». ¿Lo autorizas?';
+  const rows = [
+    { kind: 'question', text: asked, id: 'perm:capabilities:enable', options: ['sí', 'no'] },
+    { kind: 'agent', text: asked + '\n  con: {"capability":"milpa/mcp-server"}' },
+  ];
+  const p = page({ tree: html, elements: { ...prototypeTags(), 'milpa-desktop-transcript': transcriptTag(rows) }, bus: true,
+    modules: ['desktop-conversation', 'desktop-thinking', 'desktop-agent-message', 'desktop-ask-grant'] });
+  p.desktop().turn = { session: () => 'desk-1' };
+  p.mount('desktopConversation', undefined, chat);
+
+  assert.equal(chat.children.filter((m) => m.classList.contains('msg--grant')).length, 1, 'la petición');
+  assert.equal(chat.children.filter((m) => m.classList.contains('msg--agent')).length, 0, 'y NO su eco');
+});
+
+test('F10b · the control: what the agent said that is NOT the question is still replayed', () => {
+  const html = new El('html');
+  const chat = html.appendChild(new El('section', { id: 'milpa-chat' }));
+  const rows = [
+    { kind: 'question', text: '¿Autorizas?', id: 'perm:x', options: ['sí', 'no'] },
+    { kind: 'agent', text: 'Revisé el catálogo y encontré 42 operaciones.' },
+  ];
+  const p = page({ tree: html, elements: { ...prototypeTags(), 'milpa-desktop-transcript': transcriptTag(rows) }, bus: true,
+    modules: ['desktop-conversation', 'desktop-thinking', 'desktop-agent-message', 'desktop-ask-grant'] });
+  p.desktop().turn = { session: () => 'desk-1' };
+  p.mount('desktopConversation', undefined, chat);
+
+  assert.equal(chat.children.filter((m) => m.classList.contains('msg--agent')).length, 1, 'eso sí lo dijo');
+});
+
+test('F11 · the decision is said ONCE — in the request it settled, not again underneath it', () => {
+  // Rod, on a screenshot showing the closed bubble, an echo of the question, and an «ANSWERED …» line:
+  // «toda esa info ya está en la primera burbuja».
+  const html = new El('html');
+  const chat = html.appendChild(new El('section', { id: 'milpa-chat' }));
+  const rows = [
+    { kind: 'question', text: '¿Autorizas?', id: 'perm:x', options: ['sí', 'no'] },
+    { kind: 'answered', id: 'perm:x', answer: 'no', by: 'actor:rod' },
+  ];
+  const p = page({ tree: html, elements: { ...prototypeTags(), 'milpa-desktop-transcript': transcriptTag(rows) }, bus: true,
+    modules: ['desktop-conversation', 'desktop-thinking', 'desktop-ask-grant'] });
+  p.desktop().turn = { session: () => 'desk-1' };
+  p.mount('desktopConversation', undefined, chat);
+
+  assert.equal(chat.children.filter((m) => m.classList.contains('msg--system')).length, 0, 'ninguna línea repite lo que la burbuja ya dice');
+  const grant = chat.children.find((m) => m.classList.contains('msg--grant'));
+  assert.equal(grant.getAttribute('data-grant-state'), 'answered');
+  assert.equal(grant.querySelector('[data-grant-status]').textContent, 'Answered «no» by actor:rod.', 'dicho una vez, donde corresponde');
+});
+
+test('F11b · THE CONTROL: a decision whose request is not on this page is still said', () => {
+  // An older thread, a pruned question — then the standalone line is the only record there is, and
+  // swallowing it would lose the decision entirely.
+  const html = new El('html');
+  const chat = html.appendChild(new El('section', { id: 'milpa-chat' }));
+  const rows = [{ kind: 'answered', id: 'perm:nowhere', answer: 'sí', by: 'actor:rod' }];
+  const p = page({ tree: html, elements: { ...prototypeTags(), 'milpa-desktop-transcript': transcriptTag(rows) }, bus: true,
+    modules: ['desktop-conversation', 'desktop-thinking', 'desktop-ask-grant'] });
+  p.desktop().turn = { session: () => 'desk-1' };
+  p.mount('desktopConversation', undefined, chat);
+
+  assert.equal(chat.children.filter((m) => m.classList.contains('msg--system')).length, 1, 'sin burbuja que lo diga, la línea es el registro');
+  assert.equal(chat.children[0].textContent, 'Answered «sí» by actor:rod');
+});

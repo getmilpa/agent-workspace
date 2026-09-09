@@ -95,7 +95,10 @@ final class DesktopData
                 // slice, read by nobody: a thread would lose its earlier turns to a summary and read as
                 // though they had never happened.
                 'session.compacted' => ['kind' => 'compacted', 'through' => (int) ($p['through'] ?? 0), 'summary' => $this->str($p['summary'] ?? null)],
-                'session.question_answered' => ['kind' => 'answered', 'answer' => $this->str($p['answer'] ?? null), 'by' => $this->str(\is_array($p['by'] ?? null) ? ($p['by']['id'] ?? null) : null)],
+                // WHICH question was answered travels too (greenhouse decisions/0258): a surface arriving
+                // later has to be able to close the request it is replaying, or it paints live buttons for
+                // something decided days ago.
+                'session.question_answered' => ['kind' => 'answered', 'id' => $this->str($p['id'] ?? null), 'answer' => $this->str($p['answer'] ?? null), 'by' => $this->str(\is_array($p['by'] ?? null) ? ($p['by']['id'] ?? null) : null)],
                 'session.sequence_paused' => ['kind' => 'sequence_paused', 'sequence' => $this->str($p['sequenceId'] ?? null)],
                 'session.sequence_resumed' => ['kind' => 'sequence_resumed', 'sequence' => $this->str($p['sequenceId'] ?? null)],
                 default => null,

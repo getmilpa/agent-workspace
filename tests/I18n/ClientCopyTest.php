@@ -73,6 +73,7 @@ final class ClientCopyTest extends TestCase
         'agent.thinking' => 'a bus fact type',
         'decision.parked' => 'a bus fact type (the sidebar ticks its badge, the inbox adds its card)',
         'gate.opened' => 'a bus fact type',
+        'agent.answered' => 'a bus fact type (a decision taken anywhere closes the request on every surface)',
         'agent.parked' => 'a bus fact type (the turn stopped to ask; the thread renders the request)',
         'session.compacted' => 'a bus fact type (milpa/agent declares it; the thread draws its boundary)',
         'session.state' => 'a bus fact type',

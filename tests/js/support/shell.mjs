@@ -72,6 +72,21 @@ export function prototypes() {
   grantHead.appendChild(new El('span', { class: 'msg__grant-kind', 'data-grant-kind': '' }));
   grant.appendChild(new El('p', { class: 'msg__grant-question', 'data-grant-question': '' }));
   grant.appendChild(new El('p', { class: 'msg__grant-why', 'data-grant-why': '' }));
+  // What is being authorized, painted (greenhouse decisions/0259): the argument and axis rows are
+  // TEMPLATES the fill clones, the same way the option button is.
+  const claim = grant.appendChild(new El('div', { class: 'msg__claim', 'data-grant-claim': '', hidden: true }));
+  const what = claim.appendChild(new El('p', { class: 'msg__claim-what' }));
+  what.appendChild(new El('code', { class: 'msg__claim-op', 'data-claim-operation': '' }));
+  what.appendChild(new El('span', { class: 'msg__claim-over', 'data-claim-over': '' }));
+  const claimArgs = claim.appendChild(new El('ul', { class: 'msg__claim-args', 'data-claim-args': '' }));
+  const argRow = claimArgs.appendChild(new El('li', { class: 'msg__claim-arg', 'data-claim-arg': '', hidden: true }));
+  argRow.appendChild(new El('span', { 'data-claim-arg-name': '' }));
+  argRow.appendChild(new El('span', { 'data-claim-arg-value': '' }));
+  const claimAxes = claim.appendChild(new El('ul', { class: 'msg__claim-axes', 'data-claim-axes': '' }));
+  const axisRow = claimAxes.appendChild(new El('li', { class: 'msg__claim-axis', 'data-claim-axis': '', hidden: true }));
+  axisRow.appendChild(new El('span', { 'data-claim-axis-name': '' }));
+  axisRow.appendChild(new El('span', { 'data-claim-axis-value': '' }));
+  claim.appendChild(new El('pre', { class: 'msg__claim-raw', 'data-claim-raw': '', hidden: true }));
   const grantOptions = grant.appendChild(new El('div', { class: 'msg__grant-options', 'data-grant-options': '' }));
   grantOptions.appendChild(new El('button', { class: 'mui-btn msg__grant-option', 'data-grant-option': '', hidden: true }));
   grant.appendChild(new El('p', { class: 'msg__grant-status', 'data-grant-status': '' }));
