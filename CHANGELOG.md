@@ -3,6 +3,13 @@
 All notable changes to milpa/desktop-app are documented here. This project adheres to
 [Semantic Versioning](https://semver.org/) and [Keep a Changelog](https://keepachangelog.com/).
 
+## [0.64.0](https://github.com/getmilpa/agent-workspace/compare/v0.63.0...v0.64.0) (2026-09-09)
+
+
+### Features
+
+* a surface that cannot write headers can still open the live feed ([#28](https://github.com/getmilpa/agent-workspace/issues/28)) ([33b2d05](https://github.com/getmilpa/agent-workspace/commit/33b2d0553dd6783f20cb27c849004aaa6a93d81a))
+
 ## [0.63.0](https://github.com/getmilpa/agent-workspace/compare/v0.62.1...v0.63.0) (2026-09-09)
 
 
