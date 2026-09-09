@@ -297,7 +297,11 @@ final class AgentWorkspacePlugin implements PluginInterface, RouteProviderInterf
         // The composer bar is a declared view too (greenhouse decisions/0211, phase C): the last surface the
         // shell hand-stitched. Its markup is a renderer's, its behaviour `desktop-composer.js`, and the mode
         // its chip shows travels in a signed envelope like every other component's state.
-        $composerBar = new \Milpa\AgentWorkspace\Live\ComposerBar($this->liveSecret('signing'), $data, $composerField, $events, $catalog);
+        // Where the panel's Stack section is, resolved ONCE and handed down as a PROP (greenhouse
+        // decisions/0255): the bar never goes asking whether milpa/admin is installed. Empty in an app
+        // with no panel, and the degraded notice then says the state without offering a dead link.
+        $stackUrl = \Milpa\AgentWorkspace\Live\PanelLink::fromConfig($this->configBag())->stack();
+        $composerBar = new \Milpa\AgentWorkspace\Live\ComposerBar($this->liveSecret('signing'), $data, $composerField, $events, $catalog, $stackUrl);
         $this->container->registerService(\Milpa\AgentWorkspace\Live\ComposerBar::class, $composerBar);
 
         $this->container->registerService(ShellController::class, new ShellController($events, $mercure, $data, $composerField, $sidebar, $topbar, $tabs, $workBoard, $activity, $context, $gate, $thinking, $agentMessage, $messages, $conversation, $settings, $catalog, $sessionStrip, $settingsScreen, $authOverlay, $composerBar, $desktopComponents));
@@ -484,6 +488,14 @@ final class AgentWorkspacePlugin implements PluginInterface, RouteProviderInterf
                 icon: '◈',
             ),
         ];
+    }
+
+    /** The runtime's config bag, or null when this plugin booted without a kernel (as in unit tests). */
+    private function configBag(): ?Config
+    {
+        $config = $this->container->get(Config::class);
+
+        return $config instanceof Config ? $config : null;
     }
 
     /**

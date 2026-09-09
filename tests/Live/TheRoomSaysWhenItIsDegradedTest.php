@@ -28,9 +28,9 @@ use PHPUnit\Framework\TestCase;
  */
 final class TheRoomSaysWhenItIsDegradedTest extends TestCase
 {
-    private function markup(): string
+    private function markup(string $stackUrl = '/milpa/admin/s/stack'): string
     {
-        return (new ComposerBar(str_repeat('k', 32)))->render();
+        return (new ComposerBar(str_repeat('k', 32), stackUrl: $stackUrl))->render();
     }
 
     /**
@@ -56,19 +56,60 @@ final class TheRoomSaysWhenItIsDegradedTest extends TestCase
     public function testItIsHiddenWhileTheHubIsLive(): void
     {
         self::assertMatchesRegularExpression(
-            '/<p class="composer-degraded" x-show="[^"]*conn\.state[^"]*"/',
+            '/<p class="composer-degraded"[^>]*x-show="[^"]*conn\.state[^"]*"/',
             $this->markup(),
             'it must be conditional, not always painted',
         );
     }
 
     /**
-     * It points at where the problem is solved, and does not pretend to solve it here.
+     * It points at where the problem is solved — with a LINK — and does not pretend to solve it here.
      *
      * Starting a container is not something this room may do on somebody's machine.
+     *
+     * 🚨 This test used to be `assertStringContainsString('Stack', …)`, and it was green the whole time
+     * there was no link at all: a grep for a word in prose cannot fail. Rod had to look at the screen to
+     * find what the suite could not (greenhouse decisions/0255, and the same shape as evidence/0565).
      */
     public function testItPointsAtTheSectionThatSaysHowToStartIt(): void
     {
-        self::assertStringContainsString('Stack', $this->markup());
+        self::assertMatchesRegularExpression(
+            '/<a class="composer-degraded__link" href="\/milpa\/admin\/s\/stack">[^<]+<\/a>/',
+            $this->markup(),
+            'the way out is a link to that section, not a sentence naming it',
+        );
+    }
+
+    /** It reads as a WARNING: the mark is the component's, in the warning tier, and never an alarm. */
+    public function testItReadsAsAWarningAndNotAsAnAlarm(): void
+    {
+        $css = (string) file_get_contents(__DIR__ . '/../../resources/components/desktop-composer/desktop-composer.css');
+        $rule = (string) strstr($css, '.composer-degraded {');
+        $rule = substr($rule, 0, (int) strpos($rule, '}') + 1);
+
+        self::assertStringContainsString('var(--warning)', $rule, 'the warning tier, from the token that exists');
+        self::assertStringNotContainsString('var(--danger', $rule, 'degraded is not an alarm: a red here teaches people to ignore reds');
+        self::assertStringContainsString("content: '\\26A0'", $css, 'and it carries a warning mark');
+    }
+
+    /**
+     * THE CONTROL: an app with no panel gets the sentence and NO link.
+     *
+     * The Desktop does not depend on milpa/admin on purpose, so an anchor to a section this app does not
+     * serve would be worse than the prose it replaced — a way out that goes nowhere.
+     */
+    public function testWithNoPanelItSaysTheStateAndOffersNoDeadLink(): void
+    {
+        $html = $this->markup('');
+
+        self::assertStringContainsString('updates arrive on a poll', $html, 'the state is still said');
+        self::assertStringNotContainsString('composer-degraded__link', $html);
+        self::assertStringNotContainsString('<a', substr($html, (int) strpos($html, 'composer-degraded')), 'no anchor after the notice');
+    }
+
+    /** And the link honours the route the app DECLARED, never a copied default. */
+    public function testItHonoursTheRouteTheAppDeclared(): void
+    {
+        self::assertStringContainsString('href="/panel/s/stack"', $this->markup('/panel/s/stack'));
     }
 }

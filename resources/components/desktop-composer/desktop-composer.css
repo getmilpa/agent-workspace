@@ -18,12 +18,20 @@
 .composer-count { color: var(--text-muted); min-width: 0; }
 .composer-chip { border: 1px solid var(--border); border-radius: var(--radius-full); background: var(--surface); color: var(--text); padding: 4px 10px; cursor: pointer; font: inherit; }
 .composer-model { margin: var(--space-2) 0 0; font-family: var(--font-mono); font-size: var(--text-2xs); color: var(--text-muted); }
-/* The degraded notice (greenhouse decisions/0252): the room saying it is running on the poll instead of
-   the hub. It shipped with its MARKUP and no rule of its own, so it rendered at body size in full-strength
-   text — an unstyled shout for a state that is not even an error. It is a footnote next to the model line
-   it sits under: same scale, same muted voice, with a mark that says «notice» and not «failure». */
-.composer-degraded { display: flex; align-items: baseline; gap: var(--space-2); margin: var(--space-1) 0 0; font-family: var(--font-mono); font-size: var(--text-2xs); line-height: var(--leading-relaxed); color: var(--text-muted); }
-.composer-degraded::before { content: '○'; color: var(--text-muted); flex: none; }
+/* The degraded notice (greenhouse decisions/0252, 0255): the room saying it runs on the poll instead of
+   the hub. Rod, seeing it: it should read as a WARNING, with a warning mark, and its way out should be a
+   link to that section.
+   The tier matters. Degraded is not an alarm — the fallback works — and painting it red would teach
+   someone to ignore reds, which is how a gate gets turned off. So it takes the step between quiet and
+   alarming: a warning glyph, the warning hue, and the same small monospace footnote scale as the model
+   line it sits under. It shipped once with its markup and NO rule at all, at body size in full-strength
+   text: an unstyled shout for a state that is not even an error. */
+.composer-degraded { display: flex; align-items: baseline; gap: var(--space-2); margin: var(--space-1) 0 0; font-family: var(--font-mono); font-size: var(--text-2xs); line-height: var(--leading-relaxed); color: var(--warning); }
+.composer-degraded::before { content: '\26A0'; flex: none; }
+/* The way out is a link, and it looks like one: underlined at rest, because a link that only reveals
+   itself on hover is a link nobody knows is there. */
+.composer-degraded__link { color: inherit; text-decoration: underline; text-underline-offset: 2px; }
+.composer-degraded__link:hover, .composer-degraded__link:focus-visible { text-decoration-thickness: 2px; }
 
 /* ── the mode chip and its menu ──────────────────────────────────────────────────────────────────── */
 .composer-mode { position: relative; display: inline-flex; }

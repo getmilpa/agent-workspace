@@ -83,6 +83,14 @@ final class ComposerBar
         private readonly ?ComposerField $field = null,
         private readonly ?MilpaEventDispatcherInterface $events = null,
         ?Catalog $catalog = null,
+        /**
+         * Where the panel's Stack section is, or `''` when this app has no panel.
+         *
+         * A PROP, not a lookup: the bar does not go asking whether milpa/admin is installed, the same way
+         * the Agent region takes its door as a prop rather than depending on it. Empty means the degraded
+         * notice says the state and offers no way out — which is honest in an app with no panel.
+         */
+        private readonly string $stackUrl = '',
     ) {
         $this->codec = new SignedXhtmlStateTransferCodec(new XhtmlStateTransferCodec(), new HmacStateSigner($signingSecret), null);
         $this->catalog = $catalog ?? new Catalog();
@@ -153,9 +161,32 @@ final class ComposerBar
         return htmlspecialchars($this->catalog->tr($key, ...$args), ENT_QUOTES);
     }
 
+    /**
+     * The degraded notice: a WARNING, and its way out as a link when there is one.
+     *
+     * Rod, seeing it rendered: it should read as a warning, with a warning mark, and «the panel's Stack
+     * section» should be a link that goes to THAT section. Degraded is still not an alarm — painting it
+     * red would teach someone to ignore reds, which is how a gate gets turned off (greenhouse
+     * decisions/0252) — so it takes the tier between quiet and alarming, which is what was missing.
+     *
+     * Two catalog keys, not one with markup in it: a translator moves the words, never an anchor tag. And
+     * with no panel installed the sentence stands alone rather than linking to a page this app does not
+     * serve — the destination is a prop, so this method never asks whether the panel is there.
+     */
+    private function degradedNotice(): string
+    {
+        $said = $this->tr('conn.degraded');
+        $where = $this->tr('conn.degraded.where');
+        if ($this->stackUrl === '') {
+            return $said;
+        }
+
+        return $said . ' <a class="composer-degraded__link" href="' . htmlspecialchars($this->stackUrl, ENT_QUOTES) . '">' . $where . '</a>';
+    }
+
     private function markup(): string
     {
-        $degraded = $this->tr('conn.degraded');
+        $degraded = $this->degradedNotice();
         $ctx = $this->data?->context() ?? ['tokens' => 0, 'window' => 32768, 'used_pct' => 0, 'free' => 32768];
         $c = $this->data?->counters() ?? ['turns' => 0, 'steps' => 0, 'tokens' => 0, 'tool_calls' => 0, 'state' => 'idle'];
         $model = htmlspecialchars($this->data?->model()['model'] ?? 'qwen3.8-27b', ENT_QUOTES);
@@ -245,7 +276,7 @@ final class ComposerBar
        one service instead of two truths that can disagree.
        Shown only when it is not live. A permanent notice is noise, and noise is how a warning stops
        being read (greenhouse decisions/0252). -->
-  <p class="composer-degraded" x-show="\$store.milpa['conn.state'] !== 'live'" x-cloak>{$degraded}</p>
+  <p class="composer-degraded" role="status" x-show="\$store.milpa['conn.state'] !== 'live'" x-cloak>{$degraded}</p>
 </div>
 HTML;
     }
