@@ -257,7 +257,7 @@ final class DeclaredViewsTest extends TestCase
         yield 'the slash commands' => ['desktop-commands', ['function parse(text)', 'function handlesKey(event)'], ['function parseCommand(', 'function runCommand(', 'function callOp(', 'function opFailure(', 'function refreshCommandList(']];
         // Phase D: the bus, the transport, and the four screens whose behaviour the page still carried.
         yield 'the shell bus' => ['desktop-shell-bus', ['window.MilpaShell = { on: on', 'function status(state)'], ['window.MilpaShell = (function ()', 'statusHandlers.forEach']];
-        yield 'the hub connector' => ['desktop-hub', ['function translate(env)', 'new EventSource(URL'], ['new EventSource(', "window.MilpaShell.status('offline')", 'MilpaShell.session(env)']];
+        yield 'the hub connector' => ['desktop-hub', ['function translate(env)', 'new EventSource(url'], ['new EventSource(', "window.MilpaShell.status('offline')", 'MilpaShell.session(env)']];
         yield 'the capabilities two-step' => ['desktop-capabilities', ['function enable(pkg)', "'Confirm-Token': answer.confirm_token"], ['function capEnable(', 'box.innerHTML', "capHost.addEventListener('click'"]];
         yield "the work board's drag" => ['desktop-work-board', ['onDragStart: function (event)', 'onDrop: function (event)'], ["querySelector('.work-board')", "fetch('/desktop/work'", 'col.style.background']];
         yield 'the screen preview' => ['desktop-screens', ['function preview()', 'function chip(button)'], ["getElementById('milpa-preview-frame')", "getElementById('milpa-preview-name')", 'frame.src = src']];
