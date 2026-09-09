@@ -157,6 +157,7 @@ final class Catalog
             // The last inline behaviours to become declared views (greenhouse decisions/0211, phase D):
             // the transport's state, the capabilities two-step, the cross-session inbox, the preview and
             // the screens that used to be raw HTML in the shell's template.
+            'conn.degraded' => 'The live hub is not connected — updates arrive on a poll instead of instantly. The panel\'s Stack section says how to start it.',
             'conn.live' => '◉ live',
             'conn.offline' => '○ offline',
             'conn.connecting' => '○ connecting…',
@@ -308,6 +309,7 @@ final class Catalog
             'op.hint.confirm' => '%s pide confirmación — la puerta de la casa sigue en pie; un comando no la confirma',
             'op.hint.unreachable' => 'no se pudo alcanzar la operación',
             'op.hint.failed' => 'la operación falló',
+            'conn.degraded' => 'El hub en vivo no está conectado — las actualizaciones llegan por sondeo, no al instante. La sección Stack del panel dice cómo levantarlo.',
             'conn.live' => '◉ en vivo',
             'conn.offline' => '○ sin conexión',
             'conn.connecting' => '○ conectando…',
