@@ -3,6 +3,13 @@
 All notable changes to milpa/desktop-app are documented here. This project adheres to
 [Semantic Versioning](https://semver.org/) and [Keep a Changelog](https://keepachangelog.com/).
 
+## [0.65.0](https://github.com/getmilpa/agent-workspace/compare/v0.64.0...v0.65.0) (2026-09-09)
+
+
+### Features
+
+* **conversation:** the turn is the unit of the thread ([#30](https://github.com/getmilpa/agent-workspace/issues/30)) ([3ecfa86](https://github.com/getmilpa/agent-workspace/commit/3ecfa866f96fe008941db2f107272f8f5ba0411c))
+
 ## [0.64.0](https://github.com/getmilpa/agent-workspace/compare/v0.63.0...v0.64.0) (2026-09-09)
 
 
