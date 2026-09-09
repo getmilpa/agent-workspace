@@ -3,6 +3,13 @@
 All notable changes to milpa/desktop-app are documented here. This project adheres to
 [Semantic Versioning](https://semver.org/) and [Keep a Changelog](https://keepachangelog.com/).
 
+## [0.66.1](https://github.com/getmilpa/agent-workspace/compare/v0.66.0...v0.66.1) (2026-09-09)
+
+
+### Bug Fixes
+
+* **data:** name the ledger's session when the shell store holds none ([#34](https://github.com/getmilpa/agent-workspace/issues/34)) ([a6749a2](https://github.com/getmilpa/agent-workspace/commit/a6749a214f336cb4e620a5668ae3f37f39a9d1c0))
+
 ## [0.66.0](https://github.com/getmilpa/agent-workspace/compare/v0.65.0...v0.66.0) (2026-09-09)
 
 
