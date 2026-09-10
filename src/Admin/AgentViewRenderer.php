@@ -94,6 +94,22 @@ final class AgentViewRenderer implements ComponentRendererInterface, DeclaresCli
         'desktop-activity',
         'desktop-context',
         'desktop-composer',
+        // 🚨 THE SESSION STRIP, AND NOT THE STATUS BAR. I adopted the status bar first and measured
+        // it on the rendered page: three of its four facts were ALREADY there — the counters in the
+        // composer's chips, the model in the composer's line, the connection in the hub warning — and
+        // the fourth, the machine and version, is provenance that belongs in the panel's own footer.
+        // A fourth duplicate door in one arc, caught by measuring the page instead of by somebody
+        // pointing at it.
+        //
+        // The strip covers the fact nothing here covered: WHICH SESSION this is, and how to move to
+        // another. It was built for embed mode (greenhouse decisions/0210) and the panel is that host
+        // now (decisions/0270).
+        'desktop-session-strip',
+        // 🚨 THE DECISIONS INBOX, WHICH WAS PAINTED NOWHERE. Measured on the rendered panel: nothing
+        // carried it. I had claimed an hour earlier that it «stays a region of the conversation rather
+        // than a screen» — a fact I asserted about the page without measuring it. A governed agent
+        // that parks a question needs somebody to see it (greenhouse decisions/0195, decisions/0270).
+        'desktop-decisions',
         'desktop-thinking',
         'desktop-agent-message',
         'desktop-user-message',
@@ -229,6 +245,7 @@ final class AgentViewRenderer implements ComponentRendererInterface, DeclaresCli
                 . $paint('desktop-conversation')
                 . $paint('desktop-gate')
                 . '</section>'
+            . '<section class="tabpane" data-pane="decisions" hidden :hidden="$store.milpa[\'desktop.tab\'] !== \'decisions\'">' . $paint('desktop-decisions') . '</section>'
             . '<section class="tabpane" data-pane="work" hidden :hidden="$store.milpa[\'desktop.tab\'] !== \'work\'">' . $paint('desktop-work-board') . '</section>'
             . '<section class="tabpane tabpane--activity" data-pane="activity" hidden :hidden="$store.milpa[\'desktop.tab\'] !== \'activity\'">' . $paint('desktop-activity') . '</section>'
             . '<section class="tabpane" data-pane="context" hidden :hidden="$store.milpa[\'desktop.tab\'] !== \'context\'">' . $paint('desktop-context') . '</section>';
@@ -240,11 +257,15 @@ final class AgentViewRenderer implements ComponentRendererInterface, DeclaresCli
 
         return '<div class="desktop-agent" id="' . $id . '" data-desktop-agent="' . AgentViewComponent::STATE_LIVE . '" data-gate="' . self::attr($gate) . '">'
             . $this->bar($state, $catalog, $gate)
+            // Above the conversation: it names WHICH session you are reading, which is a question you
+            // ask before the messages, not after them.
+            . $paint('desktop-session-strip')
             . '<div class="view view--session" data-view="session" x-data>'
             . $paint('desktop-tabs')
             . '<div class="view--session__scroll">' . $panes . '</div>'
             . '<div id="milpa-composer-dock" class="view--session__dock" :hidden="$store.milpa[\'desktop.tab\'] !== \'chat\'">' . $paint('desktop-composer') . '</div>'
             . '</div>'
+
             . $prototypes
             . $this->dataTags($state, $catalog)
             . '</div>';

@@ -15,6 +15,7 @@ declare(strict_types=1);
 namespace Milpa\AgentWorkspace\Live;
 
 use Milpa\AgentWorkspace\Event\RenderEvents;
+use Milpa\AgentWorkspace\I18n\Catalog;
 use Milpa\Interfaces\Event\MilpaEventDispatcherInterface;
 use Milpa\Live\Security\HmacStateSigner;
 use Milpa\Live\Security\SignedXhtmlStateTransferCodec;
@@ -39,21 +40,42 @@ final class Tabs
     /** The payload key both render events carry their mutable {@see ComposerRender} under. */
     public const string SUBJECT_KEY = 'tabs';
 
-    /** @var list<array{key: string, label: string}> */
+    /**
+     * The panes, and THE CATALOG KEY EACH IS NAMED BY.
+     *
+     * 🚨 These were English literals — the same defect as `Sidebar::NAV`, one file over, found the
+     * same day: a person who chose Spanish got a Spanish panel with English tabs
+     * (greenhouse decisions/0139, decisions/0270).
+     *
+     * `decisions` is new here. The inbox of parked questions was declared and painted NOWHERE:
+     * measured on the rendered panel, nothing carried it. I had claimed an hour earlier that it
+     * «stays a region of the conversation rather than a screen» — a fact I asserted about the page
+     * without measuring it. A governed agent that parks a question needs somebody to see it, and a
+     * tab is where a count of waiting decisions can live (greenhouse decisions/0195).
+     *
+     * @var list<array{key: string, title: string}>
+     */
     private const TABS = [
-        ['key' => 'chat', 'label' => 'Conversation'],
-        ['key' => 'work', 'label' => 'Work'],
-        ['key' => 'activity', 'label' => 'Activity'],
-        ['key' => 'context', 'label' => 'Context'],
+        ['key' => 'chat', 'title' => 'tab.chat'],
+        ['key' => 'decisions', 'title' => 'tab.decisions'],
+        ['key' => 'work', 'title' => 'tab.work'],
+        ['key' => 'activity', 'title' => 'tab.activity'],
+        ['key' => 'context', 'title' => 'tab.context'],
     ];
 
     private readonly SignedXhtmlStateTransferCodec $codec;
 
+    private readonly Catalog $catalog;
+
     public function __construct(
         string $signingSecret,
         private readonly ?MilpaEventDispatcherInterface $events = null,
+        ?Catalog $catalog = null,
     ) {
         $this->codec = new SignedXhtmlStateTransferCodec(new XhtmlStateTransferCodec(), new HmacStateSigner($signingSecret), null);
+        // Optional and defaulted, like every other surface here: a host that has not chosen a locale
+        // gets the English default rather than a fatal.
+        $this->catalog = $catalog ?? new Catalog();
     }
 
     /**
@@ -87,7 +109,7 @@ final class Tabs
     private function markup(array $props): string
     {
         $active = (string) ($props['activeTab'] ?? 'chat');
-        /** @var list<array{key: string, label: string}> $tabs */
+        /** @var list<array{key: string, title?: string, label?: string}> $tabs */
         $tabs = \is_array($props['tabs'] ?? null) ? $props['tabs'] : self::TABS;
 
         // A DECLARED VIEW (greenhouse decisions/0211): the look is `desktop-tabs.css`, the behaviour is the
@@ -99,7 +121,7 @@ final class Tabs
     }
 
     /**
-     * @param list<array{key: string, label: string}> $tabs
+     * @param list<array{key: string, title?: string, label?: string}> $tabs
      */
     private function tabButtons(array $tabs, string $active): string
     {
@@ -115,7 +137,12 @@ final class Tabs
                 $key,
                 $key,
                 $key === $active ? 'true' : 'false',
-                htmlspecialchars($tab['label'], ENT_QUOTES),
+                // A subscriber may hand a literal `label`; the panes this surface declares carry a
+                // catalog `title` instead, so the tablist answers in the page's language.
+                htmlspecialchars(
+                    isset($tab['title']) ? $this->catalog->tr($tab['title']) : (string) ($tab['label'] ?? $tab['key']),
+                    ENT_QUOTES,
+                ),
             );
         }
 
