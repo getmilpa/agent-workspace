@@ -50,6 +50,8 @@ export const SIGNALS = {
  * `tr('…')` key the shipped modules use is missing from it.
  */
 export const CATALOG = {
+  'model.unreachable': '%s · not answering',
+  'model.not_served': '%s · this provider does not serve it',
   'composer.model.asking': 'asking the endpoint…',
   'composer.model.unreachable': 'the endpoint did not answer',
   'composer.model.none': 'the endpoint served no model',
