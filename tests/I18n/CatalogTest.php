@@ -60,8 +60,10 @@ final class CatalogTest extends TestCase
             // something the person is not looking for on their provider's dashboard.
             'settings.model.key',
             // A COMMAND IS NOT COPY. `coa capabilities:enable milpa/auth --sign` is what a person types,
-            // and translating a command is telling them to type something that does not run.
-            'settings.model.key.unjudgeable_command',
+            // and translating a command is telling them to type something that does not run. Both
+            // ungovernable fields name the same capability, because both are gated by the same thing:
+            // nothing in the app can say who may configure the agent (greenhouse decisions/0280).
+            'settings.model.key.unjudgeable_command', 'settings.model.endpoint.unjudgeable_command',
             // «Skills» is the word this house uses in Spanish too — the same reason «endpoint» is
             // here. Translating it to «habilidades» would name a thing nobody in the project calls
             // that, and the screen it titles is the same screen in both languages.

@@ -128,21 +128,26 @@ final class SettingsScreen
     }
 
     /**
-     * The model endpoint: the persisted setting if one was saved (0483), else the configured one,
-     * else EMPTY.
+     * THE ENDPOINT SHOWN IS THE ONE THE AGENT READS — one address, and it is not this screen's.
      *
-     * The default it used to fall to was `http://llama.local:11438` — a host that stopped resolving
-     * when that machine moved to Tailscale (greenhouse decisions/0266). A form pre-filled with a
-     * dead address is worse than an empty field: it reads as «this is what you are talking to», and
-     * saving the form without touching it would DECLARE it. An empty field asks the question.
+     * 🚨 IT USED TO PREFER ITS OWN SAVED VALUE, AND THAT IS WHY THE FIELD LOOKED LIKE IT WORKED. The
+     * form posted `endpoint` into `.milpa/desktop-settings.json` and this method read it back, so the
+     * value round-tripped through the screen and never reached anything — measured on fresh cattle,
+     * where the door answered `{"ok":true}`, the file held the address, and `coa agent:model` kept
+     * answering `endpoint_from: none` (greenhouse decisions/0280).
+     *
+     * A self-read is the most convincing kind of lie a form can tell: every reload confirms it.
+     *
+     * So the value comes from {@see DesktopData::model()} — which is `AgentEndpoint::baseUrl()`, what
+     * every turn actually resolves — and the field writes there through `config:set`, never here.
+     *
+     * EMPTY IS AN ANSWER. The default it once fell back to was `http://llama.local:11438`, a host that
+     * stopped resolving when that machine moved to Tailscale (greenhouse decisions/0266). A form
+     * pre-filled with a dead address reads as «this is what you are talking to», and saving the form
+     * without touching it would DECLARE it. An empty field asks the question.
      */
     private function endpoint(): string
     {
-        $settings = $this->data?->settings() ?? [];
-        $saved = $settings['endpoint'] ?? null;
-        if (\is_string($saved) && $saved !== '') {
-            return $saved;
-        }
         $configured = $this->data?->model()['endpoint'] ?? null;
 
         return \is_string($configured) ? $configured : '';
@@ -183,12 +188,44 @@ final class SettingsScreen
         return '<div class="mui-card mui-card--raised">'
             . '<div class="mui-card__header"><h2 class="mui-card__title">' . $this->t('settings.model.title') . '</h2></div>'
             . '<div class="mui-card__body mui-stack">'
-            . '<div class="mui-field"><label class="mui-field__label" for="set-prov">' . $this->t('settings.model.provider') . '</label><span class="mui-select-wrap"><select id="set-prov" class="mui-select">'
-            . '<option>' . $this->t('settings.provider.local') . '</option><option>' . $this->t('settings.provider.lan') . '</option><option>' . $this->t('settings.provider.external') . '</option></select></span></div>'
-            . '<div class="mui-field"><label class="mui-field__label" for="set-end">' . $this->t('settings.model.endpoint') . '</label><input id="set-end" class="mui-input milpa-settings__mono" value="' . $endpoint . '"><span class="mui-field__hint">' . $this->t('settings.model.endpoint_hint') . '</span></div>'
-            . '<div class="mui-field mui-field--row milpa-settings__row"><label class="mui-field__label" for="set-stream">' . $this->t('settings.model.stream') . '</label><input class="mui-switch" type="checkbox" id="set-stream" checked="checked"></div>'
-            . $this->keyField()
+            . (SettingsControls::offered('set-end') ? $this->endpointField($endpoint) : '')
+            . (SettingsControls::offered('set-key') ? $this->keyField() : '')
             . '</div></div>';
+    }
+
+    /**
+     * WHERE THE AGENT'S ADDRESS IS ACCEPTED — through `config:set`, the same way the key goes through
+     * `provider:declare`.
+     *
+     * 🚨 THE SCREEN DOES NOT WRITE THIS FILE. `agent.baseUrl` is where every prompt and every piece of
+     * context this app sends will go; two same-origin POSTs once moved it with no session at all, WITH
+     * a policy registered, because `config:set` declared no scope for that policy to match. It declares
+     * `config:write` now, and the framework refuses at boot to publish it unjudged (greenhouse
+     * decisions/0278, decisions/0279).
+     *
+     * So the two states are the key field's, for the key field's reason: an app where nothing can say
+     * WHO may reconfigure the agent does not get a field that will fail on submit — it gets told what
+     * to install. Configuring the agent from a browser is a governed act or it is not offered.
+     */
+    private function endpointField(string $endpoint): string
+    {
+        if (!$this->ask($this->canJudge)) {
+            return '<div class="mui-field milpa-settings__endpoint" data-endpoint-state="unjudgeable">'
+                . '<span class="mui-field__label">' . $this->t('settings.model.endpoint') . '</span>'
+                . '<div class="mui-alert mui-alert--warning" role="note">'
+                . '<span class="mui-alert__icon" aria-hidden="true">⚠</span>'
+                . '<div class="mui-alert__content"><p class="mui-alert__desc">' . $this->t('settings.model.endpoint.unjudgeable') . '</p>'
+                . '<p class="mui-alert__desc"><code>' . $this->t('settings.model.endpoint.unjudgeable_command') . '</code></p></div>'
+                . '</div></div>';
+        }
+
+        return '<div class="mui-field milpa-settings__endpoint" data-endpoint-state="' . ($endpoint === '' ? 'absent' : 'declared') . '">'
+            . '<label class="mui-field__label" for="set-end">' . $this->t('settings.model.endpoint') . '</label>'
+            . '<input id="set-end" class="mui-input milpa-settings__mono" value="' . $endpoint . '">'
+            . '<span class="mui-field__hint">' . $this->t('settings.model.endpoint_hint') . '</span>'
+            . '<button type="button" class="mui-btn mui-btn--sm milpa-settings__key-save" data-declare-endpoint'
+            . ' @click="declareEndpoint()">' . $this->t('settings.model.endpoint.save') . '</button>'
+            . '</div>';
     }
 
     /**
@@ -251,6 +288,12 @@ final class SettingsScreen
      */
     private function autonomyCard(): string
     {
+        // WHAT IS STORED, NEVER `ask` BY HABIT. The three were printed with `ask` checked no matter what
+        // the app had saved, so the screen forgot your choice on the next render while the composer's
+        // chip — reading the same key — showed the mode you had picked. Two surfaces, one value, and
+        // only one of them was reading it (greenhouse decisions/0280).
+        $settings = $this->data?->settings() ?? [];
+        $mode = \is_string($settings['mode'] ?? null) && $settings['mode'] !== '' ? (string) $settings['mode'] : 'ask';
         $choice = fn (string $mode, bool $checked): string => '<label class="mui-choice"><input class="mui-radio" type="radio" name="set-mode" value="' . $mode . '"' . ($checked ? ' checked="checked"' : '') . '>'
             . '<span class="mui-choice__text">' . $this->t('settings.autonomy.' . $mode) . ' <span class="mui-badge milpa-settings__badge">' . $mode . '</span>'
             . '<span class="mui-choice__hint">' . $this->t('settings.autonomy.' . $mode . '_hint') . '</span></span></label>';
@@ -258,30 +301,47 @@ final class SettingsScreen
         return '<div class="mui-card mui-card--raised">'
             . '<div class="mui-card__header"><h2 class="mui-card__title">' . $this->t('settings.autonomy.title') . '</h2></div>'
             . '<div class="mui-card__body mui-stack mui-stack--sm">'
-            . $choice('ask', true) . $choice('acknowledge', false) . $choice('auto', false)
+            . (SettingsControls::offered('set-mode')
+                ? $choice('ask', $mode === 'ask') . $choice('acknowledge', $mode === 'acknowledge') . $choice('auto', $mode === 'auto')
+                : '')
             . '<div class="mui-alert mui-alert--info" role="note"><span class="mui-alert__icon" aria-hidden="true">i</span><div class="mui-alert__content"><p class="mui-alert__desc">' . $this->t('settings.autonomy.note') . '</p></div></div>'
             . '</div></div>';
     }
 
+    /**
+     * Context and storage — and the compaction SWITCH is gone, because there is nothing to switch.
+     *
+     * It posted `compact: true|false` into the settings blob and nothing in this package or the
+     * framework read it. Worse than unread: `agent.compaction` is not a boolean at all, it is a policy
+     * of three numbers (`maxTurns`, `keepLast`, `maxTokens`), so the control offered an off position
+     * the framework does not have. The honest form of this control is those three numbers through
+     * `config:set`, and it returns when someone needs them (greenhouse decisions/0280).
+     */
     private function storageCard(string $sessionsPath): string
     {
         return '<div class="mui-card">'
             . '<div class="mui-card__header"><h2 class="mui-card__title">' . $this->t('settings.storage.title') . '</h2></div>'
             . '<div class="mui-card__body mui-stack mui-stack--sm">'
-            . '<div class="mui-field mui-field--row milpa-settings__row"><label class="mui-field__label" for="set-comp">' . $this->t('settings.storage.compact') . '</label><input class="mui-switch" id="set-comp" type="checkbox" checked="checked"></div>'
             . '<p class="milpa-settings__note">' . $this->t('settings.storage.compact_note') . '</p>'
-            . '<div class="mui-field"><label class="mui-field__label" for="set-path">' . $this->t('settings.storage.folder') . '</label><input id="set-path" class="mui-input mui-input--sm milpa-settings__mono" value="' . $sessionsPath . '" readonly="readonly"></div>'
+            . (SettingsControls::offered('set-path')
+                ? '<div class="mui-field"><label class="mui-field__label" for="set-path">' . $this->t('settings.storage.folder') . '</label><input id="set-path" class="mui-input mui-input--sm milpa-settings__mono" value="' . $sessionsPath . '" readonly="readonly"></div>'
+                : '')
             . '</div></div>';
     }
 
     /**
      * Appearance: the three theme buttons set the SHARED `ui.theme` signal, and `aria-pressed` BINDS to it
      * — so the chrome's toggle and these buttons can never disagree about what the shell is showing.
+     *
+     * 🚨 THE INTERFACE-SCALE ROW IS GONE, and it is the cheapest lesson on this screen: three buttons
+     * with no `@click`, no `data-*`, and a hardcoded `aria-pressed="true"` on the first. Nothing read
+     * them because nothing could — there is no `--mui-scale` in `milpa-design` for a scale to mean
+     * anything. It comes back when the design system has one to bind to (greenhouse decisions/0280).
      */
     private function appearanceCard(): string
     {
         $buttons = '';
-        foreach (['system', 'dark', 'light'] as $key) {
+        foreach (SettingsControls::offered('theme-set') ? ['system', 'dark', 'light'] : [] as $key) {
             $buttons .= sprintf(
                 '<button type="button" class="mui-btn mui-btn--sm" data-theme-set="%s"%s @click="setTheme(\'%s\')" :aria-pressed="isTheme(\'%s\')">%s</button>',
                 $key,
@@ -296,7 +356,6 @@ final class SettingsScreen
             . '<div class="mui-card__header"><h2 class="mui-card__title">' . $this->t('settings.appearance.title') . '</h2></div>'
             . '<div class="mui-card__body mui-stack mui-stack--sm">'
             . '<div class="mui-field"><span class="mui-field__label">' . $this->t('settings.appearance.theme') . '</span><div class="mui-cluster mui-cluster--sm">' . $buttons . '</div></div>'
-            . '<div class="mui-field"><span class="mui-field__label">' . $this->t('settings.appearance.scale') . '</span><div class="mui-cluster mui-cluster--sm"><button type="button" class="mui-btn mui-btn--sm" aria-pressed="true">100%</button><button type="button" class="mui-btn mui-btn--sm">115%</button><button type="button" class="mui-btn mui-btn--sm">130%</button></div></div>'
             . '</div></div>';
     }
 

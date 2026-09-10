@@ -23,6 +23,7 @@ use Milpa\AgentWorkspace\Live\AuthOverlay;
 use Milpa\AgentWorkspace\Live\AuthOverlayComponent;
 use Milpa\AgentWorkspace\Live\ComposerField;
 use Milpa\AgentWorkspace\Live\DesktopComponents;
+use Milpa\AgentWorkspace\Live\SettingsControls;
 use Milpa\AgentWorkspace\Live\SettingsScreen;
 use Milpa\AgentWorkspace\Live\SettingsScreenComponent;
 use Milpa\Eventing\EventDispatcher;
@@ -46,7 +47,7 @@ final class DeclaredScreensTest extends TestCase
 {
     public function testTheSettingsScreenIsAComponentWithItsEnvelopeAndItsBindings(): void
     {
-        $html = (new SettingsScreen('secret'))->render();
+        $html = (new SettingsScreen('secret', null, null, null, static fn (): bool => true))->render();
 
         self::assertStringContainsString('data-milpa-component="desktop-settings"', $html);
         self::assertStringContainsString('data-milpa-state="settings"', $html);
@@ -56,8 +57,16 @@ final class DeclaredScreensTest extends TestCase
         foreach (['Model and provider', 'Default autonomy', 'Context and storage', 'Appearance'] as $card) {
             self::assertStringContainsString($card, $html);
         }
-        // The ids the shell script (and any plugin) has always looked up are unchanged.
-        foreach (['set-prov', 'set-end', 'set-stream', 'set-comp', 'set-path', 'milpa-save-settings', 'milpa-discard', 'milpa-settings-saved'] as $id) {
+        // 🚨 THE IDS COME FROM THE DECLARED CORRESPONDENCE, NOT FROM A LIST KEPT BY HAND. This assertion
+        // used to name `set-prov`, `set-stream` and `set-comp` and justify them as «the ids any plugin has
+        // always looked up» — and that argument is exactly what kept three controls alive that NOTHING
+        // read, on a screen whose Save button reported success for them (greenhouse decisions/0280).
+        // Sourced from {@see SettingsControls::READERS}, this test cannot outlive the contract.
+        foreach (array_keys(SettingsControls::READERS) as $control) {
+            $q = preg_quote($control, '/');
+            self::assertMatchesRegularExpression('/(?:id|name)="' . $q . '"|data-' . $q . '="/', $html, $control);
+        }
+        foreach (['milpa-save-settings', 'milpa-discard', 'milpa-settings-saved'] as $id) {
             self::assertStringContainsString('id="' . $id . '"', $html, $id);
         }
         // Save and Discard are the component's verbs; the badge BINDS to the shared `settings.saved` signal.
@@ -75,7 +84,19 @@ final class DeclaredScreensTest extends TestCase
         self::assertStringNotContainsString('style=', $html);
     }
 
-    public function testTheSettingsScreenShowsThePersistedEndpointAndSpeaksTheCatalog(): void
+    /**
+     * 🚨 THIS TEST WAS GUARDING THE DEFECT, and its old name said so: «shows the persisted endpoint».
+     *
+     * It asserted that a value saved into `.milpa/desktop-settings.json` won the field — «the persisted
+     * endpoint wins» was the message. That IS what the screen did, and it is why the field looked
+     * correct for weeks: the form posted the address into a file, this method read it back, and the
+     * agent — which resolves `agent.baseUrl` from the governed configuration — never saw it. Measured
+     * on cattle, the door answered `{"ok":true}` and `coa agent:model` kept saying `endpoint_from:
+     * none` (greenhouse decisions/0280).
+     *
+     * A test that pins a self-read is a test that makes the lie a requirement.
+     */
+    public function testTheEndpointFieldShowsWhatTheAgentReadsAndSpeaksTheCatalog(): void
     {
         $dir = sys_get_temp_dir() . '/milpa-settings-screen-' . uniqid('', true);
         mkdir($dir);
@@ -83,18 +104,16 @@ final class DeclaredScreensTest extends TestCase
         $store->saveSettings(['endpoint' => 'http://persisted.test/v1']);
         $data = new DesktopData(new DIContainer(), null, '', $store);
 
-        $html = (new SettingsScreen('secret', $data, null, new Catalog('es')))->render();
+        $html = (new SettingsScreen('secret', $data, null, new Catalog('es'), static fn (): bool => true))->render();
 
-        self::assertStringContainsString('value="http://persisted.test/v1"', $html, 'the persisted endpoint wins');
+        self::assertStringNotContainsString('persisted.test', $html, 'the settings blob cannot put a value in this field');
+        self::assertMatchesRegularExpression('/id="set-end"[^>]*value=""/', $html, 'nothing is configured, so the field asks');
         self::assertStringContainsString('>Guardado</span>', $html, 'the badge seed speaks the declared locale');
 
-        // With no persisted endpoint and nothing configured, THE FIELD IS EMPTY. It used to be
-        // pre-filled with `http://llama.local:11438` — a host that had stopped resolving — and a
-        // form pre-filled with a dead address is worse than an empty one: it reads as «this is what
-        // you are talking to», and saving without touching it would DECLARE it
-        // (greenhouse decisions/0266). An empty field asks the question.
-        $configured = (new SettingsScreen('secret', new DesktopData(new DIContainer(), null, '', new DesktopStore($dir . '/s2', $dir . '/none.json'))))->render();
-        self::assertMatchesRegularExpression('/id="set-end"[^>]*value=""/', $configured);
+        // With nothing configured THE FIELD IS EMPTY. It used to be pre-filled with
+        // `http://llama.local:11438` — a host that had stopped resolving — and a form pre-filled with a
+        // dead address is worse than an empty one: it reads as «this is what you are talking to», and
+        // saving without touching it would DECLARE it (greenhouse decisions/0266).
         self::assertStringNotContainsString('llama.local', (new SettingsScreen('secret'))->render(), 'no surface names a host the reader never chose');
 
         unlink($dir . '/settings.json');
@@ -111,7 +130,7 @@ final class DeclaredScreensTest extends TestCase
             $p['settings']->html .= '<!-- settings extended -->';
         });
 
-        $html = (new SettingsScreen('secret', null, $events))->render();
+        $html = (new SettingsScreen('secret', null, $events, null, static fn (): bool => true))->render();
 
         self::assertStringContainsString('value="http://changed.test"', $html, 'before_render changed the props');
         self::assertStringContainsString('settings extended', $html, 'after_render changed the html');

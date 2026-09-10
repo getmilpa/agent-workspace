@@ -174,4 +174,52 @@ final class ClientCopyTest extends TestCase
         }
         self::assertGreaterThanOrEqual(7, \count($entries), 'the harness still carries the guard and settings copy');
     }
+
+    /**
+     * 🚨 THE OTHER DIRECTION, AND ITS ABSENCE WAS A CLAIM THIS FILE'S DOCBLOCK ALREADY MADE.
+     *
+     * The assertion above checks that every sentence the harness carries is the sentence the catalog
+     * ships. It never checked that a key a module ASKS FOR is in the harness at all — so a module could
+     * call `tr('settings.model.endpoint.refused')` and the node test asserting its message would be
+     * comparing against the raw key, silently, forever. Which is exactly what happened while writing
+     * `declareEndpoint`: the PHP suite stayed green and the node test failed with the key as its text
+     * (greenhouse decisions/0280).
+     *
+     * A guard whose docblock promises a property it does not assert is worse than no guard: the promise
+     * is what stops the next person from writing the check. This is the second time that pattern has
+     * been caught here after the glyph guard, so the property is now the test's NAME.
+     */
+    public function testEveryKeyAModuleAsksForIsInTheHarnessCopyToo(): void
+    {
+        $catalog = new Catalog();
+        $missing = [];
+        $modules = glob(self::root() . '/resources/components/*/*.js') ?: [];
+        self::assertNotEmpty($modules, 'the instrument found no modules to read');
+
+        $harness = (string) file_get_contents(self::root() . '/tests/js/support/page.mjs');
+        self::assertSame(1, preg_match('/export const CATALOG = \{(.*?)\n\};/s', $harness, $block));
+        preg_match_all("/^\s*'([^']+)':/m", $block[1], $carried);
+        $seeded = array_flip($carried[1]);
+        self::assertNotEmpty($seeded);
+
+        $asked = [];
+        foreach ($modules as $module) {
+            preg_match_all("/\btr\('([^']+)'/", (string) file_get_contents($module), $keys);
+            foreach ($keys[1] as $key) {
+                $asked[$key] = basename($module);
+            }
+        }
+        // The positive control for the PARSER: a key every shipped module is known to ask for.
+        self::assertArrayHasKey('guard.unreachable', $asked, 'the instrument must see a tr() call it is known to have');
+        self::assertGreaterThanOrEqual(20, \count($asked));
+
+        foreach ($asked as $key => $file) {
+            self::assertTrue($catalog->has($key), \sprintf('«%s» is asked for by %s and the catalog does not have it', $key, $file));
+            if (!isset($seeded[$key])) {
+                $missing[] = $key . ' (' . $file . ')';
+            }
+        }
+
+        self::assertSame([], $missing, 'a key a module asks for must be in the harness copy, or its node test asserts the key instead of the sentence');
+    }
 }

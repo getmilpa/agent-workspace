@@ -87,12 +87,15 @@ test('a parked question fills the gate, opens it and shows the conversation — 
 });
 
 // ── desktop-settings (B7) ───────────────────────────────────────────────────────────────────────────
-/** The Settings screen's own root, with the four fields its save reads. */
+/**
+ * The Settings screen's own root — and `save()` reads ONE field from it now.
+ *
+ * It used to carry four, and three of them went nowhere: the endpoint into a file the agent does not
+ * read, `stream` and `compact` into a file nothing reads at all (greenhouse decisions/0280). The mode
+ * is what stayed, because the composer's chip and the topbar read it.
+ */
 function settingsRoot() {
   const root = new El('div', { class: 'view milpa-settings' });
-  root.appendChild(new El('input', { id: 'set-end', value: 'http://llama.local:11438' }));
-  root.appendChild(new El('input', { id: 'set-stream', checked: true }));
-  root.appendChild(new El('input', { id: 'set-comp', checked: false }));
   root.appendChild(new El('input', { name: 'set-mode', value: 'ask' }));
   root.appendChild(new El('input', { name: 'set-mode', value: 'auto', checked: true }));
 
@@ -110,13 +113,69 @@ test('Save posts the form through the guard and says Saved only on a 2xx', async
   assert.equal(calls.length, 1);
   assert.equal(calls[0].url, '/desktop/settings');
   assert.equal(calls[0].init.method, 'POST');
-  assert.deepEqual(JSON.parse(calls[0].init.body), {
-    endpoint: 'http://llama.local:11438', stream: true, compact: false, mode: 'auto',
-  }, 'the form is read from the component\'s own root, checked radio and all');
+  assert.deepEqual(JSON.parse(calls[0].init.body), { mode: 'auto' },
+    'the form is read from the component\'s own root, checked radio and all');
   assert.equal(p.signal('settings.saved').ok, true);
   assert.equal(p.signal('settings.saved').text, 'Saved');
   assert.equal(settings.savedOk, true);
   assert.equal(settings.savedText, 'Saved');
+});
+
+test('the endpoint is written where the agent reads it, through the confirm gate', async () => {
+  const p = page({ modules: ['desktop-topbar', 'desktop-settings'] });
+  const input = new El('input', { id: 'set-end', value: 'http://llama.tailf880b7.ts.net:11438' });
+  p.byId['set-end'] = input;
+  const settings = p.mount('desktopSettings', undefined, settingsRoot());
+  const calls = stubFetch(p, [response(428, { requires_confirmation: true, confirm_token: 't-42' }), response(200, { ok: true })]);
+
+  await settings.declareEndpoint();
+
+  assert.equal(calls.length, 2, 'the 428 is a step of the flow, not a failure');
+  assert.equal(calls[0].url, '/config/set', 'agent.baseUrl is governed configuration, not the settings file');
+  assert.deepEqual(JSON.parse(calls[0].init.body), { key: 'agent.baseUrl', value: 'http://llama.tailf880b7.ts.net:11438' });
+  assert.equal(calls[1].init.headers['Confirm-Token'], 't-42', 'the second call carries the token back');
+  assert.equal(p.signal('settings.saved').ok, true);
+  // NOT cleared: unlike a key, an address is something you want to still see after saving it.
+  assert.equal(input.value, 'http://llama.tailf880b7.ts.net:11438');
+});
+
+test('a refused endpoint says so with its status and never says saved', async () => {
+  const p = page({ modules: ['desktop-topbar', 'desktop-settings'] });
+  p.byId['set-end'] = new El('input', { id: 'set-end', value: 'http://x' });
+  const settings = p.mount('desktopSettings', undefined, settingsRoot());
+  stubFetch(p, [response(404, {})]);
+
+  await settings.declareEndpoint();
+
+  assert.equal(p.signal('settings.saved').ok, false);
+  assert.match(p.signal('settings.saved').text, /404/, 'the door\'s own answer, not an assumption');
+});
+
+test('an empty endpoint asks nothing — a blank field is not a declaration', async () => {
+  const p = page({ modules: ['desktop-topbar', 'desktop-settings'] });
+  p.byId['set-end'] = new El('input', { id: 'set-end', value: '' });
+  const settings = p.mount('desktopSettings', undefined, settingsRoot());
+  const calls = stubFetch(p, []);
+
+  await settings.declareEndpoint();
+
+  assert.equal(calls.length, 0);
+});
+
+test('the provider key goes to its own operation and the input is cleared either way', async () => {
+  const p = page({ modules: ['desktop-topbar', 'desktop-settings'] });
+  const input = new El('input', { id: 'set-key', value: 'sk-secret' });
+  p.byId['set-key'] = input;
+  const settings = p.mount('desktopSettings', undefined, settingsRoot());
+  const calls = stubFetch(p, [response(428, { confirm_token: 't-7' }), response(200, { ok: true })]);
+
+  await settings.declareKey();
+
+  assert.equal(calls[0].url, '/provider/declare');
+  assert.deepEqual(JSON.parse(calls[0].init.body), { key: 'agent.apiKey', value: 'sk-secret' });
+  assert.equal(calls[1].init.headers['Confirm-Token'], 't-7');
+  // A key left in a field is a key in the next screenshot (greenhouse decisions/0276).
+  assert.equal(input.value, '');
 });
 
 test('a refused save is reported with its status, and never says Saved', async () => {

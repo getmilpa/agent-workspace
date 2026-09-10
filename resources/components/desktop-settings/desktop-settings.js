@@ -69,20 +69,22 @@
         this.$store.milpa[SAVED_SIGNAL] = { ok: !!ok, text: String(text || '') };
         setTimeout(function () { self.$store.milpa[SAVED_SIGNAL] = null; }, ok ? HOLD_OK_MS : HOLD_FAILED_MS);
       },
-      /** The form as the writer takes it — read from this component's own root. */
+      /**
+       * The form as the writer takes it — and it is ONE field now.
+       *
+       * 🚨 IT USED TO POST FOUR, AND THREE OF THEM WERE READ BY NOBODY. `endpoint` went into the
+       * settings blob while the agent read `agent.baseUrl` from the governed configuration; `stream`
+       * and `compact` had no reader anywhere in the package. The Save button reported success for all
+       * of them (greenhouse decisions/0280).
+       *
+       * What is left is `mode`, which the composer's chip, the topbar and the seeded signals all read.
+       * The endpoint has its own verb, because writing it is a governed act.
+       */
       values: function () {
         var root = this.$root || document;
-        var endpoint = root.querySelector('#set-end');
-        var stream = root.querySelector('#set-stream');
-        var compact = root.querySelector('#set-comp');
         var mode = root.querySelector('input[name="set-mode"]:checked');
 
-        return {
-          endpoint: endpoint ? endpoint.value : '',
-          stream: stream ? stream.checked : true,
-          compact: compact ? compact.checked : true,
-          mode: mode ? mode.value : 'ask',
-        };
+        return { mode: mode ? mode.value : 'ask' };
       },
       /** Persist. «Saved» is the DOOR's answer, never this screen's assumption. */
       save: function () {
@@ -146,6 +148,50 @@
         }).catch(function (err) {
           if (input) { input.value = ''; }
           self.report(false, tr('settings.model.key.refused', (err && err.status) || 0));
+        });
+      },
+      /**
+       * 🚨 THE AGENT'S ADDRESS GOES THROUGH `config:set`, NEVER THROUGH `save()`.
+       *
+       * `agent.baseUrl` is where every prompt and every piece of context this app sends will go. Two
+       * same-origin POSTs once moved it with no session at all, WITH a policy registered, because
+       * `config:set` declared no scope for the policy to match; it declares `config:write` now and the
+       * framework refuses at boot to publish it unjudged (greenhouse decisions/0278, decisions/0279).
+       *
+       * Which is exactly why it cannot ride in `POST /desktop/settings`: that door writes a file, and
+       * the agent does not read that file. The screen was posting to a place nothing read.
+       *
+       * The confirm gate's 428 is part of a consent-demanding operation's flow, so this carries the
+       * token back the way the key does. The field is NOT cleared: unlike a key, an endpoint is
+       * something you want to still see after saving it.
+       */
+      declareEndpoint: function () {
+        var d = desk();
+        if (!d) { return Promise.reject(new Error('desktop-guard not loaded')); }
+        var self = this;
+        var input = document.getElementById('set-end');
+        var value = input ? String(input.value || '') : '';
+        if (value === '') { return Promise.resolve(); }
+
+        var send = function (token) {
+          var headers = { 'Content-Type': 'application/json' };
+          if (token) { headers['Confirm-Token'] = token; }
+
+          return fetch('/config/set', {
+            method: 'POST',
+            headers: headers,
+            body: JSON.stringify({ key: 'agent.baseUrl', value: value }),
+          });
+        };
+
+        return send(null).then(d.guardedFlow).then(function (r) {
+          if (r.status !== 428) { return r; }
+
+          return r.json().then(function (body) { return send(body && body.confirm_token).then(d.guarded); });
+        }).then(function () {
+          self.report(true, tr('settings.model.endpoint.saved'));
+        }).catch(function (err) {
+          self.report(false, tr('settings.model.endpoint.refused', (err && err.status) || 0));
         });
       },
       /** Discard: the persisted values are the server's, so reloading IS the discard. */
