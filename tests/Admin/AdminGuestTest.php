@@ -217,6 +217,14 @@ final class AdminGuestTest extends TestCase
         self::assertStringContainsString('<span class="mui-kbd">Agente</span>', $section);
         self::assertStringContainsString('>puerta: loopback</span>', $section);
         self::assertStringContainsString('Escribe a la sesión', $section, 'the composed surfaces speak the declared locale too');
+        // 🚨 THE TABLIST, THROUGH THE APP'S OWN WIRING. Asserted HERE and not only where the surface is
+        // built by hand: making the labels catalog keys and never passing the catalog left the tablist
+        // in English while the source looked correct, and every direct-construction test still passed.
+        // A fix declared and not wired reads exactly like a capability (greenhouse decisions/0213,
+        // decisions/0270).
+        self::assertStringContainsString('data-tab="chat" @click="select(\'chat\')" :aria-selected="isActive(\'chat\')" aria-selected="true">Conversación<', $section, 'the tablist got the catalog the plugin built');
+        self::assertStringContainsString('data-tab="decisions"', $section, 'and the decisions inbox has a pane at last');
+        self::assertStringContainsString('>Decisiones<', $section);
     }
 
     public function testWithoutTheDesktopPluginTheAdminHasNoAgentSection(): void

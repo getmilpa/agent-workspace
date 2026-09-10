@@ -514,7 +514,7 @@ final class ShellController
     /** The sidebar surface (greenhouse decisions/0189) — the injected one, else a fallback over the same data. */
     private function sidebarOf(): \Milpa\AgentWorkspace\Live\Sidebar
     {
-        return $this->sidebar ?? new \Milpa\AgentWorkspace\Live\Sidebar('desktop-sidebar-fallback', $this->data, $this->events);
+        return $this->sidebar ?? new \Milpa\AgentWorkspace\Live\Sidebar('desktop-sidebar-fallback', $this->data, $this->events, $this->catalog());
     }
 
     /** The topbar surface (greenhouse decisions/0189, 0209) — the injected one, else a fallback over the same data and door. */
@@ -526,7 +526,7 @@ final class ShellController
     /** The main tablist surface (greenhouse decisions/0189) — the panes and composer dock read its `desktop.tab` signal. */
     private function tabsOf(): \Milpa\AgentWorkspace\Live\Tabs
     {
-        return $this->tabs ?? new \Milpa\AgentWorkspace\Live\Tabs('desktop-tabs-fallback', $this->events);
+        return $this->tabs ?? new \Milpa\AgentWorkspace\Live\Tabs('desktop-tabs-fallback', $this->events, $this->catalog());
     }
 
     /**

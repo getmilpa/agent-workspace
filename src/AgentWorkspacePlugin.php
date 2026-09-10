@@ -256,7 +256,7 @@ final class AgentWorkspacePlugin implements PluginInterface, RouteProviderInterf
 
         // The sidebar is the shell's first pure-Milpa-Components surface (greenhouse decisions/0189): a
         // declared component with a signed envelope, lifecycle events and a signal-driven active nav.
-        $sidebar = new \Milpa\AgentWorkspace\Live\Sidebar($this->liveSecret('signing'), $data, $events);
+        $sidebar = new \Milpa\AgentWorkspace\Live\Sidebar($this->liveSecret('signing'), $data, $events, $catalog);
         $this->container->registerService(\Milpa\AgentWorkspace\Live\Sidebar::class, $sidebar);
 
         // The topbar is the shell's second pure-Milpa-Components surface (greenhouse decisions/0189): a
@@ -267,7 +267,7 @@ final class AgentWorkspacePlugin implements PluginInterface, RouteProviderInterf
 
         // The main tablist is the shell's third pure-Milpa-Components surface (greenhouse decisions/0189): the
         // tablist declares the shared `desktop.tab` signal; the panes and composer dock project it.
-        $tabs = new \Milpa\AgentWorkspace\Live\Tabs($this->liveSecret('signing'), $events);
+        $tabs = new \Milpa\AgentWorkspace\Live\Tabs($this->liveSecret('signing'), $events, $catalog);
         $this->container->registerService(\Milpa\AgentWorkspace\Live\Tabs::class, $tabs);
 
         // The Work board is the shell's fourth pure-Milpa-Components surface (greenhouse decisions/0189): a

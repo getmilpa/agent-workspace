@@ -105,6 +105,11 @@ final class AgentViewRenderer implements ComponentRendererInterface, DeclaresCli
         // another. It was built for embed mode (greenhouse decisions/0210) and the panel is that host
         // now (decisions/0270).
         'desktop-session-strip',
+        // 🚨 THE DECISIONS INBOX, WHICH WAS PAINTED NOWHERE. Measured on the rendered panel: nothing
+        // carried it. I had claimed an hour earlier that it «stays a region of the conversation rather
+        // than a screen» — a fact I asserted about the page without measuring it. A governed agent
+        // that parks a question needs somebody to see it (greenhouse decisions/0195, decisions/0270).
+        'desktop-decisions',
         'desktop-thinking',
         'desktop-agent-message',
         'desktop-user-message',
@@ -240,6 +245,7 @@ final class AgentViewRenderer implements ComponentRendererInterface, DeclaresCli
                 . $paint('desktop-conversation')
                 . $paint('desktop-gate')
                 . '</section>'
+            . '<section class="tabpane" data-pane="decisions" hidden :hidden="$store.milpa[\'desktop.tab\'] !== \'decisions\'">' . $paint('desktop-decisions') . '</section>'
             . '<section class="tabpane" data-pane="work" hidden :hidden="$store.milpa[\'desktop.tab\'] !== \'work\'">' . $paint('desktop-work-board') . '</section>'
             . '<section class="tabpane tabpane--activity" data-pane="activity" hidden :hidden="$store.milpa[\'desktop.tab\'] !== \'activity\'">' . $paint('desktop-activity') . '</section>'
             . '<section class="tabpane" data-pane="context" hidden :hidden="$store.milpa[\'desktop.tab\'] !== \'context\'">' . $paint('desktop-context') . '</section>';
