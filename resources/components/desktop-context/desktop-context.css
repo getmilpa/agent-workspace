@@ -11,3 +11,10 @@
  */
 
 .panel-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(18rem, 1fr)); gap: var(--space-4); }
+
+/* The empty state spans the whole grid, because it is not a panel.
+   `.panel-grid` auto-fills 18rem columns, so a lone `.mui-empty` landed in column ONE and centred
+   itself inside 363px of a 1120px region — reading as a block nudged off to the left rather than as
+   the state of an empty tab. Measured in the browser: parent `362.656px 362.672px 362.672px`, the
+   empty state 363px wide at x=288 (greenhouse decisions/0287). */
+.panel-grid > .mui-empty { grid-column: 1 / -1; }

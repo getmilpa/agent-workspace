@@ -29,9 +29,9 @@ final class RolesView
     public function html(array $roles): string
     {
         if ($roles === []) {
-            return '<p class="mui-empty" style="color:var(--text-muted)">'
-                . 'No specialist roles yet. A role is a <code>.milpa/agents/&lt;name&gt;.md</code> composed with '
-                . '<code>agent:role:declare</code> — a brief, the skills it preloads, and the tools it is denied.</p>';
+            return '<div class="mui-empty"><p class="mui-empty__title">No specialist roles yet</p>'
+                . '<p class="mui-empty__desc">A role is a <code>.milpa/agents/&lt;name&gt;.md</code> composed with '
+                . '<code>agent:role:declare</code> — a brief, the skills it preloads, and the tools it is denied.</p></div>';
         }
 
         $cards = '';

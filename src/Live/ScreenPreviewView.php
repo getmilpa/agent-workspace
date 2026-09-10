@@ -29,9 +29,9 @@ final class ScreenPreviewView
     public function html(array $screens): string
     {
         if ($screens === []) {
-            return '<p class="mui-empty" style="color:var(--text-muted)">'
-                . 'No screens declared yet. The agent declares one with <code>screen:declare</code> — it is served '
-                . 'live at <code>/live/page?component=&lt;name&gt;</code> with no code deploy, and shows up here to preview.</p>';
+            return '<div class="mui-empty"><p class="mui-empty__title">No screens declared yet</p>'
+                . '<p class="mui-empty__desc">The agent declares one with <code>screen:declare</code> — it is served '
+                . 'live at <code>/live/page?component=&lt;name&gt;</code> with no code deploy, and shows up here to preview.</p></div>';
         }
 
         $chips = '';

@@ -97,7 +97,7 @@ final class DecisionsInboxView
         // has to build an `<ol>` out of a JavaScript string.
         return '<ol class="mui-replay__stream" id="milpa-decisions-list" aria-live="polite">' . $cards . '</ol>'
             . ($pending === []
-                ? '<p class="mui-empty" id="milpa-decisions-empty">' . $this->esc($empty) . '</p>'
+                ? '<div class="mui-empty" id="milpa-decisions-empty"><p class="mui-empty__desc">' . $this->esc($empty) . '</p></div>'
                 : '');
     }
 
@@ -135,7 +135,7 @@ final class DecisionsInboxView
         }
 
         return '<ol class="mui-replay__stream" id="milpa-sequences-list">' . $cards . '</ol>'
-            . ($sequences === [] ? '<p class="mui-empty" id="milpa-sequences-empty">' . $this->esc($empty) . '</p>' : '');
+            . ($sequences === [] ? '<div class="mui-empty" id="milpa-sequences-empty"><p class="mui-empty__desc">' . $this->esc($empty) . '</p></div>' : '');
     }
 
     /**
