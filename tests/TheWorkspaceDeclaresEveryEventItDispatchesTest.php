@@ -76,6 +76,12 @@ final class TheWorkspaceDeclaresEveryEventItDispatchesTest extends TestCase
         'desktop.compacted.before_render', 'desktop.compacted.after_render',
         'desktop.settings.before_render', 'desktop.settings.after_render',
         'desktop.capabilities.before_render', 'desktop.capabilities.after_render',
+        // 🚨 LOS DOS DEL SUBAGENTS: `declarations()` no los esparcía, así que este censo esperaba 47
+        // donde el paquete declara 49 — y la lista esperada estaba corta por exactamente esos dos, que
+        // es la forma en que un censo que no se mide contra el código se queda atrás
+        // (greenhouse decisions/0228, decisions/0283).
+        'desktop.subagents.before_render',
+        'desktop.subagents.after_render',
         'desktop.skills.before_render', 'desktop.skills.after_render',
         'desktop.screens.before_render', 'desktop.screens.after_render',
         'desktop.decisions.before_render', 'desktop.decisions.after_render',
@@ -365,6 +371,7 @@ final class TheWorkspaceDeclaresEveryEventItDispatchesTest extends TestCase
         (new \Milpa\AgentWorkspace\Live\SkillsScreen($codec, null, $events, $catalog))->render();
         (new \Milpa\AgentWorkspace\Live\CapabilitiesScreen($codec, null, $events, $catalog))->render();
         (new \Milpa\AgentWorkspace\Live\DecisionsInbox($codec, null, $events, $catalog))->render();
+        (new \Milpa\AgentWorkspace\Live\SubagentsScreen($codec, null, $events, $catalog))->render();
         (new \Milpa\AgentWorkspace\Live\ScreenPreview($codec, null, $events, $catalog))->render();
     }
 }

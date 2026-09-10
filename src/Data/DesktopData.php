@@ -831,27 +831,13 @@ final class DesktopData
         return $out;
     }
 
-    /**
-     * A downloadable dump of the CURRENT session — the material for a video or an autopsy of what the
-     * agent did: the raw session record, its counters and context, the work board and the activity/audit.
+    /*
+     * NO HAY `export()`, Y SU ÚNICO LLAMADOR ERA UNA RUTA. Servía `GET /desktop/export` — el material de
+     * autopsia de una sesión — y esa ruta se fue con la página. El censo lo reportó «no caller outside
+     * its own file» en el mismo commit en que borré la ruta (greenhouse decisions/0213, decisions/0283).
      *
-     * @return array{exported_at: string, id: string, model: array{model: string, endpoint: string}, session: array<string, mixed>, counters: array{turns: int, steps: int, tokens: int, tool_calls: int, state: string}, context: array{tokens: int, window: int, used_pct: int, free: int}, budget: list<array{class: string, messages: int, est_tokens: int}>, work: list<array{title: string, status: string, origin: string}>, audit: list<array{seq: int, type: string, data: string}>}
+     * Lo que exportaba sigue siendo legible: el ledger de la sesión, que es de donde lo leía.
      */
-    public function export(string $agentSessionId = ''): array
-    {
-        return [
-            'exported_at' => date('c'),
-            'id' => $this->currentSessionId(),
-            'model' => $this->model(),
-            'session' => $this->currentSession(),
-            'counters' => $this->counters(),
-            'context' => $this->context(),
-            'budget' => $this->tokenBudget($agentSessionId),
-            'work' => $this->work(),
-            'audit' => $this->audit(),
-        ];
-    }
-
     /**
      * Where the token budget goes, by category — so a human can SEE and debug it (greenhouse decisions/0196).
      *

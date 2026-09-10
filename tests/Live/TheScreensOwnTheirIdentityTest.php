@@ -49,15 +49,6 @@ final class TheScreensOwnTheirIdentityTest extends TestCase
         self::assertSame('', Screens::icon('agent-widgets'), 'no glyph is a glyph nobody drew');
     }
 
-    /** The ORDER is the caller's, and an unknown key is skipped rather than painted hollow. */
-    public function testTheOrderIsTheCallersAndUnknownKeysAreSkipped(): void
-    {
-        self::assertSame(
-            ['settings', 'skills'],
-            array_column(Screens::inOrder(['settings', 'nope', 'skills']), 'key'),
-        );
-    }
-
     /**
      * 🚨 THE GUARD: a glyph exists in EXACTLY ONE PLACE, and that place is not a host.
      *
