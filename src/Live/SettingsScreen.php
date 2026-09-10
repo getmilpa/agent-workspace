@@ -188,8 +188,8 @@ final class SettingsScreen
         return '<div class="mui-card mui-card--raised">'
             . '<div class="mui-card__header"><h2 class="mui-card__title">' . $this->t('settings.model.title') . '</h2></div>'
             . '<div class="mui-card__body mui-stack">'
-            . $this->endpointField($endpoint)
-            . $this->keyField()
+            . (SettingsControls::offered('set-end') ? $this->endpointField($endpoint) : '')
+            . (SettingsControls::offered('set-key') ? $this->keyField() : '')
             . '</div></div>';
     }
 
@@ -301,7 +301,9 @@ final class SettingsScreen
         return '<div class="mui-card mui-card--raised">'
             . '<div class="mui-card__header"><h2 class="mui-card__title">' . $this->t('settings.autonomy.title') . '</h2></div>'
             . '<div class="mui-card__body mui-stack mui-stack--sm">'
-            . $choice('ask', $mode === 'ask') . $choice('acknowledge', $mode === 'acknowledge') . $choice('auto', $mode === 'auto')
+            . (SettingsControls::offered('set-mode')
+                ? $choice('ask', $mode === 'ask') . $choice('acknowledge', $mode === 'acknowledge') . $choice('auto', $mode === 'auto')
+                : '')
             . '<div class="mui-alert mui-alert--info" role="note"><span class="mui-alert__icon" aria-hidden="true">i</span><div class="mui-alert__content"><p class="mui-alert__desc">' . $this->t('settings.autonomy.note') . '</p></div></div>'
             . '</div></div>';
     }
@@ -321,7 +323,9 @@ final class SettingsScreen
             . '<div class="mui-card__header"><h2 class="mui-card__title">' . $this->t('settings.storage.title') . '</h2></div>'
             . '<div class="mui-card__body mui-stack mui-stack--sm">'
             . '<p class="milpa-settings__note">' . $this->t('settings.storage.compact_note') . '</p>'
-            . '<div class="mui-field"><label class="mui-field__label" for="set-path">' . $this->t('settings.storage.folder') . '</label><input id="set-path" class="mui-input mui-input--sm milpa-settings__mono" value="' . $sessionsPath . '" readonly="readonly"></div>'
+            . (SettingsControls::offered('set-path')
+                ? '<div class="mui-field"><label class="mui-field__label" for="set-path">' . $this->t('settings.storage.folder') . '</label><input id="set-path" class="mui-input mui-input--sm milpa-settings__mono" value="' . $sessionsPath . '" readonly="readonly"></div>'
+                : '')
             . '</div></div>';
     }
 
@@ -337,7 +341,7 @@ final class SettingsScreen
     private function appearanceCard(): string
     {
         $buttons = '';
-        foreach (['system', 'dark', 'light'] as $key) {
+        foreach (SettingsControls::offered('theme-set') ? ['system', 'dark', 'light'] : [] as $key) {
             $buttons .= sprintf(
                 '<button type="button" class="mui-btn mui-btn--sm" data-theme-set="%s"%s @click="setTheme(\'%s\')" :aria-pressed="isTheme(\'%s\')">%s</button>',
                 $key,

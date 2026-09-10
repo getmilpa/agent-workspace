@@ -69,4 +69,33 @@ final class SettingsControls
         // The shell's theme, owned by the topbar's module and applied to the document root.
         'theme-set' => 'signal:ui.theme',
     ];
+
+    /**
+     * Whether this control may be printed at all — asked by {@see SettingsScreen} BEFORE it renders one.
+     *
+     * 🚨 THIS IS WHY THIS CLASS IS NOT A DOCUMENT. It shipped for an hour as a map that only a test
+     * read, and the house's own unwired-piece gate named it within that hour: «classes +1 … graduate it
+     * or retire it» (greenhouse decisions/0213). A correspondence that only a test consults is prose
+     * with a checker, and prose drifts — which is precisely the failure this whole slice is about.
+     *
+     * Asked at RENDER time, the map is load-bearing: delete an entry and the control LEAVES THE PAGE,
+     * rather than a test turning red while the screen keeps offering it. That is the difference between
+     * a contract and a comment.
+     */
+    public static function offered(string $control): bool
+    {
+        return isset(self::READERS[$control]);
+    }
+
+    /*
+     * NO HAY `reader(string $control)` AQUÍ, Y ES UNA DECISIÓN.
+     *
+     * La escribí junto con `offered()` y nadie la llamaba más que su propio test — que sería el CUARTO
+     * accesorio-que-nadie-pidió de esta familia, después de `InstalledPackages::version()`,
+     * `ProviderReach::declared()` y `ProviderReach::endpoint()`. Es un hábito, no un accidente
+     * (greenhouse decisions/0213).
+     *
+     * La constante es pública: quien necesite la ORACIÓN la lee de `READERS`. Lo que el render necesita
+     * es una pregunta de sí o no, y eso es lo único que este objeto contesta.
+     */
 }

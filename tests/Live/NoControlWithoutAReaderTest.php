@@ -102,6 +102,32 @@ final class NoControlWithoutAReaderTest extends TestCase
     }
 
     /**
+     * 🚨 THE POSITIVE CONTROL FOR THE MAP BEING LOAD-BEARING: remove a reader, lose the control.
+     *
+     * Without this, {@see SettingsControls} would be a document with a checker — a test would turn red
+     * while the screen kept offering the control, which is the failure this whole slice is about. The
+     * house's unwired-piece gate named the class within an hour of it shipping as exactly that
+     * (greenhouse decisions/0213, decisions/0280).
+     *
+     * It cannot mutate a constant, so it asserts the two halves that make the property: the screen ASKS
+     * `offered()` for every control it prints, and `offered()` answers by the map alone.
+     */
+    public function testTheScreenAsksTheMapBeforeItPrintsAControl(): void
+    {
+        $source = (string) file_get_contents(\dirname(__DIR__, 2) . '/src/Live/SettingsScreen.php');
+
+        foreach (array_keys(SettingsControls::READERS) as $control) {
+            self::assertStringContainsString(
+                "SettingsControls::offered('" . $control . "')",
+                $source,
+                $control . ' is printed without asking whether anything reads it',
+            );
+        }
+        self::assertFalse(SettingsControls::offered('set-stream'), 'a control nobody reads is not offered');
+        self::assertTrue(SettingsControls::offered('set-end'));
+    }
+
+    /**
      * The controls a rendered screen offers: input ids and the `data-*-set` verbs that stand for a group.
      *
      * @return list<string>
