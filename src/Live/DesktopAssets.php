@@ -117,7 +117,6 @@ final class DesktopAssets
         // The screens the shell's template used to carry as raw HTML with their behaviour in its inline
         // script (greenhouse decisions/0211, phase D). `desktop-skills` declares a
         // stylesheet and nothing else: they are read-only projections, so they have no module to ship.
-        'desktop-capabilities' => ['css', 'js'],
         'desktop-decisions' => ['css', 'js'],
         'desktop-screens' => ['css', 'js'],
         'desktop-skills' => ['css'],

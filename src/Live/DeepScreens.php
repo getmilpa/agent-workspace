@@ -21,7 +21,7 @@ use Milpa\Interfaces\Event\MilpaEventDispatcherInterface;
 /**
  * THE AGENT'S DEEP SCREENS, DECLARED IN ONE PLACE FOR BOTH DOORS.
  *
- * Capabilities, skills, preview and decisions used to be declared inside the shell controller alone,
+ * Skills, preview and decisions used to be declared inside the shell controller alone,
  * which runs on a `/desktop` request and nowhere else. The moment the panel wanted the same screens as
  * sections of its own, a second declaration site appeared — two lists of the same screens, built from
  * the same collaborators, free to drift the first time one gained a screen the other did not
@@ -67,10 +67,6 @@ final class DeepScreens
                 static fn (array $props): string => $settings->render($hidden),
             );
         }
-        $live->declare(
-            new CapabilitiesScreenComponent(),
-            static fn (array $props): string => (new CapabilitiesScreen($live->codec(), $data, $events, $catalog))->render($hidden),
-        );
         $live->declare(
             new SkillsScreenComponent(),
             static fn (array $props): string => (new SkillsScreen($live->codec(), $data, $events, $catalog))->render($hidden),

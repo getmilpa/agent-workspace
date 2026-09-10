@@ -14,7 +14,6 @@ declare(strict_types=1);
 
 namespace Milpa\AgentWorkspace\Tests\Live;
 
-use Milpa\AgentWorkspace\Live\CapabilityCatalogueView;
 use Milpa\AgentWorkspace\Live\DecisionsInboxView;
 use Milpa\AgentWorkspace\Live\RolesView;
 use Milpa\AgentWorkspace\Live\ScreenPreviewView;
@@ -32,40 +31,17 @@ use Psr\Log\NullLogger;
  * a property about a VIEW outlives whichever host renders it (greenhouse decisions/0283).
  *
  * The file they came from was named after a controller, which is why they read as page tests. They are
- * not: the capability catalogue, the decisions inbox, the declared sequences, the skills and roles
+ * not: the decisions inbox, the declared sequences, the skills and roles
  * lists, the screen preview and the composer field are all painted by the admin panel today.
  */
 final class TheWorkspaceViewsRenderTest extends TestCase
 {
-    public function testCapabilityCatalogueViewRendersCardsAndAOneClickEnable(): void
-    {
-        // Populated catalogue (pure view, greenhouse decisions/0193): an installed capability renders a card
-        // with its badge; an available one renders its exact command as legible consent plus a one-click Enable.
-        $html = (new CapabilityCatalogueView())->html(
-            [['id' => 'agent', 'title' => 'Sessions that outlive the process', 'provides' => 'agent.sessions']],
-            [['package' => 'milpa/data', 'title' => 'Persistence with four backends', 'unlocks' => ['persistence'], 'command' => 'composer require milpa/data']],
-        );
+    /*
+     * NO HAY PRUEBAS DEL CATÁLOGO DE CAPACIDADES: la vista se retiró con su pantalla, por duplicada.
+     * La sección Plugins del panel es nativa de `milpa/admin` y pinta el mismo catálogo
+     * (greenhouse decisions/0290).
+     */
 
-        self::assertStringContainsString('Installed · 1', $html);
-        self::assertStringContainsString('Available · 1', $html);
-        self::assertStringContainsString('Sessions that outlive the process', $html);
-        self::assertStringContainsString('mui-badge--success">installed', $html);
-        self::assertStringContainsString('data-cap-enable="milpa/data"', $html);
-        self::assertStringContainsString('composer require milpa/data', $html);
-        self::assertStringContainsString('Unlocks: persistence', $html);
-        self::assertStringContainsString('agent.sessions', $html);
-    }
-    public function testCapabilityCatalogueViewFallsBackToADerivedCommandAndEmptyStates(): void
-    {
-        // No command given → derive `composer require <package>`; empty collections → the two empty states.
-        $derived = (new CapabilityCatalogueView())->html([], [['package' => 'milpa/mcp-server']]);
-        self::assertStringContainsString('composer require milpa/mcp-server', $derived);
-        self::assertStringContainsString('Only the catalogue', $derived);
-
-        $empty = (new CapabilityCatalogueView())->html([['package' => 'milpa/core']], []);
-        self::assertStringContainsString('milpa/core', $empty);
-        self::assertStringContainsString('Everything available is installed', $empty);
-    }
     public function testTheDecisionsInboxRendersAParkedQuestionAcrossSessions(): void
     {
         // Populated inbox (pure view, greenhouse decisions/0195): a card carries the goal, the question, its

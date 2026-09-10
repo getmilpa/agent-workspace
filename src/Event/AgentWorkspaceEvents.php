@@ -16,7 +16,6 @@ namespace Milpa\AgentWorkspace\Event;
 
 use Milpa\AgentWorkspace\Live\Activity;
 use Milpa\AgentWorkspace\Live\AgentMessage;
-use Milpa\AgentWorkspace\Live\CapabilitiesScreen;
 use Milpa\AgentWorkspace\Live\ComposerBar;
 use Milpa\AgentWorkspace\Live\ComposerField;
 use Milpa\AgentWorkspace\Live\Context;
@@ -78,7 +77,6 @@ final class AgentWorkspaceEvents implements DeclaresEvents
             ...AgentMessage::events(),
             ...MessagePrototypes::events(),
             ...SettingsScreen::events(),
-            ...CapabilitiesScreen::events(),
             ...SkillsScreen::events(),
             // 🚨 LOS DEL SUBAGENTS FALTABAN, y los cazó el censo de piezas sin cableado: la pantalla
             // declaraba sus dos eventos y `declarations()` no los esparcía, así que `events:catalogue`

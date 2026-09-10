@@ -102,7 +102,6 @@ final class AgentWorkspacePlugin implements PluginInterface, RouteProviderInterf
     public const array COMPONENTS = [
         Live\ActivityComponent::class,
         Live\AgentMessageComponent::class,
-        Live\CapabilitiesScreenComponent::class,
         Live\ComposerBarComponent::class,
         Live\ComposerMessageComponent::class,
         Live\ContextComponent::class,

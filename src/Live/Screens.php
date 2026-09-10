@@ -54,7 +54,6 @@ final class Screens
         'agent' => ['title' => 'agent.title', 'icon' => '◈'],
         'sessions' => ['title' => 'nav.sessions', 'icon' => '▤'],
         'decisions' => ['title' => 'nav.decisions', 'icon' => '◈'],
-        'capabilities' => ['title' => 'nav.capabilities', 'icon' => '▩'],
         'skills' => ['title' => 'nav.skills', 'icon' => '✦'],
         'subagents' => ['title' => 'nav.subagents', 'icon' => '◉'],
         'preview' => ['title' => 'nav.preview', 'icon' => '◱'],
@@ -78,6 +77,14 @@ final class Screens
     {
         return self::ALL[$key]['icon'] ?? '';
     }
+
+    /*
+     * NO HAY PANTALLA DE CAPACIDADES EN ESTE PAQUETE, Y NO FALTA: era un DUPLICADO. La sección Plugins del
+     * panel es nativa de `milpa/admin`, pinta el mismo catálogo, declara la misma acción y corre el mismo
+     * `capabilities:enable` — y su botón ahora sí tiene juez. Un test del panel ya lo afirmaba con su razón
+     * escrita («the panel's Plugins section already is this door»), que es por lo que esta pantalla llevaba
+     * tanto tiempo sin puerta: nadie la olvidó, se decidió (greenhouse decisions/0289, retirada en 0290).
+     */
 
     /*
      * NO HAY `inOrder()`, Y SU ÚNICO LLAMADOR ERA EL SIDEBAR DE LA PÁGINA. Existía porque el ORDEN es
