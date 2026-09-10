@@ -177,9 +177,17 @@ final class AdminGuestTest extends TestCase
         self::assertStringNotContainsString('desktop-agent-guest', $html);
         self::assertNull(DesktopAssets::path('desktop-agent-guest.js'));
 
-        // The seeds the view declared reached the page's own tag, merged with the panel's.
-        self::assertMatchesRegularExpression('~<script id="milpa-live-signals"[^>]*>\{[^<]*"desktop\.tab":"chat"~', $html);
-        self::assertStringContainsString('"admin.section":"agent"', $html, 'the host\'s own seed is still there');
+        // The seeds the view declared reached the page's own tag, merged with the panel's — DECODED
+        // rather than pattern-matched. The old regex bounded itself with `[^<]*`, which was a cheap way
+        // to stay inside the tag and broke the moment the payload legitimately carried a bracket: the
+        // catalog rides here now, and `command.goal.none` reads «/goal <text> sets one»
+        // (greenhouse decisions/0277). Decoding asserts the property instead of the punctuation.
+        self::assertSame(1, preg_match('~<script id="milpa-live-signals" type="application/json">(.*?)</script>~s', $html, $seed));
+        $signals = json_decode(str_replace('<\/', '</', $seed[1]), true);
+        self::assertIsArray($signals);
+        self::assertSame('chat', $signals['desktop.tab'] ?? null, 'the guest\'s seed');
+        self::assertSame('agent', $signals['admin.section'] ?? null, 'and the host\'s own, in the same tag');
+        self::assertIsArray($signals['desktop.i18n'] ?? null, 'and the client catalog, which is why a screen section has copy at all');
     }
 
     /**
@@ -191,7 +199,7 @@ final class AdminGuestTest extends TestCase
         [, $kernel] = self::boot([AdminPlugin::class, AgentWorkspacePlugin::class]);
         $html = (string) self::dispatch($kernel, '/milpa/admin/s/agent')->getBody();
 
-        foreach (['milpa-commands', 'milpa-desktop-i18n', 'milpa-desktop-guard', 'milpa-desktop-session'] as $tag) {
+        foreach (['milpa-commands', 'milpa-live-signals', 'milpa-desktop-guard', 'milpa-desktop-session'] as $tag) {
             self::assertSame(1, substr_count($html, '<script id="' . $tag . '" type="application/json">'), $tag . ' is written once, as data');
         }
         self::assertStringNotContainsString('id="milpa-desktop-hub"', $html, 'no hub tag: only GET /desktop can set the subscriber cookie');

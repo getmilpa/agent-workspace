@@ -344,11 +344,13 @@ export function page({ elements = {}, tree = null, catalog = CATALOG, signals = 
   const storage = {};
   let reloads = 0;
 
-  const catalogEl = new El('script', { id: 'milpa-desktop-i18n' });
-  catalogEl.textContent = JSON.stringify(catalog);
-  byId['milpa-desktop-i18n'] = catalogEl;
+  // 🚨 THE CATALOG RIDES IN THE SIGNALS SEED, under `desktop.i18n` — the one source both hosts write.
+  // It used to have a tag of its own that only the page and the panel's Agent region emitted, so a
+  // screen SECTION got no client copy and every `tr()` there rendered its key
+  // (greenhouse decisions/0277). The harness seeds it the way the servers do, or these tests would
+  // pass on a shape nothing serves.
   const seedEl = new El('script', { id: 'milpa-live-signals' });
-  seedEl.textContent = JSON.stringify(signals);
+  seedEl.textContent = JSON.stringify({ 'desktop.i18n': catalog, ...signals });
   byId['milpa-live-signals'] = seedEl;
 
   const sandbox = {

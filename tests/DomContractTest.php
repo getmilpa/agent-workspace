@@ -207,7 +207,7 @@ final class DomContractTest extends TestCase
 
         // The positive control for the PARSER: without these it would pass on a package that reaches for
         // nothing at all.
-        foreach (['milpa-activity', 'milpa-charcount', 'milpa-search', 'milpa-desktop-i18n'] as $known) {
+        foreach (['milpa-activity', 'milpa-charcount', 'milpa-search', 'milpa-live-signals'] as $known) {
             self::assertArrayHasKey($known, $ids, 'the parser reads the ids the modules resolve');
         }
         self::assertGreaterThanOrEqual(10, \count($ids));
