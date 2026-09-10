@@ -3,6 +3,19 @@
 All notable changes to milpa/desktop-app are documented here. This project adheres to
 [Semantic Versioning](https://semver.org/) and [Keep a Changelog](https://keepachangelog.com/).
 
+## [0.69.0](https://github.com/getmilpa/agent-workspace/compare/v0.68.0...v0.69.0) (2026-09-10)
+
+
+### Features
+
+* **electron:** the native window opens the panel, not a second shell ([#47](https://github.com/getmilpa/agent-workspace/issues/47)) ([a5c3f78](https://github.com/getmilpa/agent-workspace/commit/a5c3f78776225a785160fe8a9f9f9768701b9870))
+
+
+### Bug Fixes
+
+* **admin:** the panel's screens carry the Desktop runtime, so their controls work ([#50](https://github.com/getmilpa/agent-workspace/issues/50)) ([a7cdff6](https://github.com/getmilpa/agent-workspace/commit/a7cdff6cb4e198b1784fcc741ec64f1a744cbf63))
+* **electron:** untrack node_modules, which an add -A swept into the repository ([#49](https://github.com/getmilpa/agent-workspace/issues/49)) ([c7ae382](https://github.com/getmilpa/agent-workspace/commit/c7ae382f0666b1afddce5bf7e13643ca9864368f))
+
 ## [0.68.0](https://github.com/getmilpa/agent-workspace/compare/v0.67.0...v0.68.0) (2026-09-10)
 
 
