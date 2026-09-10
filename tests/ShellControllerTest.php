@@ -408,7 +408,18 @@ final class ShellControllerTest extends TestCase
         // endpoint to `config:set` because the agent resolves `agent.baseUrl`, the key to
         // `provider:declare` because the settings file is committed on a real app.
         self::assertStringContainsString("fetch('/desktop/settings'", self::module('desktop-settings'), 'the mode posts');
-        self::assertStringContainsString("fetch('/config/set'", self::module('desktop-settings'), 'the endpoint is a governed write');
+        // 🚨 THE GOVERNED WRITER AND THE PROBE LIVE IN THE GUARD, and that is the invariant, not their
+        // location: TWO surfaces need them — the Settings screen configures the agent, the composer's
+        // chip switches models — and a second copy of the confirm gate's two-step is how one of them
+        // forgets to carry the `Confirm-Token` back, reading a 428 as a refusal
+        // (greenhouse decisions/0281).
+        self::assertStringContainsString("fetch('/config/set'", self::module('desktop-guard'), 'configuration is a governed write');
+        self::assertStringContainsString("fetch('/agent/model?ask=1'", self::module('desktop-guard'), 'the provider is asked by the operation, on demand');
+        foreach (['desktop-settings', 'desktop-composer'] as $caller) {
+            self::assertStringContainsString('d.config.set(', self::module($caller), $caller . ' writes through the shared writer');
+            self::assertSame(0, preg_match_all("/fetch\('\/config\/set'/", self::module($caller)), $caller . ' carries no copy of the two-step');
+        }
+        self::assertStringContainsString('d.models()', self::module('desktop-composer'), 'the chip asks the same prober the field does');
         self::assertStringContainsString("fetch('/provider/declare'", self::module('desktop-settings'), 'the key has its own operation');
         self::assertStringContainsString("fetch('/desktop/sessions'", self::module('desktop-auth'), 'create session posts');
         self::assertStringNotContainsString("fetch('/desktop/sessions'", $body);
@@ -1059,13 +1070,19 @@ final class ShellControllerTest extends TestCase
         // And in the modules, every fetch is guarded — `d.guarded` is the same discipline by another name.
         // The commands module makes TWO calls (a GET read and a POST mutation) through ONE guarded `request`;
         // the capabilities module makes two because the house's confirm gate is a two-STEP, not two calls.
-        // `desktop-settings` calls THREE endpoints on purpose, and each one is a different PROMISE:
+        // `desktop-settings` calls TWO endpoints of its own: the form to `POST /desktop/settings` and
+        // the API key to `provider:declare`. Configuration and the provider probe are the GUARD's, one
+        // implementation for the two surfaces that need them (see above).
+        //
+        // The prose that used to be here counted FOUR endpoints on purpose, and each one is a different PROMISE:
         // the form goes to `POST /desktop/settings` (the Desktop's own file, for what only this UI
         // reads), the API key to `provider:declare` (never in the settings file, which a real app
-        // COMMITS), and the endpoint to `config:set` — because `agent.baseUrl` is what the agent
-        // resolves, and the screen used to post it into the file instead, where nothing read it
-        // (greenhouse decisions/0276, decisions/0280). Two of the three are confirm-gate two-steps.
-        foreach (['desktop-auth' => 1, 'desktop-settings' => 3, 'desktop-sidebar' => 1, 'desktop-turn' => 1, 'desktop-composer' => 1, 'desktop-commands' => 2, 'desktop-capabilities' => 2, 'desktop-work-board' => 1] as $component => $calls) {
+        // COMMITS), configuration to `config:set` — ONE writer for `agent.baseUrl` AND `agent.model`,
+        // because that is what the agent resolves and the screen used to post it into the file
+        // instead, where nothing read it — and `GET /agent/model?ask=1`, the one call that goes out on
+        // the wire, made by a VERB and never by a render: 5.0 s against a dead endpoint versus 0.06 s
+        // for `ask=false` (greenhouse decisions/0276, decisions/0280, decisions/0281).
+        foreach (['desktop-auth' => 1, 'desktop-settings' => 2, 'desktop-sidebar' => 1, 'desktop-turn' => 1, 'desktop-composer' => 1, 'desktop-commands' => 2, 'desktop-capabilities' => 2, 'desktop-work-board' => 1] as $component => $calls) {
             $module = self::module($component);
             self::assertSame($calls, preg_match_all('/\bfetch\((?!\))/', $module), $component);
             self::assertGreaterThanOrEqual(1, substr_count($module, '.then(d.guarded)'), $component . ' guards every call');

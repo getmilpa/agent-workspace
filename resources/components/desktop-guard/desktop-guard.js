@@ -170,6 +170,53 @@
     }
   });
 
+  /**
+   * 🚨 THE ONE GOVERNED WRITER OF CONFIGURATION, AND THE ONE PROBE OF THE PROVIDER.
+   *
+   * They live in the guard because TWO surfaces need them and neither owns them: the Settings screen
+   * configures the agent, and the composer's model chip switches models. A second copy of the confirm
+   * gate's two-step is the thing to avoid, not a line count — a surface that forgets to carry the
+   * `Confirm-Token` back reads the 428 as a refusal, and the person is told the write failed when it
+   * was merely asked about (greenhouse decisions/0281).
+   *
+   * `config.set` is governed: `agent.baseUrl` is where every prompt this app sends will go, and
+   * `agent.model` is which model receives them. Two same-origin POSTs once moved the first with no
+   * session at all, WITH a policy registered, because `config:set` declared no scope for the policy to
+   * match (greenhouse decisions/0278, decisions/0279).
+   *
+   * `models` asks the OPERATION, which is what declares the egress and leaves the trail; a reader of
+   * our own would skip both. It is a VERB, never a render: measured against a dead endpoint the probe
+   * costs 5.0 s and `ask=false` costs 0.06 s, so nothing calls it while painting
+   * (greenhouse decisions/0266).
+   *
+   * Both REJECT rather than report: the copy belongs to whoever asked, in its own surface's words.
+   */
+  function configSet(key, value) {
+    var send = function (token) {
+      var headers = { 'Content-Type': 'application/json' };
+      if (token) { headers['Confirm-Token'] = token; }
+
+      return fetch('/config/set', {
+        method: 'POST',
+        headers: headers,
+        body: JSON.stringify({ key: key, value: value }),
+      });
+    };
+
+    return send(null).then(guardedFlow).then(function (r) {
+      if (r.status !== 428) { return r; }
+
+      return r.json().then(function (body) { return send(body && body.confirm_token).then(guarded); });
+    });
+  }
+
+  /** What the endpoint says it serves: `{reached, models}`, or a rejection the caller words. */
+  function providerModels() {
+    return fetch('/agent/model?ask=1', { headers: { Accept: 'application/json' } })
+      .then(guarded)
+      .then(function (response) { return response.json(); });
+  }
+
   live.desktop = {
     tr: tr,
     signal: signal,
@@ -179,5 +226,7 @@
     notice: notice,
     onNotice: onNotice,
     onDismiss: onDismiss,
+    config: { set: configSet },
+    models: providerModels,
   };
 })();

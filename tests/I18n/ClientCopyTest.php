@@ -84,6 +84,13 @@ final class ClientCopyTest extends TestCase
         'conn.state' => 'a signal the bus alone writes and the status bar binds — the page seeds no value',
         'conn.label' => 'idem: the connection has no state until the transport says one',
         'milpa.theme' => "the localStorage key the viewer's own theme preference is remembered under",
+        // CONFIGURATION KEYS, not copy: the settings screen's one governed writer names them in the
+        // body it posts to `config:set` (greenhouse decisions/0281). Its sibling `agent.baseUrl` is
+        // here for the same reason and NOT because the parser demanded it — that name escapes the
+        // pattern below on a capital letter alone, which is worth writing down: a parser that cannot
+        // see a name will never complain about it.
+        'agent.model' => 'the config key the model select writes through config:set',
+        'agent.baseUrl' => 'the config key the endpoint field writes through config:set',
     ];
 
     /** The signals the SERVED page declares — seeded and computed — read off the page itself. */
@@ -192,7 +199,6 @@ final class ClientCopyTest extends TestCase
     public function testEveryKeyAModuleAsksForIsInTheHarnessCopyToo(): void
     {
         $catalog = new Catalog();
-        $missing = [];
         $modules = glob(self::root() . '/resources/components/*/*.js') ?: [];
         self::assertNotEmpty($modules, 'the instrument found no modules to read');
 
@@ -202,24 +208,41 @@ final class ClientCopyTest extends TestCase
         $seeded = array_flip($carried[1]);
         self::assertNotEmpty($seeded);
 
+        // 🚨 IT COLLECTS EVERY DOTTED NAME, NOT EVERY `tr('…')` CALL, AND THAT IS A CORRECTION.
+        //
+        // The first shape of this test read `tr\('([^']+)'` — the call sites. One refactor later, the
+        // settings screen grew ONE governed writer taking its message keys as ARGUMENTS
+        // (`declareConfig(key, value, okKey, failKey)`), and four keys went invisible to it the same
+        // hour it was written: they are still literals in the module, just not inside a `tr(`.
+        //
+        // A parser that cannot see a name will never complain about it — which is the sentence this
+        // file already carries about `agent.baseUrl` escaping on a capital letter. Twice in one slice.
+        //
+        // So the collection is the same as the sibling test's: every dotted name the module carries.
+        // Filtering to the ones the CATALOG answers is what separates a message key from a bus fact
+        // type or a config key, and it means an indirect key is covered exactly like a direct one.
         $asked = [];
         foreach ($modules as $module) {
-            preg_match_all("/\btr\('([^']+)'/", (string) file_get_contents($module), $keys);
-            foreach ($keys[1] as $key) {
-                $asked[$key] = basename($module);
+            preg_match_all("/'([a-z][a-z0-9_]*(?:\.[a-z0-9_]+)+)'/", (string) file_get_contents($module), $names);
+            foreach ($names[1] as $name) {
+                if ($catalog->has($name)) {
+                    $asked[$name] = basename($module);
+                }
             }
         }
-        // The positive control for the PARSER: a key every shipped module is known to ask for.
-        self::assertArrayHasKey('guard.unreachable', $asked, 'the instrument must see a tr() call it is known to have');
+        // The positive control for the PARSER: two keys it is known to have to see — one written at its
+        // call site, one handed to the writer as an argument.
+        self::assertArrayHasKey('guard.unreachable', $asked, 'a key at its call site');
+        self::assertArrayHasKey('settings.model.endpoint.saved', $asked, 'a key passed to the governed writer as an argument');
         self::assertGreaterThanOrEqual(20, \count($asked));
 
+        $missing = [];
         foreach ($asked as $key => $file) {
-            self::assertTrue($catalog->has($key), \sprintf('«%s» is asked for by %s and the catalog does not have it', $key, $file));
             if (!isset($seeded[$key])) {
                 $missing[] = $key . ' (' . $file . ')';
             }
         }
 
-        self::assertSame([], $missing, 'a key a module asks for must be in the harness copy, or its node test asserts the key instead of the sentence');
+        self::assertSame([], $missing, 'a key a module carries must be in the harness copy, or its node test asserts the key instead of the sentence');
     }
 }

@@ -222,6 +222,12 @@ final class ComposerBar
         // (greenhouse decisions/0189); otherwise a plain textarea (backwards-compatible fallback), whose
         // seamless look is the stylesheet's `.milpa-composer-box .mui-textarea` rule, not an attribute.
         $placeholder = $this->tr('composer.placeholder');
+        // 🚨 THESE TWO WERE HARDCODED ENGLISH IN THE MARKUP: «Model: … · panels open on their figures,
+        // close as you type.» A `desktop.locale = es` app read an English island in its own composer,
+        // and the code-language rule is that no human-facing string is a literal
+        // (greenhouse decisions/0138, decisions/0281).
+        $panelsHint = $this->tr('composer.panels_hint');
+        $modelAsking = $this->tr('composer.model.asking');
         $field = $this->field !== null
             ? $this->field->render()
             : '<textarea id="composer-input" class="mui-textarea" rows="2" placeholder="' . $placeholder . '"></textarea>';
@@ -262,6 +268,10 @@ final class ComposerBar
         <button type="button" class="mui-badge composer-mode__chip" id="milpa-mode-chip" aria-haspopup="true" aria-expanded="false" :aria-expanded="menuOpen ? 'true' : 'false'" @click="toggleMenu(\$event)"><span id="milpa-mode-label" x-text="\$store.milpa['composer.mode.label']">{$modeLabel}</span><span class="composer-mode__caret" aria-hidden="true">▾</span></button>
         <div id="milpa-mode-menu" class="composer-mode__menu" hidden :hidden="!menuOpen" @click.stop role="menu">{$modeMenu}</div>
       </span>
+      <span class="composer-mode">
+        <button type="button" class="mui-badge composer-mode__chip" id="milpa-model-chip" aria-haspopup="true" aria-expanded="false" :aria-expanded="modelMenuOpen ? 'true' : 'false'" @click="toggleModelMenu(\$event)" :title="\$store.milpa['agent.model.label']"><span id="milpa-model-label" x-text="\$store.milpa['agent.model.label']">{$model}</span><span class="composer-mode__caret" aria-hidden="true">▾</span></button>
+        <div id="milpa-model-menu" class="composer-mode__menu" hidden :hidden="!modelMenuOpen" @click.stop="modelMenuClick(\$event)" role="menu"><p class="composer-mode__empty" x-text="modelNotice">{$modelAsking}</p></div>
+      </span>
       <span class="composer-meta">
         <span id="milpa-charcount" class="composer-count" aria-live="polite"></span>
         <button type="button" class="composer-chip" data-open-panel="session" @click="\$store.milpa['composer.panel'] = \$store.milpa['composer.panel'] === 'session' ? '' : 'session'">◈ <span x-text="\$store.milpa['session.counters']">{$c['turns']} turns · {$c['tool_calls']} tools</span></button>
@@ -270,7 +280,7 @@ final class ComposerBar
       </span>
     </div>
   </div>
-  <p class="composer-model">Model: {$model} · panels open on their figures, close as you type.</p>
+  <p class="composer-model">{$panelsHint}</p>
   <!-- THE ROOM SAYS WHEN IT IS RUNNING DEGRADED. Without the Mercure hub the workspace still works —
        the browser polls the shared log instead of being pushed to — and it looked identical to the
        pushed version, so somebody read a working screen and had no way to know their live feed was a

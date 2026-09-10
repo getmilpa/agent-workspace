@@ -117,7 +117,7 @@ export function prototypeTags() {
   return tags;
 }
 
-/** The composer bar as `Live\ComposerBar` prints it: the field, the count, the mode menu, the send. */
+/** The composer bar as `Live\ComposerBar` prints it: the field, the count, both chips' menus, the send. */
 export function composerBar() {
   const wrap = new El('div', { class: 'composer-wrap' });
   const box = wrap.appendChild(new El('div', { class: 'milpa-composer-box' }));
@@ -128,9 +128,16 @@ export function composerBar() {
   for (const [mode, label] of [['ask', 'Ask before changing'], ['acknowledge', 'Compatibility'], ['auto', 'Continue automatically']]) {
     menu.appendChild(new El('button', { class: 'milpa-mode-opt', 'data-mode': mode, 'data-label': label }));
   }
+  // The MODEL chip and its menu, printed empty exactly as the server prints them: the list is asked
+  // for on open and never on render, so the only thing here is the notice line
+  // (greenhouse decisions/0281). A harness that pre-filled it would be easier than the browser, which
+  // is how a harness hides the code the browser runs (greenhouse decisions/0273).
+  foot.appendChild(new El('button', { id: 'milpa-model-chip' }));
+  const modelMenu = foot.appendChild(new El('div', { id: 'milpa-model-menu', hidden: true }));
+  modelMenu.appendChild(new El('p', { class: 'composer-mode__empty' }));
   foot.appendChild(new El('button', { id: 'milpa-send' }));
 
-  return { wrap, field, menu };
+  return { wrap, field, menu, modelMenu };
 }
 
 /** The completion popup as `CommandListView` prints it, for the commands the house serves. */

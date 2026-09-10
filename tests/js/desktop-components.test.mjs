@@ -178,6 +178,64 @@ test('the provider key goes to its own operation and the input is cleared either
   assert.equal(input.value, '');
 });
 
+test('Find models asks the OPERATION and fills the select with what the provider serves', async () => {
+  const p = page({ modules: ['desktop-topbar', 'desktop-settings'] });
+  const select = new El('select', { id: 'set-model' });
+  p.byId['set-model'] = select;
+  const settings = p.mount('desktopSettings', undefined, settingsRoot());
+  const calls = stubFetch(p, [response(200, { ok: true, reached: true, models: ['qwen3.8-27b', 'llama3.2'] })]);
+
+  await settings.findModels();
+
+  assert.equal(calls[0].url, '/agent/model?ask=1', 'the operation declares the egress; a reader of our own would not');
+  assert.deepEqual(select.children.map((o) => o.value), ['qwen3.8-27b', 'llama3.2']);
+  assert.match(p.signal('settings.saved').text, /2/, 'it says how many the provider serves');
+  assert.equal(p.signal('settings.saved').ok, true);
+});
+
+test('a declared model the provider does NOT serve stays in the list and stays selected', async () => {
+  const p = page({ modules: ['desktop-topbar', 'desktop-settings'] });
+  const select = new El('select', { id: 'set-model', value: 'qwen3-coder:30b' });
+  p.byId['set-model'] = select;
+  const settings = p.mount('desktopSettings', undefined, settingsRoot());
+  stubFetch(p, [response(200, { ok: true, reached: true, models: ['llama3.2'] })]);
+
+  await settings.findModels();
+
+  // Dropping it would silently change what this app is configured to talk to, and «the provider does
+  // not serve what you declared» is a fact a person needs to SEE (greenhouse decisions/0266).
+  assert.deepEqual(select.children.map((o) => o.value), ['qwen3-coder:30b', 'llama3.2']);
+  assert.equal(select.children.find((o) => o.selected).value, 'qwen3-coder:30b');
+});
+
+test('an endpoint that does not answer is reported as that, and fills nothing', async () => {
+  const p = page({ modules: ['desktop-topbar', 'desktop-settings'] });
+  const select = new El('select', { id: 'set-model' });
+  p.byId['set-model'] = select;
+  const settings = p.mount('desktopSettings', undefined, settingsRoot());
+  stubFetch(p, [response(200, { ok: true, reached: false, models: [] })]);
+
+  await settings.findModels();
+
+  assert.equal(p.signal('settings.saved').ok, false);
+  assert.equal(p.signal('settings.saved').text, 'The endpoint did not answer');
+  assert.equal(select.children.length, 0);
+});
+
+test('picking a model is a governed write to the same one writer', async () => {
+  const p = page({ modules: ['desktop-topbar', 'desktop-settings'] });
+  p.byId['set-model'] = new El('select', { id: 'set-model', value: 'qwen3.8-27b' });
+  const settings = p.mount('desktopSettings', undefined, settingsRoot());
+  const calls = stubFetch(p, [response(428, { confirm_token: 't-9' }), response(200, { ok: true })]);
+
+  await settings.declareModel();
+
+  assert.equal(calls[0].url, '/config/set');
+  assert.deepEqual(JSON.parse(calls[0].init.body), { key: 'agent.model', value: 'qwen3.8-27b' });
+  assert.equal(calls[1].init.headers['Confirm-Token'], 't-9', 'the 428 two-step, from the ONE writer');
+  assert.equal(p.signal('settings.saved').text, 'Model saved');
+});
+
 test('a refused save is reported with its status, and never says Saved', async () => {
   const p = page({ modules: ['desktop-topbar', 'desktop-settings'] });
   const settings = p.mount('desktopSettings', undefined, settingsRoot());
