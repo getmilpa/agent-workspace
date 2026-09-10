@@ -667,3 +667,43 @@ test('a click in the menu is delegated — dynamic items carry a name, not an x-
 
   assert.equal(p.signal('agent.model'), 'qwen3.8-27b');
 });
+
+test('the chip says what the provider answered — the two sentences nothing was asking', async () => {
+  const { p, composer } = composerPage();
+  p.signal('agent.model', 'qwen3.8-27b');
+  p.signal('agent.model.label', 'qwen3.8-27b');
+  stubFetch(p, [response(200, { ok: true, reached: true, serves_declared: false, models: ['llama3.2'] })]);
+
+  await composer.toggleModelMenu({ stopPropagation() {} });
+
+  // `modelLabel()` has carried this sentence in two locales since decisions/0266 and no caller could
+  // produce it: both hand it a CONFIG read, which never says whether the provider answered. The probe
+  // this chip makes on open returns all three fields (greenhouse decisions/0286).
+  assert.match(p.signal('agent.model.label'), /does not serve it/);
+});
+
+test('a provider that does not answer says THAT, and a declared-and-served model keeps its name', async () => {
+  const { p, composer } = composerPage();
+  p.signal('agent.model', 'qwen3.8-27b');
+  stubFetch(p, [response(200, { ok: true, reached: false, models: [] })]);
+
+  await composer.toggleModelMenu({ stopPropagation() {} });
+  assert.match(p.signal('agent.model.label'), /not answering/);
+
+  const second = composerPage();
+  second.p.signal('agent.model', 'qwen3.8-27b');
+  stubFetch(second.p, [response(200, { ok: true, reached: true, serves_declared: true, models: ['qwen3.8-27b'] })]);
+  await second.composer.toggleModelMenu({ stopPropagation() {} });
+  assert.equal(second.p.signal('agent.model.label'), 'qwen3.8-27b', 'served: the name alone');
+});
+
+test('with NO model declared the label is left alone — there is no name to fail to serve', async () => {
+  const { p, composer } = composerPage();
+  p.signal('agent.model', '');
+  p.signal('agent.model.label', 'no model declared');
+  stubFetch(p, [response(200, { ok: true, reached: false, models: [] })]);
+
+  await composer.toggleModelMenu({ stopPropagation() {} });
+
+  assert.equal(p.signal('agent.model.label'), 'no model declared');
+});

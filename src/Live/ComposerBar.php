@@ -231,6 +231,15 @@ final class ComposerBar
         // The composer's text field IS a milpa/live component when the framework's UI system is wired
         // (greenhouse decisions/0189); otherwise a plain textarea (backwards-compatible fallback), whose
         // seamless look is the stylesheet's `.milpa-composer-box .mui-textarea` rule, not an attribute.
+        // 🚨 NO HAY BOTÓN DE ADJUNTAR, Y ES LA MISMA REGLA QUE VACIÓ SETTINGS. Era un `＋` con
+        // `aria-label` y NADA más: sin `id`, sin `@click`, sin `data-*` — así que ningún módulo podía
+        // cablearlo ni por delegación. Lo cachó contar los botones sin verbo en la página, y Rod pidió
+        // que esto quede limpio (greenhouse decisions/0280, decisions/0286).
+        //
+        // No volvió cableado porque adjuntar no existe: no hay ruta que reciba un archivo, ni tipo de
+        // mensaje que lo lleve, ni nada en la sesión que lo guarde. Un control que promete una
+        // capacidad que nada respalda es la clase de mentira que este arco lleva un día borrando — y
+        // cuando adjuntar exista, el botón entra CON su verbo.
         $placeholder = $this->tr('composer.placeholder');
         // 🚨 THESE TWO WERE HARDCODED ENGLISH IN THE MARKUP: «Model: … · panels open on their figures,
         // close as you type.» A `desktop.locale = es` app read an English island in its own composer,
@@ -242,7 +251,6 @@ final class ComposerBar
             ? $this->field->render()
             : '<textarea id="composer-input" class="mui-textarea" rows="2" placeholder="' . $placeholder . '"></textarea>';
         $commandList = (new CommandListView())->html($this->commands());
-        $attach = $this->tr('composer.attach');
         $send = $this->tr('composer.send');
         // The same two words INSIDE an Alpine expression: a JS string literal in an HTML attribute, so an
         // apostrophe in some locale's word has to survive both readings, not just the HTML one.
@@ -273,7 +281,6 @@ final class ComposerBar
   <div class="milpa-composer-box">
     {$field}
     <div class="composer-row">
-      <button type="button" class="mui-btn mui-btn--ghost mui-btn--sm mui-btn--icon composer-round" aria-label="{$attach}">＋</button>
       <span class="composer-mode">
         <button type="button" class="mui-badge composer-mode__chip" id="milpa-mode-chip" aria-haspopup="true" aria-expanded="false" :aria-expanded="menuOpen ? 'true' : 'false'" @click="toggleMenu(\$event)"><span id="milpa-mode-label" x-text="\$store.milpa['composer.mode.label']">{$modeLabel}</span><span class="composer-mode__caret" aria-hidden="true">▾</span></button>
         <div id="milpa-mode-menu" class="composer-mode__menu" hidden :hidden="!menuOpen" @click.stop role="menu">{$modeMenu}</div>

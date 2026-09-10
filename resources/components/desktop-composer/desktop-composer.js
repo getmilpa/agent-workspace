@@ -259,11 +259,46 @@
         return d.models().then(function (report) {
           var models = (report && report.models) || [];
           self.modelsLoaded = true;
+          self.sayWhatTheProviderAnswered(report);
           if (!report || report.reached !== true) { self.modelNotice = d.tr('composer.model.unreachable'); return; }
           if (models.length === 0) { self.modelNotice = d.tr('composer.model.none'); return; }
           self.modelNotice = '';
           self.fillModels(models);
         }).catch(function () { self.modelNotice = d.tr('composer.model.unreachable'); });
+      },
+
+      /**
+       * THE CHIP'S LABEL LEARNS WHAT THE PROVIDER ANSWERED — the two facts nothing was asking.
+       *
+       * 🚨 `ComposerBar::modelLabel()` HAS THREE ANSWERS AND ONLY ONE WAS REACHABLE. It says the name
+       * alone, or «%s · not answering», or «%s · this provider does not serve it» — and both callers
+       * hand it a CONFIG read (`DesktopData::model()`), which never carries `reached` or
+       * `serves_declared`, because painting must not probe (greenhouse decisions/0266, decisions/0281).
+       * So two sentences existed in two locales and no caller could ever produce them.
+       *
+       * They were not dead, they were UNASKED. The probe that answers them is the one this chip makes
+       * when a person opens the menu, and it returns all three fields — so the label says the truth it
+       * just learned, and only then (greenhouse decisions/0286).
+       *
+       * The DECLARED name is what these sentences are about, so a workspace with no model declared
+       * keeps its "no model declared" label: there is no name for the provider to fail to serve.
+       */
+      sayWhatTheProviderAnswered: function (report) {
+        var d = desk();
+        var name = String(signal('agent.model') || '');
+        if (!d || name === '') { return; }
+
+        if (!report || report.reached !== true) {
+          signal('agent.model.label', d.tr('model.unreachable', name));
+
+          return;
+        }
+        if (report.serves_declared === false) {
+          signal('agent.model.label', d.tr('model.not_served', name));
+
+          return;
+        }
+        signal('agent.model.label', name);
       },
 
       /**
