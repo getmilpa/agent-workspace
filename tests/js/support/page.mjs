@@ -266,8 +266,28 @@ export class El {
   setAttribute(name, value) { if (name === 'id') { this.id = String(value); } else { this.attrs[name] = String(value); } }
   removeAttribute(name) { delete this.attrs[name]; }
   addEventListener(type, fn) { (this.listeners[type] ||= []).push(fn); }
-  /** Fire a listener the way a click does — the harness's stand-in for a user acting on the page. */
-  fire(type, event = {}) { (this.listeners[type] || []).forEach((fn) => fn({ target: this, currentTarget: this, ...event })); }
+  /**
+   * Fire a listener the way a click does — the harness's stand-in for a user acting on the page.
+   *
+   * `preventDefault` and `stopPropagation` are on EVERY real event, and their absence here threw a
+   * TypeError inside a handler that was doing the ordinary thing (greenhouse decisions/0273). A
+   * harness easier than the browser hides the code the browser runs; `defaultPrevented` is recorded so
+   * a test can assert a handler did stop the default rather than only that it did not crash.
+   */
+  fire(type, event = {}) {
+    const fired = {
+      target: this,
+      currentTarget: this,
+      defaultPrevented: false,
+      preventDefault() { fired.defaultPrevented = true; },
+      stopPropagation() { fired.propagationStopped = true; },
+      propagationStopped: false,
+      ...event,
+    };
+    (this.listeners[type] || []).forEach((fn) => fn(fired));
+
+    return fired;
+  }
   appendChild(child) {
     // A fragment appends its CHILDREN and is emptied, the way the DOM does it — so a thread that was
     // handed `template.content.cloneNode(true)` ends up holding the message, not a wrapper around it.
@@ -336,7 +356,11 @@ export function page({ elements = {}, tree = null, catalog = CATALOG, signals = 
     location: {
       pathname: '/desktop',
       search: '',
-      href: '/desktop',
+      // ABSOLUTE, like every browser's. It was '/desktop', a relative string no `location.href` ever
+      // holds, and a module doing `new URL(location.href)` — the honest way to keep a host's other
+      // query params — throws on it. A harness that is easier than the browser hides exactly the code
+      // the browser would run (greenhouse decisions/0273).
+      href: 'http://localhost/desktop',
       assign: (url) => assigned.push(url),
       reload: () => { reloads += 1; },
     },
@@ -346,6 +370,11 @@ export function page({ elements = {}, tree = null, catalog = CATALOG, signals = 
       removeItem: (k) => { delete storage[k]; },
     },
     setTimeout: (fn, ms) => setTimeout(fn, ms),
+    // `URL` and `URLSearchParams` are globals in every browser, and a module that keeps a host's other
+    // query params needs them. Their absence here made the harness easier than the browser, which
+    // hides exactly the code the browser would run (greenhouse decisions/0273).
+    URL,
+    URLSearchParams,
     clearTimeout,
     JSON,
     Promise,
