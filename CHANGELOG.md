@@ -3,6 +3,13 @@
 All notable changes to milpa/desktop-app are documented here. This project adheres to
 [Semantic Versioning](https://semver.org/) and [Keep a Changelog](https://keepachangelog.com/).
 
+## [0.68.0](https://github.com/getmilpa/agent-workspace/compare/v0.67.0...v0.68.0) (2026-09-10)
+
+
+### Features
+
+* **admin:** the Agent section says which session it is, and the status bar stops lying ([#45](https://github.com/getmilpa/agent-workspace/issues/45)) ([477851c](https://github.com/getmilpa/agent-workspace/commit/477851cdab574d78c73da2f097bbdb51320c76ca))
+
 ## [0.67.0](https://github.com/getmilpa/agent-workspace/compare/v0.66.3...v0.67.0) (2026-09-10)
 
 
