@@ -50,6 +50,28 @@ export const SIGNALS = {
  * `tr('…')` key the shipped modules use is missing from it.
  */
 export const CATALOG = {
+  // 🚨 THE SECOND DIRECTION OF THE DRIFT, closed by `ClientCopyTest::testEveryKeyAModuleAsksForIsInThe
+  // HarnessCopyToo`. Everything below is a key a shipped module ASKS FOR by name and this copy did not
+  // carry — so a node test asserting its message was comparing against the raw key, silently. Fourteen
+  // of them had shipped that way, the key field's two among them (greenhouse decisions/0280).
+  'op.hint.confirm': '%s asks for confirmation — the house\'s gate stands; a command does not confirm it',
+  'op.hint.unreachable': 'the operation could not be reached',
+  'op.hint.failed': 'the operation failed',
+  'command.goal.cleared': 'goal cleared',
+  'decisions.paused_on': 'paused on %s — answer below',
+  'decisions.applied': 'applied · %s of %s steps ran',
+  'decisions.denied': 'denied · %s',
+  'decisions.failed': 'did not finish · %s',
+  'decisions.running': 'running…',
+  'decisions.answering': 'answering…',
+  'decisions.stays_paused': 'refused · the run stays paused',
+  'decisions.answered': 'answered · the run continued',
+  'decisions.resuming': 'answered · resuming…',
+  'decisions.refused': 'that answer was refused: %s',
+  'settings.model.key.saved': 'Key saved',
+  'settings.model.key.refused': 'The key was not saved: %s',
+  'settings.model.endpoint.saved': 'Endpoint saved',
+  'settings.model.endpoint.refused': 'The endpoint was not saved: %s',
   'guard.forbidden': 'Not allowed here',
   'guard.forbidden.reason': 'Not allowed here (%s)',
   'guard.failed': 'The request failed (HTTP %s)',

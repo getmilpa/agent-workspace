@@ -388,9 +388,12 @@ final class ShellControllerTest extends TestCase
         rmdir($dir);
     }
 
-    public function testSettingsShowThePersistedEndpointAndTheWriteWiring(): void
+    /**
+     * The page's Settings screen writes to THREE doors, and the settings file is not one of them for the
+     * endpoint — the same inversion as {@see DeclaredScreensTest} (greenhouse decisions/0280).
+     */
+    public function testSettingsWriteToTheDoorTheirValuesAreReadFrom(): void
     {
-        // Persistence (0483): a saved endpoint comes back in the Settings field, and the write actions post.
         $dir = sys_get_temp_dir() . '/milpa-shell-store-' . uniqid('', true);
         mkdir($dir);
         $store = new DesktopStore($dir . '/sessions', $dir . '/settings.json');
@@ -400,10 +403,13 @@ final class ShellControllerTest extends TestCase
         $body = (string) (new ShellController(new EventDispatcher(new NullLogger()), null, $data))
             ->shell(new ServerRequest('GET', '/desktop'))->getBody();
 
-        self::assertStringContainsString('http://persisted.test/v1', $body, 'the persisted endpoint');
-        // The writes moved with their screens (greenhouse decisions/0211, B5/B7): Save is the Settings
-        // component's module, creating a session is the entry overlay's — both still POST, both guarded.
-        self::assertStringContainsString("fetch('/desktop/settings'", self::module('desktop-settings'), 'save posts');
+        self::assertStringNotContainsString('http://persisted.test/v1', $body, 'the settings blob cannot put an address in that field');
+        // Each write goes to the door its value is READ from: the mode to the Desktop's own file, the
+        // endpoint to `config:set` because the agent resolves `agent.baseUrl`, the key to
+        // `provider:declare` because the settings file is committed on a real app.
+        self::assertStringContainsString("fetch('/desktop/settings'", self::module('desktop-settings'), 'the mode posts');
+        self::assertStringContainsString("fetch('/config/set'", self::module('desktop-settings'), 'the endpoint is a governed write');
+        self::assertStringContainsString("fetch('/provider/declare'", self::module('desktop-settings'), 'the key has its own operation');
         self::assertStringContainsString("fetch('/desktop/sessions'", self::module('desktop-auth'), 'create session posts');
         self::assertStringNotContainsString("fetch('/desktop/sessions'", $body);
 
@@ -1053,11 +1059,13 @@ final class ShellControllerTest extends TestCase
         // And in the modules, every fetch is guarded — `d.guarded` is the same discipline by another name.
         // The commands module makes TWO calls (a GET read and a POST mutation) through ONE guarded `request`;
         // the capabilities module makes two because the house's confirm gate is a two-STEP, not two calls.
-        // `desktop-settings` calls TWO endpoints on purpose: the form goes to `POST /desktop/settings`,
-        // and the API key goes to `provider:declare` — a different door because it demands identity and
-        // writes where git cannot see, while the settings file IS committed on a real app
-        // (greenhouse decisions/0276). Like `desktop-capabilities`, its second count is a two-step flow.
-        foreach (['desktop-auth' => 1, 'desktop-settings' => 2, 'desktop-sidebar' => 1, 'desktop-turn' => 1, 'desktop-composer' => 1, 'desktop-commands' => 2, 'desktop-capabilities' => 2, 'desktop-work-board' => 1] as $component => $calls) {
+        // `desktop-settings` calls THREE endpoints on purpose, and each one is a different PROMISE:
+        // the form goes to `POST /desktop/settings` (the Desktop's own file, for what only this UI
+        // reads), the API key to `provider:declare` (never in the settings file, which a real app
+        // COMMITS), and the endpoint to `config:set` — because `agent.baseUrl` is what the agent
+        // resolves, and the screen used to post it into the file instead, where nothing read it
+        // (greenhouse decisions/0276, decisions/0280). Two of the three are confirm-gate two-steps.
+        foreach (['desktop-auth' => 1, 'desktop-settings' => 3, 'desktop-sidebar' => 1, 'desktop-turn' => 1, 'desktop-composer' => 1, 'desktop-commands' => 2, 'desktop-capabilities' => 2, 'desktop-work-board' => 1] as $component => $calls) {
             $module = self::module($component);
             self::assertSame($calls, preg_match_all('/\bfetch\((?!\))/', $module), $component);
             self::assertGreaterThanOrEqual(1, substr_count($module, '.then(d.guarded)'), $component . ' guards every call');
