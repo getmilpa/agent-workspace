@@ -1,0 +1,4 @@
+# Installed by `npm install`, never committed. 845 of these files reached main once, swept in by an
+# `add -A` over this directory while wiring the window to the panel — the lockfile is the artifact
+# that belongs here, the tree it installs is not.
+node_modules/
