@@ -17,7 +17,7 @@ namespace Milpa\AgentWorkspace;
 /**
  * The mutable collector other plugins contribute the desktop shell's UI through (greenhouse decisions/0188).
  *
- * When {@see Controllers\ShellController} renders, it dispatches {@see ShellController::COMPOSE_EVENT}
+ * When a host composes the workspace, it dispatches {@see self::EVENT}
  * carrying one of these in the payload; any plugin that subscribed to that event (in its own `boot()`)
  * appends sections here, and the controller renders them into the page. This is the seam Rod named:
  * "a plugin renders the UI, and other plugins have events they use to modify that same UI." It is
@@ -36,6 +36,23 @@ namespace Milpa\AgentWorkspace;
  */
 final class ShellComposition
 {
+    /**
+     * The event a host dispatches while composing, with this object as its mutable subject.
+     *
+     * 🚨 THE NAME USED TO LIVE ON THE PAGE'S CONTROLLER, AND THAT MADE A PUBLIC EXTENSION POINT DIE
+     * WITH A SURFACE. `ShellController::COMPOSE_EVENT` was the only dispatcher AND the only renderer of
+     * these sections, so retiring the `/desktop` page would have taken a seam third-party plugins
+     * subscribe to — silently, since a contribution nobody renders looks exactly like a plugin that
+     * contributed nothing. Caught by adversarially mapping the retirement (greenhouse decisions/0283).
+     *
+     * The string is UNCHANGED on purpose: subscribers name events by string, and renaming a published
+     * event to tidy its owner would break every one of them for nothing.
+     */
+    public const EVENT = 'desktop.shell.compose';
+
+    /** The payload key this object rides under in that event. */
+    public const SUBJECT_KEY = 'composition';
+
     /** @var list<array{id: string, title: string|null, html: string}> */
     private array $sections = [];
 
@@ -59,5 +76,28 @@ final class ShellComposition
     public function sections(): array
     {
         return $this->sections;
+    }
+
+    /**
+     * The seam's declaration, from the same constants a host dispatches with (greenhouse decisions/0228).
+     *
+     * `dispatchedBy` names no class: the HOSTS dispatch it — the admin panel's Agent region today, and
+     * whoever else composes the workspace tomorrow. Naming one of them would be the coupling this move
+     * removed.
+     *
+     * @return list<\Milpa\Interfaces\Event\EventDeclaration>
+     */
+    public static function events(): array
+    {
+        return [
+            new \Milpa\Interfaces\Event\EventDeclaration(
+                name: self::EVENT,
+                dispatchedBy: self::class,
+                when: 'When a host composes the workspace, before any surface is painted: a plugin adds its panels and sections.',
+                subjectKey: self::SUBJECT_KEY,
+                subjectType: self::class,
+                mutable: true,
+            ),
+        ];
     }
 }

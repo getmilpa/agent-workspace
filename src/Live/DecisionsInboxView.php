@@ -87,7 +87,7 @@ final class DecisionsInboxView
                 . $factLine
                 . '<p class="decision-card__facts" data-decision-status></p>'
                 . '<p class="decision-card__options">' . $this->answers($copy) . '</p>'
-                . '<a class="mui-btn mui-btn--sm decision-card__open" href="/desktop?session=' . rawurlencode($d['session']) . '">Open session</a>'
+                . '<a class="mui-btn mui-btn--sm decision-card__open" href="?session=' . rawurlencode($d['session']) . '">Open session</a>'
                 . '</li>';
         }
 

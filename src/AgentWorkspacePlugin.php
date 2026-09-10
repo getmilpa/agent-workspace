@@ -20,12 +20,9 @@ use Milpa\AgentWorkspace\Admin\AdminGuest;
 use Milpa\AgentWorkspace\Admin\AgentView;
 use Milpa\AgentWorkspace\Admin\AgentViewComponent;
 use Milpa\AgentWorkspace\Controllers\AssetsController;
-use Milpa\AgentWorkspace\Controllers\DataController;
-use Milpa\AgentWorkspace\Controllers\EventsController;
 use Milpa\AgentWorkspace\Controllers\HubController;
 use Milpa\AgentWorkspace\Controllers\LiveController;
 use Milpa\AgentWorkspace\Controllers\MutationController;
-use Milpa\AgentWorkspace\Controllers\ShellController;
 use Milpa\AgentWorkspace\Live\ComposerField;
 use Milpa\AgentWorkspace\Data\DesktopData;
 use Milpa\Interfaces\Event\DeclaredEvents;
@@ -40,7 +37,6 @@ use Milpa\AgentWorkspace\Live\MercureServiceDeclaration;
 use Milpa\AgentWorkspace\Live\ShellChangeRecorder;
 use Milpa\AgentWorkspace\Live\ShellEvent;
 use Milpa\AgentWorkspace\Live\ShellEventLog;
-use Milpa\AgentWorkspace\Live\SseFormatter;
 use Milpa\Http\HttpMethod;
 use Milpa\Http\Routing\HandlerReference;
 use Milpa\Http\Routing\Route;
@@ -82,7 +78,7 @@ use Milpa\Runtime\Support\RootResolver;
  * And it is the admin's GUEST (greenhouse decisions/0210): when milpa/admin is installed, the panel finds this
  * plugin among the booted ones — by `instanceof` its `AdminSectionProvider`, which {@see AdminGuest} carries
  * only when the admin is there, so a house without the admin boots untouched — and lists ONE section, «Agent»:
- * the shell in embed mode ({@see ShellController::EMBED_PARAM}) as one region inside the admin's main, behind
+ * the workspace as one region inside the admin's main, behind
  * the same door. The Desktop names no dependency on the admin; it honors the admin's contract when asked.
  */
 #[PluginMetadata(
@@ -106,7 +102,6 @@ final class AgentWorkspacePlugin implements PluginInterface, RouteProviderInterf
     public const array COMPONENTS = [
         Live\ActivityComponent::class,
         Live\AgentMessageComponent::class,
-        Live\AuthOverlayComponent::class,
         Live\CapabilitiesScreenComponent::class,
         Live\ComposerBarComponent::class,
         Live\ComposerMessageComponent::class,
@@ -120,16 +115,13 @@ final class AgentWorkspacePlugin implements PluginInterface, RouteProviderInterf
         Live\ScreenPreviewComponent::class,
         Live\SessionStripComponent::class,
         Live\SettingsScreenComponent::class,
-        Live\SidebarComponent::class,
         Live\SkillsScreenComponent::class,
         Live\SubagentsScreenComponent::class,
-        Live\StatusBarComponent::class,
         Live\SystemNoticeComponent::class,
         Live\TabsComponent::class,
         Live\TaskComponent::class,
         Live\ThinkingComponent::class,
         Live\ToolCallComponent::class,
-        Live\TopbarComponent::class,
         Live\UserMessageComponent::class,
         Live\WorkBoardComponent::class,
         AgentViewComponent::class,
@@ -232,7 +224,6 @@ final class AgentWorkspacePlugin implements PluginInterface, RouteProviderInterf
 
         $data = new DesktopData($this->container, $log, $this->sessionsPath(), $store);
         $this->container->registerService(DesktopData::class, $data);
-        $this->container->registerService(DataController::class, new DataController($data));
 
         $mercure = $this->mercure();
         // Expose the Mercure hub to the runtime under milpa/mercure's own name, so a governed agent turn run
@@ -254,16 +245,7 @@ final class AgentWorkspacePlugin implements PluginInterface, RouteProviderInterf
         $this->container->registerService(ComposerField::class, $composerField);
         $this->container->registerService(LiveController::class, new LiveController($desktopComponents->endpoint()));
 
-        // The sidebar is the shell's first pure-Milpa-Components surface (greenhouse decisions/0189): a
-        // declared component with a signed envelope, lifecycle events and a signal-driven active nav.
-        $sidebar = new \Milpa\AgentWorkspace\Live\Sidebar($this->liveSecret('signing'), $data, $events, $catalog);
-        $this->container->registerService(\Milpa\AgentWorkspace\Live\Sidebar::class, $sidebar);
 
-        // The topbar is the shell's second pure-Milpa-Components surface (greenhouse decisions/0189): a
-        // projection surface reading shared signals, with a signed envelope and lifecycle events. It carries the
-        // door's chips too (decisions/0209), so it reads the judged settings and speaks the declared locale.
-        $topbar = new \Milpa\AgentWorkspace\Live\Topbar($this->liveSecret('signing'), $data, $events, $settings, $catalog);
-        $this->container->registerService(\Milpa\AgentWorkspace\Live\Topbar::class, $topbar);
 
         // The main tablist is the shell's third pure-Milpa-Components surface (greenhouse decisions/0189): the
         // tablist declares the shared `desktop.tab` signal; the panes and composer dock project it.
@@ -354,8 +336,6 @@ final class AgentWorkspacePlugin implements PluginInterface, RouteProviderInterf
             },
         );
         $this->container->registerService(\Milpa\AgentWorkspace\Live\SettingsScreen::class, $settingsScreen);
-        $authOverlay = new \Milpa\AgentWorkspace\Live\AuthOverlay($this->liveSecret('signing'), $data, $events, $catalog);
-        $this->container->registerService(\Milpa\AgentWorkspace\Live\AuthOverlay::class, $authOverlay);
 
         // The composer bar is a declared view too (greenhouse decisions/0211, phase C): the last surface the
         // shell hand-stitched. Its markup is a renderer's, its behaviour `desktop-composer.js`, and the mode
@@ -367,12 +347,40 @@ final class AgentWorkspacePlugin implements PluginInterface, RouteProviderInterf
         $composerBar = new \Milpa\AgentWorkspace\Live\ComposerBar($this->liveSecret('signing'), $data, $composerField, $events, $catalog, $stackUrl);
         $this->container->registerService(\Milpa\AgentWorkspace\Live\ComposerBar::class, $composerBar);
 
-        $this->container->registerService(ShellController::class, new ShellController($events, $mercure, $data, $composerField, $sidebar, $topbar, $tabs, $workBoard, $activity, $context, $gate, $thinking, $agentMessage, $messages, $conversation, $settings, $catalog, $sessionStrip, $settingsScreen, $authOverlay, $composerBar, $desktopComponents));
+        // 🚨 THE SHARED SURFACES ARE DECLARED BY THE HOST, BEFORE ANYTHING CAPTURES THE REGISTRY.
+        //
+        // They used to be declared inside `ShellController`'s constructor, and the admin panel — which
+        // paints 17 of them — depended on that by accident: it worked because this line happened to run.
+        // Nothing asserted the panel could stand without the page's controller, and nothing would have
+        // noticed, because `AgentViewRenderer::paint()` catches per surface and answers 200 with a small
+        // warning div. Measured: 17 `data-failed-component` markers, no exception
+        // (greenhouse decisions/0283).
+        //
+        // Declared HERE, once, for the same reason `DeepScreens` is declared once in `adminSections()`:
+        // `declare()` builds a fresh renderer per call and a view captures the instances the registry
+        // holds when it is built, so a second declaration site would let two sections carry two
+        // renderers for one name — which the panel refuses outright (greenhouse decisions/0211).
+        (new Live\Surfaces(
+            $data,
+            $events,
+            $catalog,
+            $composerField,
+            $sessionStrip,
+            $composerBar,
+            $tabs,
+            $workBoard,
+            $activity,
+            $context,
+            $gate,
+            $thinking,
+            $agentMessage,
+            $conversation,
+            $messages,
+        ))->declareOn($desktopComponents);
+
 
         $this->container->registerService(AssetsController::class, new AssetsController());
 
-        [$windowMs, $pollMs] = $this->feedTiming();
-        $this->container->registerService(EventsController::class, new EventsController($log, new SseFormatter(), $windowMs, $pollMs));
         // The same wiring the shell page uses, offered to the surfaces that cannot write headers.
         $this->container->registerService(HubController::class, new HubController($this->mercure(), $this->liveSecret('signing')));
 
@@ -399,13 +407,6 @@ final class AgentWorkspacePlugin implements PluginInterface, RouteProviderInterf
         $middleware = $this->settings()->effectiveMiddleware();
 
         return [
-            new Route(
-                path: self::SHELL_PATH,
-                methods: HttpMethod::GET,
-                name: 'desktop.shell',
-                middleware: $middleware,
-                handler: new HandlerReference(ShellController::class, 'shell'),
-            ),
             // WHERE A SURFACE THAT CANNOT SET COOKIES ASKS FOR ITS CONNECTION. The workspace inside the
             // panel is a DeclaredView: it contributes markup to somebody else's response and never owns
             // the headers, so it cannot mint the cookie the hub reads (greenhouse decisions/0253).
@@ -416,25 +417,6 @@ final class AgentWorkspacePlugin implements PluginInterface, RouteProviderInterf
                 middleware: $middleware,
                 handler: new HandlerReference(HubController::class, 'connect'),
             ),
-            new Route(
-                path: '/desktop/events',
-                methods: HttpMethod::GET,
-                name: 'desktop.events',
-                middleware: $middleware,
-                handler: new HandlerReference(EventsController::class, 'events'),
-            ),
-            new Route(
-                path: '/desktop/assets/tokens.css',
-                methods: HttpMethod::GET,
-                name: 'desktop.assets.tokens',
-                handler: new HandlerReference(AssetsController::class, 'tokens'),
-            ),
-            new Route(
-                path: '/desktop/assets/bundle.css',
-                methods: HttpMethod::GET,
-                name: 'desktop.assets.bundle',
-                handler: new HandlerReference(AssetsController::class, 'bundle'),
-            ),
             // Per-component files (greenhouse decisions/0211): `/desktop/assets/c/<component>.css|js`. ONE
             // route family — the placeholder captures the whole last segment, so `<name>.css` and `<name>.js`
             // both land here and {@see DesktopAssets::path()} decides which package file, if any, they name.
@@ -444,45 +426,6 @@ final class AgentWorkspacePlugin implements PluginInterface, RouteProviderInterf
                 methods: HttpMethod::GET,
                 name: 'desktop.assets.component',
                 handler: new HandlerReference(AssetsController::class, 'component'),
-            ),
-            new Route(
-                path: '/desktop/data.json',
-                methods: HttpMethod::GET,
-                name: 'desktop.data',
-                middleware: $middleware,
-                handler: new HandlerReference(DataController::class, 'data'),
-            ),
-            new Route(
-                path: '/desktop/export',
-                methods: HttpMethod::GET,
-                name: 'desktop.export',
-                middleware: $middleware,
-                handler: new HandlerReference(DataController::class, 'export'),
-            ),
-            new Route(
-                path: '/desktop/live',
-                methods: HttpMethod::POST,
-                name: 'desktop.live',
-                middleware: $middleware,
-                handler: new HandlerReference(LiveController::class, 'live'),
-            ),
-            new Route(
-                path: '/desktop/assets/milpa-live.js',
-                methods: HttpMethod::GET,
-                name: 'desktop.assets.live',
-                handler: new HandlerReference(LiveController::class, 'client'),
-            ),
-            new Route(
-                path: '/desktop/assets/milpa-live-remote.js',
-                methods: HttpMethod::GET,
-                name: 'desktop.assets.live.remote',
-                handler: new HandlerReference(LiveController::class, 'clientRemote'),
-            ),
-            new Route(
-                path: '/desktop/assets/alpine.min.js',
-                methods: HttpMethod::GET,
-                name: 'desktop.assets.alpine',
-                handler: new HandlerReference(LiveController::class, 'alpine'),
             ),
             new Route(
                 path: '/desktop/settings',
@@ -758,19 +701,12 @@ final class AgentWorkspacePlugin implements PluginInterface, RouteProviderInterf
             : sys_get_temp_dir() . '/milpa-desktop-shell-events.log';
     }
 
-    /**
-     * The live feed's connection window and poll interval, both in milliseconds.
-     *
-     * @return array{0: int, 1: int}
+    /*
+     * NO HAY `feedTiming()` AQUÍ. Alimentaba la ventana y el intervalo del feed SSE
+     * (`GET /desktop/events`), que nadie abría: el único `EventSource` del paquete lee el hub de
+     * Mercure, no esa ruta. La ruta, su controlador, su formateador y esta configuración se fueron
+     * juntos con la página (greenhouse decisions/0283).
      */
-    private function feedTiming(): array
-    {
-        $config = $this->container->get(Config::class);
-        $windowMs = $config instanceof Config ? $config->get('desktop.events.window_ms', 25000) : 25000;
-        $pollMs = $config instanceof Config ? $config->get('desktop.events.poll_ms', 1000) : 1000;
-
-        return [is_int($windowMs) ? $windowMs : 25000, is_int($pollMs) ? $pollMs : 1000];
-    }
 
     /** No persistent state to create: the shell is served, not stored. */
     public function install(): void

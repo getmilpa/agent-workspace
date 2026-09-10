@@ -18,7 +18,6 @@ use Milpa\Container\DIContainer;
 use Milpa\AgentWorkspace\Admin\AdminGuest;
 use Milpa\AgentWorkspace\Admin\AgentViewComponent;
 use Milpa\AgentWorkspace\Admin\AgentViewRenderer;
-use Milpa\AgentWorkspace\Controllers\ShellController;
 use Milpa\AgentWorkspace\AgentWorkspacePlugin;
 use Milpa\AgentWorkspace\Http\LoopbackOnlyMiddleware;
 use Milpa\AgentWorkspace\I18n\Catalog;
@@ -44,28 +43,31 @@ final class AgentWorkspacePluginTest extends TestCase
      * declared views (greenhouse decisions/0211) that includes the per-component route family, whose path
      * carries the `{file}` placeholder.
      */
-    private const ASSETS = [
-        '/desktop/assets/tokens.css', '/desktop/assets/bundle.css', '/desktop/assets/c/{file}',
-        '/desktop/assets/milpa-live.js', '/desktop/assets/milpa-live-remote.js', '/desktop/assets/alpine.min.js',
-    ];
+    /**
+     * The one public route left, and it is the panel's lifeline.
+     *
+     * 🚨 IT USED TO BE SIX. The page's own five — its tokens, its bundle and the three runtimes — went
+     * with it; the panel serves its runtimes from `/milpa/admin/assets/…`, measured on a rendered panel
+     * as ZERO references to the workspace's. What stays public is `/desktop/assets/c/{file}`, which is
+     * where the panel loads every workspace stylesheet and behaviour module from — deleting it would
+     * gut the panel in total silence, since a 404 to a `<link>` or a deferred `<script>` throws nothing
+     * (greenhouse decisions/0283).
+     */
+    private const ASSETS = ['/desktop/assets/c/{file}'];
 
     public function testItMountsTheShellEventsAndAssetRoutes(): void
     {
         $plugin = new AgentWorkspacePlugin(new DIContainer());
 
         $routes = $plugin->routes();
-        self::assertCount(15, $routes);
+        self::assertCount(5, $routes);
         foreach ($routes as $route) {
             self::assertInstanceOf(Route::class, $route);
             self::assertNotNull($route->handler);
         }
         $paths = array_map(static fn (Route $r): string => $r->path, $routes);
         self::assertSame(
-            [
-                '/desktop', '/desktop/hub', '/desktop/events', '/desktop/assets/tokens.css', '/desktop/assets/bundle.css', '/desktop/assets/c/{file}',
-                '/desktop/data.json', '/desktop/export', '/desktop/live', '/desktop/assets/milpa-live.js', '/desktop/assets/milpa-live-remote.js',
-                '/desktop/assets/alpine.min.js', '/desktop/settings', '/desktop/sessions', '/desktop/work',
-            ],
+            ['/desktop/hub', '/desktop/assets/c/{file}', '/desktop/settings', '/desktop/sessions', '/desktop/work'],
             $paths,
         );
     }
@@ -75,7 +77,7 @@ final class AgentWorkspacePluginTest extends TestCase
         $plugin = new AgentWorkspacePlugin(new DIContainer());
 
         self::assertSame([LoopbackOnlyMiddleware::class], $plugin->settings()->effectiveMiddleware());
-        self::assertSame(['/desktop', '/desktop/hub', '/desktop/events', '/desktop/data.json', '/desktop/export', '/desktop/live', '/desktop/settings', '/desktop/sessions', '/desktop/work'], self::gatedPaths($plugin->routes()));
+        self::assertSame(['/desktop/hub', '/desktop/settings', '/desktop/sessions', '/desktop/work'], self::gatedPaths($plugin->routes()));
         foreach ($plugin->routes() as $route) {
             $isAsset = \in_array($route->path, self::ASSETS, true);
             self::assertSame($isAsset ? [] : [LoopbackOnlyMiddleware::class], $route->middleware, $route->path);
@@ -97,11 +99,11 @@ final class AgentWorkspacePluginTest extends TestCase
 
         $typo = self::withConfig(['desktop' => ['middleware' => [AllowAllMiddleware::class, 'Acme\\Nope']]]);
         self::assertSame([LoopbackOnlyMiddleware::class], $typo->routes()[0]->middleware, 'the whole stack falls to loopback-only — never the half that loads');
-        self::assertSame(9, \count(self::gatedPaths($typo->routes())));
+        self::assertSame(4, \count(self::gatedPaths($typo->routes())));
         self::assertSame('fallback', $typo->settings()->gateKind());
     }
 
-    public function testBootRegistersTheShellControllerAndTheGate(): void
+    public function testBootRegistersTheGateAndDeclaresTheSurfaces(): void
     {
         $container = new DIContainer();
         // The kernel registers the dispatcher before plugins boot; mirror that here.
@@ -110,7 +112,6 @@ final class AgentWorkspacePluginTest extends TestCase
         $plugin->boot();
 
         // The router resolves the handler's class from the container; after boot it is the shell controller.
-        self::assertInstanceOf(ShellController::class, $container->get(ShellController::class));
         // And the gate under its class name, so the router's resolver can compose it in front of the routes.
         self::assertInstanceOf(LoopbackOnlyMiddleware::class, $container->get(LoopbackOnlyMiddleware::class));
     }
@@ -238,9 +239,9 @@ final class AgentWorkspacePluginTest extends TestCase
         $plugin->enable();
         $plugin->disable();
 
-        self::assertCount(15, $plugin->routes(), 'the shell, the hub a headerless surface asks, feed, assets (design system + per component), data, export, live + its assets, and the write endpoints');
+        self::assertCount(5, $plugin->routes(), 'the hub a headerless surface asks, the per-component assets the panel loads, and the three write endpoints — ten routes went with the page (greenhouse decisions/0283)');
         $paths = array_map(static fn ($r): string => $r->path, $plugin->routes());
-        self::assertContains('/desktop/export', $paths, 'the session export (autopsy/video material)');
+        self::assertContains('/desktop/work', $paths, 'the session export (autopsy/video material)');
     }
 
     /**

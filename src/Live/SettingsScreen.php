@@ -168,7 +168,6 @@ final class SettingsScreen
             . $this->modelCard($e((string) ($props['endpoint'] ?? '')))
             . $this->autonomyCard()
             . $this->storageCard($e((string) ($props['sessionsPath'] ?? '.milpa/sessions/')))
-            . $this->appearanceCard()
             . '</div>'
             . $this->actions($e((string) ($props['savedLabel'] ?? 'Saved')))
             . '</div>';
@@ -362,35 +361,24 @@ final class SettingsScreen
             . '</div></div>';
     }
 
-    /**
-     * Appearance: the three theme buttons set the SHARED `ui.theme` signal, and `aria-pressed` BINDS to it
-     * — so the chrome's toggle and these buttons can never disagree about what the shell is showing.
+    /*
+     * NO HAY TARJETA «APARIENCIA» AQUÍ, Y ES UNA CONSECUENCIA DEL RETIRO DE LA PÁGINA.
      *
-     * 🚨 THE INTERFACE-SCALE ROW IS GONE, and it is the cheapest lesson on this screen: three buttons
-     * with no `@click`, no `data-*`, and a hardcoded `aria-pressed="true"` on the first. Nothing read
-     * them because nothing could — there is no `--mui-scale` in `milpa-design` for a scale to mean
-     * anything. It comes back when the design system has one to bind to (greenhouse decisions/0280).
+     * 🚨 UN INVITADO NO ES DUEÑO DEL TEMA DEL DOCUMENTO. Los tres botones de tema llamaban
+     * `MilpaLive.desktop.theme.set()`, un objeto que crea ÚNICAMENTE `desktop-topbar.js` — y el panel
+     * nunca emite ese módulo, porque ninguna sección pinta el topbar. Así que en el panel esos botones
+     * **ya no hacían nada, en silencio**, exactamente la clase de control que `decisions/0280` retiró de
+     * esta misma pantalla; mi propio falsificador no lo vio porque revisa el MAPA, no si el lector está
+     * presente en la superficie que se está pintando.
+     *
+     * Y midiendo se ve por qué no era un cableado que faltaba: `milpa/admin` tiene su PROPIO tema, con
+     * su `earlyThemeScript()` escribiendo el mismo `data-theme` de la raíz y recordándolo bajo su propia
+     * llave. Eran dos puertas para un hecho, y la del invitado perdía por no cargarse.
+     *
+     * Mientras existió `/desktop` el workspace ERA el anfitrión y su tema tenía sentido. Sin esa página
+     * el workspace es siempre invitado, y el tema del documento es del anfitrión (greenhouse
+     * decisions/0283). La escala se fue por la misma regla un acta antes.
      */
-    private function appearanceCard(): string
-    {
-        $buttons = '';
-        foreach (SettingsControls::offered('theme-set') ? ['system', 'dark', 'light'] : [] as $key) {
-            $buttons .= sprintf(
-                '<button type="button" class="mui-btn mui-btn--sm" data-theme-set="%s"%s @click="setTheme(\'%s\')" :aria-pressed="isTheme(\'%s\')">%s</button>',
-                $key,
-                $key === 'dark' ? ' aria-pressed="true"' : '',
-                $key,
-                $key,
-                $this->t('settings.theme.' . $key),
-            );
-        }
-
-        return '<div class="mui-card">'
-            . '<div class="mui-card__header"><h2 class="mui-card__title">' . $this->t('settings.appearance.title') . '</h2></div>'
-            . '<div class="mui-card__body mui-stack mui-stack--sm">'
-            . '<div class="mui-field"><span class="mui-field__label">' . $this->t('settings.appearance.theme') . '</span><div class="mui-cluster mui-cluster--sm">' . $buttons . '</div></div>'
-            . '</div></div>';
-    }
 
     /**
      * The action row. The badge is the `settings.saved` signal: hidden until a save is reported, green on

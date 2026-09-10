@@ -28,7 +28,7 @@ use PHPUnit\Framework\TestCase;
 /**
  * The declaration and the shell are two lists, so they are measured against each other.
  *
- * `AgentWorkspacePlugin::COMPONENTS` tells the catalogue what this plugin brings; `ShellController`
+ * `AgentWorkspacePlugin::COMPONENTS` tells the catalogue what this plugin brings; `Surfaces`
  * paints them. Two hand-kept lists of the same fact is a lie waiting to happen — and the lie would
  * be the exact defect greenhouse decisions/0213 names: a catalogue reporting a capability that is
  * not wired. So every surface the shell declares must appear in the declaration.
@@ -106,10 +106,17 @@ final class DeclarationMatchesTheShellTest extends TestCase
         $executed = array_values(array_diff($live->names(), $before));
         self::assertNotSame([], $executed, 'the extracted list declares nothing — this half would prove nothing');
 
-        $source = file_get_contents(\dirname(__DIR__, 2) . '/src/Controllers/ShellController.php');
+        // 🚨 THE DECLARATION LIST IS READ FROM `Surfaces`, NOT FROM A CONTROLLER. It used to be
+        // `src/Controllers/ShellController.php` — which is exactly how the coupling hid: the panel's
+        // surfaces were declared by the page's controller, so a census of the page's source was also a
+        // census of the panel's (greenhouse decisions/0283).
+        $source = file_get_contents(\dirname(__DIR__, 2) . '/src/Live/Surfaces.php');
         self::assertIsString($source);
 
-        preg_match_all('/declare\(new (\w+)\(/', $source, $matches);
+        // 🚨 THE PATTERN CROSSES A NEWLINE, because a census that depends on formatting is a census that
+        // lies the first time somebody wraps a line. Moving one declaration onto three lines made this
+        // report the component as «declared by nobody» (greenhouse decisions/0283).
+        preg_match_all('/declare\(\s*new (\w+)\(/', $source, $matches);
 
         $names = [];
         foreach ($matches[1] as $short) {

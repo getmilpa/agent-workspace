@@ -15,7 +15,6 @@ declare(strict_types=1);
 namespace Milpa\AgentWorkspace\Tests;
 
 use Milpa\Container\DIContainer;
-use Milpa\AgentWorkspace\Controllers\ShellController;
 use Milpa\AgentWorkspace\Data\DesktopData;
 use Milpa\AgentWorkspace\Admin\AgentViewComponent;
 use Milpa\AgentWorkspace\Admin\AgentViewRenderer;
@@ -30,7 +29,11 @@ use Milpa\AgentWorkspace\ShellComposition;
 use Milpa\Live\ValueObjects\ComponentContext;
 use Milpa\Live\ValueObjects\RenderRequest;
 use Milpa\Eventing\EventDispatcher;
-use Nyholm\Psr7\ServerRequest;
+use Milpa\AgentWorkspace\Live\Surfaces;
+use Milpa\AgentWorkspace\Live\DeepScreens;
+use Milpa\AgentWorkspace\Live\DesktopComponents;
+use Milpa\AgentWorkspace\I18n\Catalog;
+use Milpa\Interfaces\Event\MilpaEventDispatcherInterface;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
 
@@ -124,7 +127,7 @@ final class DomContractTest extends TestCase
     private static function pages(): string
     {
         $events = new EventDispatcher(new NullLogger());
-        $events->subscribe(ShellController::COMPOSE_EVENT, static function (string $name, array $payload): void {
+        $events->subscribe(ShellComposition::EVENT, static function (string $name, array $payload): void {
             $composition = $payload['composition'] ?? null;
             if ($composition instanceof ShellComposition) {
                 $composition->addPanel('probe', 'Probe', '<p>a plugin\'s panel</p>');
@@ -161,22 +164,14 @@ final class DomContractTest extends TestCase
         $log->append(new ShellEvent('gate.opened', ['operation' => 'x']));
         $data = new DesktopData(new DIContainer(), $log, $dir);
 
-        $withData = new ShellController($events, null, $data);
-        // …and one page with NO data at all: the empty states are markup too, and the Activity tab's
-        // `data-activity-empty` only exists while nothing has been recorded.
-        $bare = new ShellController(new EventDispatcher(new NullLogger()));
-
-        // …and the surface this package contributes to SOMEBODY ELSE's page (greenhouse decisions/0211,
-        // slice 3): the admin's Agent region, which composes the SAME surfaces into a host's document.
-        $guest = (new AgentViewRenderer($withData->components(), $data))->render(
-            new AgentViewComponent(),
-            new RenderRequest(new ComponentContext('milpa-admin-section-agent', route: '/milpa/admin'), ['gate' => 'loopback']),
-        )->output;
-
-        $pages = (string) $withData->shell(new ServerRequest('GET', '/desktop'))->getBody()
-            . (string) $withData->shell(new ServerRequest('GET', '/desktop?embed=1'))->getBody()
-            . (string) $bare->shell(new ServerRequest('GET', '/desktop'))->getBody()
-            . $guest;
+        // 🚨 THE SUBJECT IS THE PANEL'S REGION, TWICE — and it used to be three renders of a page plus
+        // the region. The page is retired, and what this contract was always about is the markup the
+        // RENDERERS print, which the panel prints too (greenhouse decisions/0283).
+        //
+        // Twice, because the empty states are markup as well: the Activity tab's
+        // `data-activity-empty` only exists while nothing has been recorded, so one region carries a
+        // recorded event and the other carries no data at all.
+        $pages = self::region($data, $events) . self::region(null, $events);
 
         unlink($dir . '/s1.json');
         unlink($dir . '/events.log');
@@ -195,6 +190,27 @@ final class DomContractTest extends TestCase
             static fn (): bool => false,
         ))->render(hidden: false);
 
+        // …AND THE OTHER DEEP SCREENS, each its own admin section. The page used to paint them all in one
+        // document, so a census of the page covered them for free; now each is a section and the census
+        // has to name them or it gains holes exactly where the page's coverage used to be
+        // (greenhouse decisions/0283).
+        $codec = new \Milpa\Live\Security\SignedXhtmlStateTransferCodec(
+            new \Milpa\Live\Transport\XhtmlStateTransferCodec(),
+            new \Milpa\Live\Security\HmacStateSigner('dom-contract-secret-0123456789'),
+            null,
+        );
+        $pages .= (new CapabilitiesScreen($codec, $data, $events))->render(false)
+            . (new \Milpa\AgentWorkspace\Live\SkillsScreen($codec, $data, $events))->render(false)
+            . (new \Milpa\AgentWorkspace\Live\SubagentsScreen($codec, $data, $events))->render(false)
+            . (new \Milpa\AgentWorkspace\Live\ScreenPreview($codec, $data, $events))->render(false);
+
+        // 🚨 AND WHAT THE HOST PRINTS, which is no longer this package's to print. `#milpa-live-signals`
+        // is emitted by whoever owns the document — the page did, and the admin's `LiveBoot` does now —
+        // so the census would report it «painted by nobody» while the panel prints it on every request.
+        // Naming it here says the contract is with the HOST, and keeps the assertion from lying in
+        // either direction (greenhouse decisions/0283).
+        $pages .= '<script id="milpa-live-signals" type="application/json">{}</script>';
+
         rmdir($dir);
 
         return $pages;
@@ -207,10 +223,10 @@ final class DomContractTest extends TestCase
 
         // The positive control for the PARSER: without these it would pass on a package that reaches for
         // nothing at all.
-        foreach (['milpa-activity', 'milpa-charcount', 'milpa-search', 'milpa-live-signals'] as $known) {
+        foreach (['milpa-activity', 'milpa-charcount', 'milpa-live-signals'] as $known) {
             self::assertArrayHasKey($known, $ids, 'the parser reads the ids the modules resolve');
         }
-        self::assertGreaterThanOrEqual(10, \count($ids));
+        self::assertGreaterThanOrEqual(9, \count($ids), 'the floor is nine: the page took its own ids with it (greenhouse decisions/0283)');
 
         foreach ($ids as $id => $modules) {
             self::assertStringContainsString(
@@ -272,5 +288,18 @@ final class DomContractTest extends TestCase
             self::assertStringContainsString($region, $module, $region . ' is filled by desktop-thinking.js');
         }
         self::assertStringNotContainsString('data-thinking-spark', $module, 'the spark is the component\'s look; no module touches it');
+    }
+
+    /** The panel's Agent region, which composes every surface into a host's document. */
+    private static function region(?DesktopData $data, MilpaEventDispatcherInterface $events): string
+    {
+        $live = new DesktopComponents('signing', 'csrf', $events);
+        (new Surfaces($data, $events, new Catalog()))->declareOn($live);
+        DeepScreens::declareOn($live, $data, $events, new Catalog(), hidden: false);
+
+        return (new AgentViewRenderer($live, $data, null, '', $events))->render(
+            new AgentViewComponent(),
+            new RenderRequest(new ComponentContext('milpa-admin-section-agent', route: '/milpa/admin'), ['gate' => 'loopback']),
+        )->output;
     }
 }

@@ -27,7 +27,7 @@ use PHPUnit\Framework\TestCase;
  */
 final class AdminAbsentBootTest extends TestCase
 {
-    public function testAFreshAppWithoutTheAdminBootsThePluginAndServesEmbedMode(): void
+    public function testWithoutTheAdminLoadableThePluginStillBootsAndClaimsNoSection(): void
     {
         $script = \dirname(__DIR__) . '/Fixtures/boot-without-admin.php';
         $output = [];
@@ -39,11 +39,19 @@ final class AdminAbsentBootTest extends TestCase
         $report = json_decode((string) end($output), true);
         self::assertIsArray($report, 'one JSON line: ' . $stdout);
         self::assertSame(['AgentWorkspace'], $report['booted'], 'the runtime booted the plugin');
-        self::assertSame(200, $report['status'], '/desktop?embed=1 is served');
-        self::assertTrue($report['embed'], 'in embed mode');
+        self::assertSame(200, $report['status'], 'a surviving route still answers');
         self::assertFalse($report['admin_interface'], 'the control of the control: the admin really was unloadable in that process');
         self::assertFalse($report['admin_section']);
-        self::assertTrue($report['guest'], 'the plugin is an AdminGuest — the standalone shape');
+        // 🚨 THE STANDALONE SHAPE NO LONGER HAS A SURFACE, AND THAT IS ROD'S CALL, NOT AN OVERSIGHT.
+        // This asserted that the plugin serves `/desktop?embed=1` when the admin is absent — the page
+        // WAS the standalone surface. With the page retired, `milpa/admin` became a hard `require`, so
+        // an app cannot reach this shape through composer at all (greenhouse decisions/0283).
+        //
+        // The property that remains is the one the `class_exists` guards exist for: a process where the
+        // admin is genuinely unloadable must still BOOT and must claim nothing it cannot do. That is
+        // what the four assertions below measure, and the fourth is the control that the admin really
+        // was missing in that process.
+        self::assertTrue($report['guest'], 'the plugin is an AdminGuest — the shape with no section to declare');
         self::assertFalse($report['provider'], 'and NOT an AdminSectionProvider: nothing to find, nothing fatal');
         self::assertContains(AdminGuest::class, $report['interfaces']);
         self::assertNotContains('Milpa\\Admin\\Section\\AdminSectionProvider', $report['interfaces']);

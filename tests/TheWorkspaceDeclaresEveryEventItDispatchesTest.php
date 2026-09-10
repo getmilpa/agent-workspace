@@ -15,13 +15,11 @@ declare(strict_types=1);
 namespace Milpa\AgentWorkspace\Tests;
 
 use Milpa\AgentWorkspace\AgentWorkspacePlugin;
-use Milpa\AgentWorkspace\Controllers\ShellController;
 use Milpa\AgentWorkspace\Event\AgentWorkspaceEvents;
 use Milpa\Container\DIContainer;
 use Milpa\Interfaces\Event\DeclaredEvents;
 use Milpa\Interfaces\Event\EventDeclaration;
 use Milpa\Interfaces\Event\MilpaEventDispatcherInterface;
-use Nyholm\Psr7\ServerRequest;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -57,8 +55,6 @@ final class TheWorkspaceDeclaresEveryEventItDispatchesTest extends TestCase
      */
     private const array EXPECTED = [
         'desktop.shell.compose',
-        'desktop.sidebar.before_render', 'desktop.sidebar.after_render',
-        'desktop.topbar.before_render', 'desktop.topbar.after_render',
         'desktop.session_strip.before_render', 'desktop.session_strip.after_render',
         'desktop.tabs.before_render', 'desktop.tabs.after_render',
         'desktop.conversation.before_render', 'desktop.conversation.after_render',
@@ -83,8 +79,6 @@ final class TheWorkspaceDeclaresEveryEventItDispatchesTest extends TestCase
         'desktop.skills.before_render', 'desktop.skills.after_render',
         'desktop.screens.before_render', 'desktop.screens.after_render',
         'desktop.decisions.before_render', 'desktop.decisions.after_render',
-        'desktop.statusbar.before_render', 'desktop.statusbar.after_render',
-        'desktop.auth.before_render', 'desktop.auth.after_render',
     ];
 
     public function testWhatItDeclaresIsExactlyWhatItDispatches(): void
@@ -93,7 +87,8 @@ final class TheWorkspaceDeclaresEveryEventItDispatchesTest extends TestCase
         $container = new DIContainer();
         // The kernel registers the dispatcher before any plugin boots; the plugin declares where it receives it.
         $container->registerService(MilpaEventDispatcherInterface::class, $spy);
-        (new AgentWorkspacePlugin($container))->boot();
+        $plugin = new AgentWorkspacePlugin($container);
+        $plugin->boot();
 
         $declared = self::declaredHere($spy->declared());
         $names = array_map(static fn (EventDeclaration $d): string => $d->name, $declared);
@@ -105,11 +100,14 @@ final class TheWorkspaceDeclaresEveryEventItDispatchesTest extends TestCase
         sort($names);
         self::assertSame($expected, $names, 'the declared names are exactly the expected ones');
 
-        // Drive the real path: the shell served in both modes paints every surface and every prototype.
-        $controller = $container->get(ShellController::class);
-        self::assertInstanceOf(ShellController::class, $controller);
-        $controller->shell(new ServerRequest('GET', '/desktop'));
-        $controller->shell(new ServerRequest('GET', '/desktop?embed=1'));
+        // 🚨 THE REAL PATH IS THE PANEL'S REGION, and it used to be the page served in both modes.
+        // Which is why this census could not have caught the coupling: driving the page dispatched every
+        // surface's events because the page painted every surface (greenhouse decisions/0283).
+        self::region($container, $spy);
+        // AND THE DEEP SCREENS, which are SECTIONS of their own — the Agent region does not paint them,
+        // so a census that drove only the region would miss ten render events and call the difference a
+        // declaration nothing dispatches. Two doors, both driven (greenhouse decisions/0268, 0283).
+        self::screens($container, $plugin);
 
         $dispatched = $spy->dispatched();
         $src = \dirname(__DIR__) . '/src/';
@@ -146,7 +144,8 @@ final class TheWorkspaceDeclaresEveryEventItDispatchesTest extends TestCase
         $spy = self::spy();
         $container = new DIContainer();
         $container->registerService(MilpaEventDispatcherInterface::class, $spy);
-        (new AgentWorkspacePlugin($container))->boot();
+        $plugin = new AgentWorkspacePlugin($container);
+        $plugin->boot();
 
         self::assertEquals(AgentWorkspaceEvents::declarations(), self::declaredHere($spy->declared()), 'the plugin declares the holder\'s list, unchanged');
     }
@@ -195,13 +194,17 @@ final class TheWorkspaceDeclaresEveryEventItDispatchesTest extends TestCase
 
         $container = new DIContainer();
         $container->registerService(MilpaEventDispatcherInterface::class, $plain);
-        (new AgentWorkspacePlugin($container))->boot();
+        $plugin = new AgentWorkspacePlugin($container);
+        $plugin->boot();
 
-        $controller = $container->get(ShellController::class);
-        self::assertInstanceOf(ShellController::class, $controller);
-        $body = (string) $controller->shell(new ServerRequest('GET', '/desktop'))->getBody();
-        self::assertStringContainsString('Milpa Desktop', $body);
-        self::assertStringContainsString('data-milpa-component="desktop-sidebar"', $body);
+        // The subject is the PANEL's region now: a dispatcher with no declaration contract must still
+        // let every surface paint (greenhouse decisions/0283).
+        $body = self::region($container, $plain);
+        self::assertStringContainsString('data-milpa-component="desktop-composer"', $body);
+        // NAMES what failed rather than counting: a count tells you something broke, and this tells you
+        // which surface, which is the difference between a red test and a fixable one.
+        preg_match_all('/data-failed-component="([a-z-]+)"/', $body, $failed);
+        self::assertSame([], $failed[1], 'every surface paints under a dispatcher with no declaration contract');
     }
 
     /** A dispatcher that implements the dispatch contract and NOTHING else — the control's whole point. */
@@ -309,5 +312,59 @@ final class TheWorkspaceDeclaresEveryEventItDispatchesTest extends TestCase
                 return ($this->handlers[$eventName] ?? []) !== [];
             }
         };
+    }
+
+    /** Paint the panel's Agent region, which is what dispatches every surface's render events now. */
+    private static function region(\Milpa\Interfaces\Di\DIContainerInterface $container, mixed $events): string
+    {
+        $live = $container->get(\Milpa\AgentWorkspace\Live\DesktopComponents::class);
+
+        return (new \Milpa\AgentWorkspace\Admin\AgentViewRenderer(
+            $live,
+            $container->has(\Milpa\AgentWorkspace\Data\DesktopData::class) ? $container->get(\Milpa\AgentWorkspace\Data\DesktopData::class) : null,
+            null,
+            '',
+            $events,
+        ))->render(
+            new \Milpa\AgentWorkspace\Admin\AgentViewComponent(),
+            new \Milpa\Live\ValueObjects\RenderRequest(
+                new \Milpa\Live\ValueObjects\ComponentContext('milpa-admin-section-agent', route: '/milpa/admin'),
+                ['gate' => 'loopback'],
+            ),
+        )->output;
+    }
+
+    /**
+     * Paint the deep screens the way their sections do — each is its own admin section.
+     *
+     * 🚨 IT ASKS THE PLUGIN FOR ITS SECTIONS, and does not re-declare them here. They are declared in
+     * `adminSections()`, which is what the admin calls on every request; a test that called
+     * `DeepScreens::declareOn` itself would be proving a wiring nobody has — the exact mistake the page
+     * era left in `TheRegionRepliesTheSessionsThreadTest` (greenhouse decisions/0283).
+     *
+     * Measured while writing this: a bare `Kernel::boot()` declares 19 surfaces and NO deep screens,
+     * because the page's controller used to declare them at boot as a side effect.
+     */
+    private static function screens(\Milpa\Interfaces\Di\DIContainerInterface $container, AgentWorkspacePlugin $plugin): void
+    {
+        $plugin->adminSections();
+        // 🚨 THE SCREEN DISPATCHES ITS OWN RENDER EVENTS, so the real path is `render()` on each of
+        // them — not a compile of their tags. Measured while writing this: compiling
+        // `<milpa-desktop-settings/>` off the registry returns ZERO bytes without the props a host
+        // passes, so a census built on the compiler would have driven nothing and called every deep
+        // screen's pair «a declaration nothing dispatches» (greenhouse decisions/0283).
+        $events = $container->get(\Milpa\Interfaces\Event\MilpaEventDispatcherInterface::class);
+        $catalog = new \Milpa\AgentWorkspace\I18n\Catalog();
+        $secret = str_repeat('k', 32);
+        $codec = new \Milpa\Live\Security\SignedXhtmlStateTransferCodec(
+            new \Milpa\Live\Transport\XhtmlStateTransferCodec(),
+            new \Milpa\Live\Security\HmacStateSigner($secret),
+            null,
+        );
+        (new \Milpa\AgentWorkspace\Live\SettingsScreen($secret, null, $events, $catalog))->render();
+        (new \Milpa\AgentWorkspace\Live\SkillsScreen($codec, null, $events, $catalog))->render();
+        (new \Milpa\AgentWorkspace\Live\CapabilitiesScreen($codec, null, $events, $catalog))->render();
+        (new \Milpa\AgentWorkspace\Live\DecisionsInbox($codec, null, $events, $catalog))->render();
+        (new \Milpa\AgentWorkspace\Live\ScreenPreview($codec, null, $events, $catalog))->render();
     }
 }

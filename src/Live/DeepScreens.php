@@ -83,18 +83,18 @@ final class DeepScreens
             new ScreenPreviewComponent(),
             static fn (array $props): string => (new ScreenPreview($live->codec(), $data, $events, $catalog))->render($hidden),
         );
-        $live->declare(
-            new DecisionsInboxComponent(),
-            static fn (array $props): string => (new DecisionsInbox(
-                $live->codec(),
-                $data,
-                $events,
-                $catalog,
-                // The render request's prop wins over the caller's default: the shell knows who is
-                // signed in per request, and a screen answering as the wrong principal is worse than
-                // one answering as nobody.
-                \is_string($props['principal'] ?? null) && $props['principal'] !== '' ? $props['principal'] : $principal,
-            ))->render($hidden),
-        );
+        /*
+         * NO DECLARA `desktop-decisions` AQUÍ, Y MOVERLO ARREGLÓ UNA DEPENDENCIA DE ORDEN.
+         *
+         * 🚨 La bandeja no es una pantalla profunda: no es sección de nadie —`SCREEN_SECTIONS` son
+         * settings, skills, subagents y preview— y en cambio la REGIÓN Agent la pinta como pestaña. Así
+         * que su declaración vivía en la ruta de las secciones y la región dependía de que esa ruta
+         * hubiera corrido primero.
+         *
+         * Lo cazó el control del despachador sin contrato: pintaba la región tras `boot()` y
+         * `desktop-decisions` era la ÚNICA superficie con `data-failed-component`. Es la misma clase de
+         * acoplamiento que este arco le quitó al controlador de la página, una capa más adentro
+         * (greenhouse decisions/0283). Vive en {@see Surfaces} con las demás superficies de la región.
+         */
     }
 }

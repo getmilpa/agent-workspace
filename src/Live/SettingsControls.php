@@ -71,9 +71,23 @@ final class SettingsControls
         'set-mode' => 'store:mode',
         // Where sessions are written. A person needs to know it; nothing here changes it.
         'set-path' => 'readonly',
-        // The shell's theme, owned by the topbar's module and applied to the document root.
-        'theme-set' => 'signal:ui.theme',
     ];
+
+    /*
+     * NO HAY `theme-set` AQUÍ, Y SU SALIDA ES EL MEJOR EJEMPLO DE PARA QUÉ SIRVE ESTE MAPA.
+     *
+     * Decía `signal:ui.theme` — «owned by the topbar's module» — y era cierto y no era suficiente: el
+     * dueño es `desktop-topbar.js`, que el panel NUNCA emite, así que los tres botones no hacían nada
+     * ahí. Medido al mapear el retiro de la página (greenhouse decisions/0283).
+     *
+     * 🚨 UN MAPA NO PRUEBA QUE EL LECTOR ESTÉ EN ESTA SUPERFICIE. El falsificador cuenta controles
+     * contra esta lista, y un lector nombrado que vive en un módulo que este anfitrión no carga pasa la
+     * revisión igual. Lo que lo caza es contar los fallos de pintado del anfitrión, que es lo que
+     * `ThePanelPaintsEverySurfaceWithoutThePageTest` hace ahora.
+     *
+     * Y el tema no volvió cableado, se fue: `milpa/admin` tiene el suyo, sobre el mismo `data-theme`.
+     * Un invitado no es dueño del tema del documento.
+     */
 
     /**
      * Whether this control may be printed at all — asked by {@see SettingsScreen} BEFORE it renders one.
