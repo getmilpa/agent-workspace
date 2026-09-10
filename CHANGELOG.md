@@ -3,6 +3,13 @@
 All notable changes to milpa/desktop-app are documented here. This project adheres to
 [Semantic Versioning](https://semver.org/) and [Keep a Changelog](https://keepachangelog.com/).
 
+## [0.67.0](https://github.com/getmilpa/agent-workspace/compare/v0.66.3...v0.67.0) (2026-09-10)
+
+
+### Features
+
+* **admin:** the deep screens are sections under Agent, behind its gear ([#41](https://github.com/getmilpa/agent-workspace/issues/41)) ([d441942](https://github.com/getmilpa/agent-workspace/commit/d4419424c63a3164b7de0378027df6e994133096))
+
 ## [0.66.3](https://github.com/getmilpa/agent-workspace/compare/v0.66.2...v0.66.3) (2026-09-10)
 
 
