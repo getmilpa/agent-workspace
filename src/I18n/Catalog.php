@@ -47,6 +47,18 @@ final class Catalog
             'guard.unreachable' => 'The app could not be reached',
             'enroll.none' => 'No passkey door in this app',
             'agent.title' => 'Agent',
+            // ── THE SCREENS, NAMED ONCE ──────────────────────────────────────────────────────
+            // Both doors read these: the Desktop's own sidebar and the panel, which titles the same
+            // screens as sections of its own. One source for what a screen is CALLED, so the two can
+            // never disagree — and they used to be English literals in `Sidebar::NAV`, which gave a
+            // person who chose Spanish a Spanish panel with an English navigation
+            // (greenhouse decisions/0139, caught measuring decisions/0268).
+            'nav.sessions' => 'Sessions',
+            'nav.decisions' => 'Decisions',
+            'nav.capabilities' => 'Capabilities',
+            'nav.skills' => 'Skills',
+            'nav.preview' => 'Preview',
+            'nav.settings' => 'Settings',
             'agent.open' => 'Open the Desktop',
             'agent.signin' => 'Sign in to open the Agent',
             'agent.signin.action' => 'Sign in',
@@ -267,6 +279,12 @@ final class Catalog
             'guard.unreachable' => 'No se pudo alcanzar la app',
             'enroll.none' => 'Esta app no tiene puerta de passkey',
             'agent.title' => 'Agente',
+            'nav.sessions' => 'Sesiones',
+            'nav.decisions' => 'Decisiones',
+            'nav.capabilities' => 'Capacidades',
+            'nav.skills' => 'Skills',
+            'nav.preview' => 'Vista previa',
+            'nav.settings' => 'Ajustes',
             'agent.open' => 'Abrir el Desktop',
             'agent.signin' => 'Inicia sesión para abrir el Agente',
             'agent.signin.action' => 'Iniciar sesión',

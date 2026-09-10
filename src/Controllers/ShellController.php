@@ -23,16 +23,13 @@ use Milpa\AgentWorkspace\Live\ActivityComponent;
 use Milpa\AgentWorkspace\Live\AgentMessageComponent;
 use Milpa\AgentWorkspace\Live\AuthOverlay;
 use Milpa\AgentWorkspace\Live\AuthOverlayComponent;
-use Milpa\AgentWorkspace\Live\CapabilitiesScreen;
-use Milpa\AgentWorkspace\Live\CapabilitiesScreenComponent;
 use Milpa\AgentWorkspace\Live\CommandListView;
 use Milpa\AgentWorkspace\Live\ComposerBar;
 use Milpa\AgentWorkspace\Live\ComposerBarComponent;
 use Milpa\AgentWorkspace\Live\ComposerField;
 use Milpa\AgentWorkspace\Live\ContextComponent;
 use Milpa\AgentWorkspace\Live\ConversationComponent;
-use Milpa\AgentWorkspace\Live\DecisionsInbox;
-use Milpa\AgentWorkspace\Live\DecisionsInboxComponent;
+use Milpa\AgentWorkspace\Live\DeepScreens;
 use Milpa\AgentWorkspace\Live\DesktopAssets;
 use Milpa\AgentWorkspace\Live\DesktopComponents;
 use Milpa\AgentWorkspace\Live\GateComponent;
@@ -40,16 +37,11 @@ use Milpa\AgentWorkspace\Live\MercureConfig;
 use Milpa\AgentWorkspace\Live\AskGrantComponent;
 use Milpa\AgentWorkspace\Live\CompactedComponent;
 use Milpa\AgentWorkspace\Live\ResultClaimComponent;
-use Milpa\AgentWorkspace\Live\ScreenPreview;
-use Milpa\AgentWorkspace\Live\ScreenPreviewComponent;
 use Milpa\AgentWorkspace\Live\SessionStrip;
 use Milpa\AgentWorkspace\Live\SessionStripComponent;
 use Milpa\AgentWorkspace\Live\SettingsScreen;
-use Milpa\AgentWorkspace\Live\SettingsScreenComponent;
 use Milpa\AgentWorkspace\Live\ShellSignals;
 use Milpa\AgentWorkspace\Live\SidebarComponent;
-use Milpa\AgentWorkspace\Live\SkillsScreen;
-use Milpa\AgentWorkspace\Live\SkillsScreenComponent;
 use Milpa\AgentWorkspace\Live\StatusBar;
 use Milpa\AgentWorkspace\Live\StatusBarComponent;
 use Milpa\AgentWorkspace\Live\SystemNoticeComponent;
@@ -196,16 +188,15 @@ final class ShellController
         $this->live->declare(new CompactedComponent(), fn (array $props): string => $this->messages()->compacted());
         // The two screens phase B took out of the template (greenhouse decisions/0211): the Settings screen
         // and the entry overlay were the last raw HTML the shell hand-wrote.
-        $this->live->declare(new SettingsScreenComponent(), fn (array $props): string => $this->settingsScreenOf()->render());
+
         $this->live->declare(new AuthOverlayComponent(), fn (array $props): string => $this->authOverlayOf()->render());
         // Phase D: the four screens whose markup the template still carried and whose behaviour and CSS
         // the page's own inline script and `<style>` still paid for. Each is a declared view now, and each
         // is built HERE from the registry's own codec — one signing key per page (greenhouse
         // decisions/0211), which is also why they need no constructor argument of their own.
-        $this->live->declare(new CapabilitiesScreenComponent(), fn (array $props): string => (new CapabilitiesScreen($this->live->codec(), $this->data, $this->events, $this->catalog()))->render());
-        $this->live->declare(new SkillsScreenComponent(), fn (array $props): string => (new SkillsScreen($this->live->codec(), $this->data, $this->events, $this->catalog()))->render());
-        $this->live->declare(new ScreenPreviewComponent(), fn (array $props): string => (new ScreenPreview($this->live->codec(), $this->data, $this->events, $this->catalog()))->render());
-        $this->live->declare(new DecisionsInboxComponent(), fn (array $props): string => (new DecisionsInbox($this->live->codec(), $this->data, $this->events, $this->catalog(), \is_string($props['principal'] ?? null) ? $props['principal'] : ''))->render());
+        // ONE LIST, TWO DOORS: the panel declares these same screens as sections under Agent, and a
+        // second declaration site here would be free to drift (greenhouse decisions/0268).
+        DeepScreens::declareOn($this->live, $this->data, $this->events, $this->catalog(), settings: $this->settingsScreenOf());
         $this->live->declare(new StatusBarComponent(), fn (array $props): string => (new StatusBar($this->live->codec(), $this->data, $this->events, $this->catalog()))->render());
     }
 

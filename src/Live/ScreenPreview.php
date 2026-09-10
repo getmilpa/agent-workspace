@@ -62,9 +62,12 @@ final class ScreenPreview
     }
 
     /** The screen, with its signed envelope, after the render events a plugin may extend it through. */
-    public function render(): string
+    public function render(bool $hidden = true): string
     {
         $subject = new ComposerRender([
+            // The host's call, not this screen's — see ScreenVisibility. Hidden by default, so the
+            // shell's stacked views paint exactly as they did.
+            'hidden' => $hidden,
             'route' => $this->data?->liveRoute() ?? '/live',
             'screens' => $this->data?->declaredScreens() ?? [],
         ]);
@@ -87,7 +90,8 @@ final class ScreenPreview
 
         return '<div class="view milpa-screens" data-view="preview" data-milpa-runtime="alpine"'
             . ' data-milpa-component="desktop-screens" data-milpa-component-id="' . self::COMPONENT_ID . '"'
-            . ' x-data="desktopScreens()" @click="onClick($event)" @keydown="onKey($event)" hidden>'
+            . ' x-data="desktopScreens()" @click="onClick($event)" @keydown="onKey($event)"'
+            . ScreenVisibility::attr($props) . '>'
             . '<p class="milpa-screens__intro">' . $this->tr('screens.intro') . '</p>'
             . '<div class="mui-cluster mui-cluster--sm milpa-screens__bar">'
             . '<input class="mui-input mui-input--sm milpa-screens__name" id="milpa-preview-name" placeholder="' . $this->tr('screens.name') . '">'

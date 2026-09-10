@@ -62,9 +62,12 @@ final class SkillsScreen
     }
 
     /** The screen, with its signed envelope, after the render events a plugin may extend it through. */
-    public function render(): string
+    public function render(bool $hidden = true): string
     {
         $subject = new ComposerRender([
+            // The host's call, not this screen's — see ScreenVisibility. Hidden by default, so the
+            // shell's stacked views paint exactly as they did.
+            'hidden' => $hidden,
             'skills' => $this->data?->skills() ?? [],
             'roles' => $this->data?->roles() ?? [],
         ]);
@@ -87,7 +90,7 @@ final class SkillsScreen
         $roles = \is_array($props['roles'] ?? null) ? $props['roles'] : [];
 
         return '<div class="view milpa-skills" data-view="skills"'
-            . ' data-milpa-component="desktop-skills" data-milpa-component-id="' . self::COMPONENT_ID . '" hidden>'
+            . ' data-milpa-component="desktop-skills" data-milpa-component-id="' . self::COMPONENT_ID . '"' . ScreenVisibility::attr($props) . '>'
             . '<p class="milpa-skills__intro">' . $this->tr('skills.intro') . '</p>'
             . '<div id="milpa-skills">' . (new SkillsView())->html($skills) . '</div>'
             . '<p class="milpa-skills__head">' . $this->tr('skills.roles') . '</p>'
