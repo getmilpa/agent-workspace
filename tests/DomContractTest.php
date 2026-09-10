@@ -186,7 +186,7 @@ final class DomContractTest extends TestCase
             $data,
             null,
             null,
-            static fn (): bool => true,
+            static fn (): string => '',
             static fn (): bool => false,
         ))->render(hidden: false);
 

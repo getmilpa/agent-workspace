@@ -41,7 +41,7 @@ final class DeclaredScreensTest extends TestCase
 {
     public function testTheSettingsScreenIsAComponentWithItsEnvelopeAndItsBindings(): void
     {
-        $html = (new SettingsScreen('secret', null, null, null, static fn (): bool => true))->render();
+        $html = (new SettingsScreen('secret', null, null, null, static fn (): string => ''))->render();
 
         self::assertStringContainsString('data-milpa-component="desktop-settings"', $html);
         self::assertStringContainsString('data-milpa-state="settings"', $html);
@@ -103,7 +103,7 @@ final class DeclaredScreensTest extends TestCase
         $store->saveSettings(['endpoint' => 'http://persisted.test/v1']);
         $data = new DesktopData(new DIContainer(), null, '', $store);
 
-        $html = (new SettingsScreen('secret', $data, null, new Catalog('es'), static fn (): bool => true))->render();
+        $html = (new SettingsScreen('secret', $data, null, new Catalog('es'), static fn (): string => ''))->render();
 
         self::assertStringNotContainsString('persisted.test', $html, 'the settings blob cannot put a value in this field');
         self::assertMatchesRegularExpression('/id="set-end"[^>]*value=""/', $html, 'nothing is configured, so the field asks');
@@ -129,7 +129,7 @@ final class DeclaredScreensTest extends TestCase
             $p['settings']->html .= '<!-- settings extended -->';
         });
 
-        $html = (new SettingsScreen('secret', null, $events, null, static fn (): bool => true))->render();
+        $html = (new SettingsScreen('secret', null, $events, null, static fn (): string => ''))->render();
 
         self::assertStringContainsString('value="http://changed.test"', $html, 'before_render changed the props');
         self::assertStringContainsString('settings extended', $html, 'after_render changed the html');

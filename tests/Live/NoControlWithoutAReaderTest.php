@@ -44,7 +44,7 @@ final class NoControlWithoutAReaderTest extends TestCase
      */
     public function testEveryControlPrintedHasADeclaredReader(): void
     {
-        $printed = self::controlsIn((new SettingsScreen('s', null, null, null, static fn (): bool => true))->render(false));
+        $printed = self::controlsIn((new SettingsScreen('s', null, null, null, static fn (): string => ''))->render(false));
 
         self::assertSame(
             array_values(array_keys(SettingsControls::READERS)),
@@ -56,7 +56,7 @@ final class NoControlWithoutAReaderTest extends TestCase
     /** A person can press it, so it carries a verb — three scale buttons carried none. */
     public function testEveryButtonCarriesAVerb(): void
     {
-        $html = (new SettingsScreen('s', null, null, null, static fn (): bool => true))->render(false);
+        $html = (new SettingsScreen('s', null, null, null, static fn (): string => ''))->render(false);
 
         self::assertSame(
             0,
@@ -80,7 +80,7 @@ final class NoControlWithoutAReaderTest extends TestCase
         $store->saveSettings(['endpoint' => 'http://written-by-the-screen:1234']);
         $data = new DesktopData(new DIContainer(), null, $dir, $store);
 
-        $html = (new SettingsScreen('s', $data, null, null, static fn (): bool => true))->render(false);
+        $html = (new SettingsScreen('s', $data, null, null, static fn (): string => ''))->render(false);
 
         self::assertStringNotContainsString('http://written-by-the-screen:1234', $html);
         self::assertMatchesRegularExpression('/id="set-end"[^>]*value=""/', $html);
@@ -95,7 +95,7 @@ final class NoControlWithoutAReaderTest extends TestCase
         $store->saveSettings(['mode' => 'auto']);
         $data = new DesktopData(new DIContainer(), null, $dir, $store);
 
-        $html = (new SettingsScreen('s', $data, null, null, static fn (): bool => true))->render(false);
+        $html = (new SettingsScreen('s', $data, null, null, static fn (): string => ''))->render(false);
 
         self::assertStringContainsString('value="auto" checked="checked"', $html);
         self::assertStringNotContainsString('value="ask" checked="checked"', $html);

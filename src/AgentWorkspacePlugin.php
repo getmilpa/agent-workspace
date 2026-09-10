@@ -319,9 +319,32 @@ final class AgentWorkspacePlugin implements PluginInterface, RouteProviderInterf
             $data,
             $events,
             $catalog,
-            // Asked of the UNDERLYING container: the wrapper's has() also says yes to anything it could
-            // auto-wire, and a policy is not auto-wireable.
-            static fn (): bool => $container->getContainer()->has(\Milpa\Command\OperationHttpPolicy::class),
+            // 🚨 IT ASKS WHETHER A WRITE CAN BE AUTHORIZED, NOT WHETHER A JUDGE EXISTS — and the
+            // difference was a field that lied while you typed into it.
+            //
+            // This used to ask only for an `OperationHttpPolicy`. Measured on cattle with `milpa/auth`
+            // installed and `passkey.rpId` absent: the policy IS in the container, so the fields were
+            // offered — and `AuthContextFactory` is NOT, because without a relying party the passkey
+            // door mounts ZERO routes and nothing can produce a principal. A judge with nobody it can
+            // judge is not an answer (greenhouse decisions/0285).
+            //
+            // So the closure names WHAT IS MISSING rather than answering yes or no: the screen has two
+            // different sentences to say, and a boolean could only carry one of them.
+            //
+            // Asked of the UNDERLYING container in both halves: the wrapper's has() also says yes to
+            // anything it could auto-wire, and neither of these is auto-wireable.
+            static function () use ($container): string {
+                $registered = $container->getContainer();
+                if (!$registered->has(\Milpa\Command\OperationHttpPolicy::class)) {
+                    return \Milpa\AgentWorkspace\Live\SettingsScreen::NO_POLICY;
+                }
+                if (!interface_exists(\Milpa\Auth\Contracts\AuthContextFactory::class)
+                    || !$registered->has(\Milpa\Auth\Contracts\AuthContextFactory::class)) {
+                    return \Milpa\AgentWorkspace\Live\SettingsScreen::NO_DOOR;
+                }
+
+                return '';
+            },
             static function () use ($container): bool {
                 if (!class_exists(\Milpa\AppRuntime\Config\SecretOverlay::class)) {
                     return false;

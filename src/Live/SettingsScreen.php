@@ -39,6 +39,28 @@ use Milpa\Live\ValueObjects\StateSnapshot;
 final class SettingsScreen
 {
     public const string COMPONENT_ID = 'settings';
+
+    /**
+     * NOTHING CAN SAY WHO MAY WRITE: the app registered no `OperationHttpPolicy`.
+     *
+     * The framework refuses to boot rather than publish a consent-demanding operation unguarded
+     * (greenhouse decisions/0279), so an app in this state cannot expose `provider:declare` or
+     * `config:set` at all. The capability that brings a policy is the sentence to say.
+     */
+    public const string NO_POLICY = 'no-policy';
+
+    /**
+     * NOBODY CAN BE JUDGED: a policy is registered and no door can produce a principal.
+     *
+     * 🚨 THIS STATE IS WHY THE QUESTION CHANGED. Measured on cattle with `milpa/auth` installed and
+     * `passkey.rpId` absent: the policy is in the container, `AuthContextFactory` is not, and the
+     * passkey door mounts ZERO routes — so the fields were offered and pressing save answered 500
+     * (`AuthMiddlewareNotInstalledException`, correctly a host misconfiguration rather than a 401).
+     *
+     * A judge with nobody it can judge is not an answer, and «there is a policy» was the wrong
+     * question to have asked (greenhouse decisions/0285).
+     */
+    public const string NO_DOOR = 'no-door';
     public const string BEFORE_RENDER = 'desktop.settings.before_render';
     public const string AFTER_RENDER = 'desktop.settings.after_render';
 
@@ -75,7 +97,12 @@ final class SettingsScreen
          * A closure and not the container: the screen gets a QUESTION IT CAN ASK, not a world it can
          * explore.
          *
-         * @var (\Closure(): bool)|null
+         * 🚨 IT ANSWERS WHAT IS MISSING, NOT YES OR NO. It used to return `bool` and the boolean could
+         * only carry one sentence — so an app with `milpa/auth` installed and no `passkey.rpId` was told
+         * to install a package it already had. `''` offers the fields; {@see NO_POLICY} and
+         * {@see NO_DOOR} each name their own fix (greenhouse decisions/0285).
+         *
+         * @var (\Closure(): string)|null
          */
         private readonly ?\Closure $canJudge = null,
         /**
@@ -209,14 +236,9 @@ final class SettingsScreen
      */
     private function endpointField(string $endpoint): string
     {
-        if (!$this->ask($this->canJudge)) {
-            return '<div class="mui-field milpa-settings__endpoint" data-endpoint-state="unjudgeable">'
-                . '<span class="mui-field__label">' . $this->t('settings.model.endpoint') . '</span>'
-                . '<div class="mui-alert mui-alert--warning" role="note">'
-                . '<span class="mui-alert__icon" aria-hidden="true">⚠</span>'
-                . '<div class="mui-alert__content"><p class="mui-alert__desc">' . $this->t('settings.model.endpoint.unjudgeable') . '</p>'
-                . '<p class="mui-alert__desc"><code>' . $this->t('settings.model.endpoint.unjudgeable_command') . '</code></p></div>'
-                . '</div></div>';
+        $blocker = $this->blocker();
+        if ($blocker !== '') {
+            return $this->cannotWrite('endpoint', 'settings.model.endpoint', $blocker);
         }
 
         return '<div class="mui-field milpa-settings__endpoint" data-endpoint-state="' . ($endpoint === '' ? 'absent' : 'declared') . '">'
@@ -281,22 +303,58 @@ final class SettingsScreen
      *   - A KEY IS THERE: said, never shown. `SecretOverlay` has no reader that can return a value, so
      *     this screen cannot echo one even by mistake; what it knows is that a path holds one.
      */
-    /** One of the two questions, asked now — false when nobody handed it over. */
+    /** One of the yes-or-no questions, asked now — false when nobody handed it over. */
     private function ask(?\Closure $question): bool
     {
         return $question instanceof \Closure && $question() === true;
     }
 
+    /**
+     * What stops a write from being authorized here: `''`, {@see NO_POLICY} or {@see NO_DOOR}.
+     *
+     * A host that hands over no question gets {@see NO_POLICY}: a screen that cannot ask must not
+     * offer, and the safer of the two sentences is the one that names a capability to install.
+     */
+    /**
+     * THE FIELD IS NOT OFFERED, AND THE NOTICE NAMES WHICH OF THE TWO THINGS IS MISSING.
+     *
+     * One renderer for both fields: the endpoint's refusal and the key's said the same shape twice,
+     * differing only in a label and two catalog keys. And the shape is the rule this screen exists to
+     * keep — a permission problem discovered on SUBMIT is a control that lied while you typed into it
+     * (greenhouse decisions/0276).
+     *
+     * `$blocker` picks the sentence: {@see NO_POLICY} names the capability to install,
+     * {@see NO_DOOR} names the config key that mounts the door. Two causes, two fixes, and telling
+     * somebody to install a package they already have is the failure this replaced
+     * (greenhouse decisions/0285).
+     */
+    private function cannotWrite(string $state, string $label, string $blocker): string
+    {
+        $why = $blocker === self::NO_DOOR ? 'settings.write.no_door' : 'settings.write.no_policy';
+        $how = $blocker === self::NO_DOOR ? 'settings.write.no_door_command' : 'settings.write.no_policy_command';
+
+        return '<div class="mui-field milpa-settings__' . $state . '" data-' . $state . '-state="unjudgeable" data-blocked-by="' . $blocker . '">'
+            . '<span class="mui-field__label">' . $this->t($label) . '</span>'
+            . '<div class="mui-alert mui-alert--warning" role="note">'
+            . '<span class="mui-alert__icon" aria-hidden="true">⚠</span>'
+            . '<div class="mui-alert__content"><p class="mui-alert__desc">' . $this->t($why) . '</p>'
+            . '<p class="mui-alert__desc"><code>' . $this->t($how) . '</code></p></div>'
+            . '</div></div>';
+    }
+
+    private function blocker(): string
+    {
+        if (!$this->canJudge instanceof \Closure) {
+            return self::NO_POLICY;
+        }
+        return $this->canJudge->__invoke();
+    }
+
     private function keyField(): string
     {
-        if (!$this->ask($this->canJudge)) {
-            return '<div class="mui-field milpa-settings__key" data-key-state="unjudgeable">'
-                . '<span class="mui-field__label">' . $this->t('settings.model.key') . '</span>'
-                . '<div class="mui-alert mui-alert--warning" role="note">'
-                . '<span class="mui-alert__icon" aria-hidden="true">⚠</span>'
-                . '<div class="mui-alert__content"><p class="mui-alert__desc">' . $this->t('settings.model.key.unjudgeable') . '</p>'
-                . '<p class="mui-alert__desc"><code>' . $this->t('settings.model.key.unjudgeable_command') . '</code></p></div>'
-                . '</div></div>';
+        $blocker = $this->blocker();
+        if ($blocker !== '') {
+            return $this->cannotWrite('key', 'settings.model.key', $blocker);
         }
 
         $held = $this->ask($this->keyDeclared);
