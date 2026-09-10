@@ -3,6 +3,17 @@
 All notable changes to milpa/desktop-app are documented here. This project adheres to
 [Semantic Versioning](https://semver.org/) and [Keep a Changelog](https://keepachangelog.com/).
 
+## [0.72.0](https://github.com/getmilpa/agent-workspace/compare/v0.71.1...v0.72.0) (2026-09-10)
+
+
+### ⚠ BREAKING CHANGES
+
+* `GET /desktop` and nine sibling routes are gone; `milpa/admin` is now a `require`. An app that linked to the page links to the panel's Agent section instead.
+
+### Features
+
+* the /desktop page is retired — the panel is the workspace ([#65](https://github.com/getmilpa/agent-workspace/issues/65)) ([8c4b80a](https://github.com/getmilpa/agent-workspace/commit/8c4b80a40a34d97f653f3f0dbd18cad9054d6942))
+
 ## [0.71.1](https://github.com/getmilpa/agent-workspace/compare/v0.71.0...v0.71.1) (2026-09-10)
 
 
