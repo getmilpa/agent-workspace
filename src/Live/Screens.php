@@ -79,26 +79,13 @@ final class Screens
         return self::ALL[$key]['icon'] ?? '';
     }
 
-    /**
-     * The screens named, in the order given, skipping any this class does not know.
+    /*
+     * NO HAY `inOrder()`, Y SU ÚNICO LLAMADOR ERA EL SIDEBAR DE LA PÁGINA. Existía porque el ORDEN es
+     * del anfitrión, no de la pantalla — la página listaba las suyas de una forma y el engrane del panel
+     * de otra. Con la página retirada queda un solo anfitrión, y ordena su propia lista
+     * (greenhouse decisions/0283).
      *
-     * The ORDER is the caller's: the page's sidebar lists them one way and the panel's gear another,
-     * and neither order is a property of a screen.
-     *
-     * @param list<string> $keys
-     *
-     * @return list<array{key: string, title: string, icon: string}>
+     * Lo cazó el censo de piezas sin cablear el mismo día, no yo. La observación sobre el orden sigue
+     * siendo cierta y vuelve como método cuando haya un segundo anfitrión que ordene distinto.
      */
-    public static function inOrder(array $keys): array
-    {
-        $out = [];
-        foreach ($keys as $key) {
-            if (!isset(self::ALL[$key])) {
-                continue;
-            }
-            $out[] = ['key' => $key, 'title' => self::ALL[$key]['title'], 'icon' => self::ALL[$key]['icon']];
-        }
-
-        return $out;
-    }
 }

@@ -80,6 +80,11 @@ final class AgentWorkspaceEvents implements DeclaresEvents
             ...SettingsScreen::events(),
             ...CapabilitiesScreen::events(),
             ...SkillsScreen::events(),
+            // 🚨 LOS DEL SUBAGENTS FALTABAN, y los cazó el censo de piezas sin cableado: la pantalla
+            // declaraba sus dos eventos y `declarations()` no los esparcía, así que `events:catalogue`
+            // sub-reportaba dos nombres — la cuarta pregunta de decisions/0228 contestando de menos.
+            // La pantalla nació partiendo Skills en dos (decisions/0268) y este spread se quedó atrás.
+            ...\Milpa\AgentWorkspace\Live\SubagentsScreen::events(),
             ...ScreenPreview::events(),
             ...DecisionsInbox::events(),
         ];

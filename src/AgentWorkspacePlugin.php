@@ -21,7 +21,6 @@ use Milpa\AgentWorkspace\Admin\AgentView;
 use Milpa\AgentWorkspace\Admin\AgentViewComponent;
 use Milpa\AgentWorkspace\Controllers\AssetsController;
 use Milpa\AgentWorkspace\Controllers\HubController;
-use Milpa\AgentWorkspace\Controllers\LiveController;
 use Milpa\AgentWorkspace\Controllers\MutationController;
 use Milpa\AgentWorkspace\Live\ComposerField;
 use Milpa\AgentWorkspace\Data\DesktopData;
@@ -243,7 +242,6 @@ final class AgentWorkspacePlugin implements PluginInterface, RouteProviderInterf
         $this->container->registerService(DesktopComponents::class, $desktopComponents);
         $composerField = new ComposerField($this->liveSecret('signing'), $this->liveSecret('csrf'), $events, $desktopComponents, $catalog);
         $this->container->registerService(ComposerField::class, $composerField);
-        $this->container->registerService(LiveController::class, new LiveController($desktopComponents->endpoint()));
 
 
 

@@ -54,40 +54,6 @@ use Psr\Log\NullLogger;
  */
 final class DeclaredViewsTest extends TestCase
 {
-    /** The order `LiveBoot::html()` documents: styles → boot → local → remote → plugin modules → Alpine. */
-    private const RUNTIME_ORDER = [
-        '<script id="milpa-live-boot" type="application/json">',
-        '<script src="/desktop/assets/milpa-live.js" defer></script>',
-        '<script src="/desktop/assets/milpa-live-remote.js" defer></script>',
-        // The five modules the PAGE declares lead — the guard creates `MilpaLive.desktop`, the bus creates
-        // `window.MilpaShell`, the hub subscribes the transport to it, and the turn and the commands hang
-        // off the guard — and the component modules follow in the order their surfaces were painted
-        // (greenhouse decisions/0211, phases B, C and D).
-        '<script src="/desktop/assets/c/desktop-guard.js" defer></script>',
-        '<script src="/desktop/assets/c/desktop-shell-bus.js" defer></script>',
-        '<script src="/desktop/assets/c/desktop-hub.js" defer></script>',
-        '<script src="/desktop/assets/c/desktop-turn.js" defer></script>',
-        '<script src="/desktop/assets/c/desktop-commands.js" defer></script>',
-        '<script src="/desktop/assets/c/desktop-sidebar.js" defer></script>',
-        '<script src="/desktop/assets/c/desktop-topbar.js" defer></script>',
-        '<script src="/desktop/assets/c/desktop-tabs.js" defer></script>',
-        '<script src="/desktop/assets/c/desktop-conversation.js" defer></script>',
-        '<script src="/desktop/assets/c/desktop-gate.js" defer></script>',
-        '<script src="/desktop/assets/c/desktop-work-board.js" defer></script>',
-        '<script src="/desktop/assets/c/desktop-activity.js" defer></script>',
-        '<script src="/desktop/assets/c/desktop-composer.js" defer></script>',
-        '<script src="/desktop/assets/c/desktop-thinking.js" defer></script>',
-        '<script src="/desktop/assets/c/desktop-agent-message.js" defer></script>',
-        '<script src="/desktop/assets/c/desktop-tool-call.js" defer></script>',
-        '<script src="/desktop/assets/c/desktop-result-claim.js" defer></script>',
-        '<script src="/desktop/assets/c/desktop-settings.js" defer></script>',
-        '<script src="/desktop/assets/c/desktop-capabilities.js" defer></script>',
-        '<script src="/desktop/assets/c/desktop-screens.js" defer></script>',
-        '<script src="/desktop/assets/c/desktop-decisions.js" defer></script>',
-        '<script src="/desktop/assets/c/desktop-auth.js" defer></script>',
-        '<script src="/desktop/assets/alpine.min.js" defer></script>',
-    ];
-
     /** Every stylesheet the plain page's surfaces declare, in the order they are painted. */
     private const STYLE_ORDER = [
         'desktop-tabs', 'desktop-conversation', 'desktop-gate',

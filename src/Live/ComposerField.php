@@ -17,7 +17,6 @@ namespace Milpa\AgentWorkspace\Live;
 use Milpa\AgentWorkspace\Event\RenderEvents;
 use Milpa\AgentWorkspace\I18n\Catalog;
 use Milpa\Interfaces\Event\MilpaEventDispatcherInterface;
-use Milpa\Live\Components\Form\InputComponent;
 use Milpa\Live\Http\LiveEndpoint;
 use Milpa\Live\ValueObjects\ComponentContext;
 use Milpa\Live\ValueObjects\RenderRequest;
@@ -36,6 +35,18 @@ use Milpa\Live\ValueObjects\RenderTarget;
  */
 final class ComposerField
 {
+    /*
+     * NO HAY `csrfToken()`, `registry()` NI `renderStatus()`, Y LOS TRES ERAN DE LA PÁGINA.
+     *
+     * `csrfToken()` y `registry()` los llamaba `ShellController` para armar el `#milpa-live-boot` del
+     * documento: el token que el runtime hace eco y el registro que el endpoint comparte. El anfitrión
+     * que reemplazó a la página emite su propio boot y trae su propio registro, así que nadie los
+     * llamaba desde fuera de este archivo. `renderStatus()` repintaba el chip de estado del composer
+     * desde el endpoint del paquete, que se fue con `/desktop/live`.
+     *
+     * Los nombró el censo de piezas sin cablear en el mismo commit del retiro, y por eso se van con él
+     * y no un mes después (greenhouse decisions/0213, decisions/0283).
+     */
     public const string ROUTE = '/desktop/live';
     public const string COMPONENT = 'textarea';
     public const string COMPONENT_ID = 'composer-message';
@@ -113,33 +124,6 @@ final class ComposerField
         $this->events?->dispatch(self::AFTER_RENDER, [self::SUBJECT_KEY => $subject]);
 
         return $subject->html;
-    }
-
-    /** Render the read-only status input the composer field re-paints on blur (its id is the effect target). */
-    public function renderStatus(string $message): string
-    {
-        $component = new InputComponent();
-        $context = new ComponentContext(componentId: self::STATUS_ID, route: self::ROUTE);
-        $state = $component->mount(['name' => 'status', 'value' => $message, 'disabled' => true], $context);
-
-        return $this->registry->formRenderer()->render($component, new RenderRequest(
-            context: $context,
-            props: ['endpoint' => self::ROUTE],
-            state: $state,
-            target: RenderTarget::HTML,
-        ))->output;
-    }
-
-    /** The CSRF token the client presents on an interaction, bound to this session and route. */
-    public function csrfToken(string $sessionId): string
-    {
-        return $this->registry->csrfToken($sessionId);
-    }
-
-    /** The Desktop's ONE component registry, shared with the shell's compiler and the live endpoint. */
-    public function registry(): DesktopComponents
-    {
-        return $this->registry;
     }
 
     /** The endpoint that verifies and handles an interaction (server actions, submit). */

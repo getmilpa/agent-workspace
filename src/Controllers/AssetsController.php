@@ -43,31 +43,33 @@ use Psr\Http\Message\ServerRequestInterface;
  * behaviour against this release's markup — the `x-data` factory names and the `data-*` hooks are a
  * CONTRACT between the two halves of a component, so a stale half is a dead surface. They are served
  * with the same hour the package's other behaviour files get
- * ({@see \Milpa\AgentWorkspace\Controllers\LiveController::asset()}): one cache policy for everything that
+ * (the runtime assets the page served, now the host's): one cache policy for everything that
  * carries behaviour, and an upgrade is live within the hour instead of within the year.
  */
 final class AssetsController
 {
+    /*
+     * NO HAY `tokens()`, `bundle()` NI `css()`, Y LOS CAZÓ EL CENSO DE LA CASA, NO YO.
+     *
+     * Eran los handlers de `GET /desktop/assets/tokens.css` y `/bundle.css`, dos rutas que se fueron con
+     * la página. Borré las rutas y me dejé los métodos: el censo de piezas sin cablear los reportó como
+     * «used only by its own tests» en el mismo commit (greenhouse decisions/0213, decisions/0283).
+     *
+     * `assets/milpa/tokens.css` y `assets/milpa/bundle.css` se van con ellos: el panel sirve su propio
+     * sistema de diseño desde `/milpa/admin/assets/…`, medido como cero referencias a estos dos en un
+     * panel renderizado.
+     *
+     * Lo que queda es `component()`, que sirve `/desktop/assets/c/{file}` — de donde el panel carga sus
+     * 42 archivos, y la ruta cuyo borrado lo habría destripado en silencio.
+     */
     /**
      * What a file whose URL carries no version may be cached for: an hour, revalidated after it.
      *
-     * The same value {@see \Milpa\AgentWorkspace\Controllers\LiveController::asset()} serves the runtime with
+     * The same value the host serves its own runtime with
      * — one policy for every file that carries BEHAVIOUR, so an upgrade cannot leave a browser running a
      * module from a previous release against this release's markup.
      */
     public const string BEHAVIOUR_CACHE = 'public, max-age=3600';
-
-    /** The design-system tokens (colors, type, spacing, motion — dark-first). */
-    public function tokens(ServerRequestInterface $request): ResponseInterface
-    {
-        return $this->css('tokens.css');
-    }
-
-    /** The design-system component bundle (`mui-*`: shell, sidebar, tabs, cards, gate, …). */
-    public function bundle(ServerRequestInterface $request): ResponseInterface
-    {
-        return $this->css('bundle.css');
-    }
 
     /**
      * One declared view's own file: `GET /desktop/assets/c/<component>.css` or `…/<component>.js`.
@@ -99,15 +101,4 @@ final class AssetsController
         );
     }
 
-    private function css(string $file): ResponseInterface
-    {
-        $path = \dirname(__DIR__, 2) . '/assets/milpa/' . $file;
-        $body = is_file($path) ? (string) file_get_contents($path) : '';
-
-        return new Response(
-            $body === '' ? 404 : 200,
-            ['Content-Type' => 'text/css; charset=utf-8', 'Cache-Control' => 'public, max-age=31536000, immutable'],
-            $body,
-        );
-    }
 }
