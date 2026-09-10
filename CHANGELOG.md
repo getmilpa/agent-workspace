@@ -3,6 +3,17 @@
 All notable changes to milpa/desktop-app are documented here. This project adheres to
 [Semantic Versioning](https://semver.org/) and [Keep a Changelog](https://keepachangelog.com/).
 
+## [0.73.0](https://github.com/getmilpa/agent-workspace/compare/v0.72.0...v0.73.0) (2026-09-10)
+
+
+### ⚠ BREAKING CHANGES
+
+* the config namespace is `workspace` (was `desktop`) and the routes are `/workspace/*`. An app declaring the old namespace refuses to boot and is told the one-line fix.
+
+### Features
+
+* the package stops calling itself «desktop» where a person reads it ([#68](https://github.com/getmilpa/agent-workspace/issues/68)) ([32f4533](https://github.com/getmilpa/agent-workspace/commit/32f45336b53ba05b76c29afc2ed269d90ffb31b8))
+
 ## [0.72.0](https://github.com/getmilpa/agent-workspace/compare/v0.71.1...v0.72.0) (2026-09-10)
 
 
