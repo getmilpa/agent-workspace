@@ -103,7 +103,7 @@ function settingsRoot() {
 }
 
 test('Save posts the form through the guard and says Saved only on a 2xx', async () => {
-  const p = page({ modules: ['desktop-topbar', 'desktop-settings'] });
+  const p = page({ modules: ['desktop-settings'] });
   const root = settingsRoot();
   const settings = p.mount('desktopSettings', undefined, root);
   const calls = stubFetch(p, [response(200, { ok: true })]);
@@ -122,7 +122,7 @@ test('Save posts the form through the guard and says Saved only on a 2xx', async
 });
 
 test('the endpoint is written where the agent reads it, through the confirm gate', async () => {
-  const p = page({ modules: ['desktop-topbar', 'desktop-settings'] });
+  const p = page({ modules: ['desktop-settings'] });
   const input = new El('input', { id: 'set-end', value: 'http://llama.tailf880b7.ts.net:11438' });
   p.byId['set-end'] = input;
   const settings = p.mount('desktopSettings', undefined, settingsRoot());
@@ -140,7 +140,7 @@ test('the endpoint is written where the agent reads it, through the confirm gate
 });
 
 test('a refused endpoint says so with its status and never says saved', async () => {
-  const p = page({ modules: ['desktop-topbar', 'desktop-settings'] });
+  const p = page({ modules: ['desktop-settings'] });
   p.byId['set-end'] = new El('input', { id: 'set-end', value: 'http://x' });
   const settings = p.mount('desktopSettings', undefined, settingsRoot());
   stubFetch(p, [response(404, {})]);
@@ -152,7 +152,7 @@ test('a refused endpoint says so with its status and never says saved', async ()
 });
 
 test('an empty endpoint asks nothing — a blank field is not a declaration', async () => {
-  const p = page({ modules: ['desktop-topbar', 'desktop-settings'] });
+  const p = page({ modules: ['desktop-settings'] });
   p.byId['set-end'] = new El('input', { id: 'set-end', value: '' });
   const settings = p.mount('desktopSettings', undefined, settingsRoot());
   const calls = stubFetch(p, []);
@@ -163,7 +163,7 @@ test('an empty endpoint asks nothing — a blank field is not a declaration', as
 });
 
 test('the provider key goes to its own operation and the input is cleared either way', async () => {
-  const p = page({ modules: ['desktop-topbar', 'desktop-settings'] });
+  const p = page({ modules: ['desktop-settings'] });
   const input = new El('input', { id: 'set-key', value: 'sk-secret' });
   p.byId['set-key'] = input;
   const settings = p.mount('desktopSettings', undefined, settingsRoot());
@@ -179,7 +179,7 @@ test('the provider key goes to its own operation and the input is cleared either
 });
 
 test('Find models asks the OPERATION and fills the select with what the provider serves', async () => {
-  const p = page({ modules: ['desktop-topbar', 'desktop-settings'] });
+  const p = page({ modules: ['desktop-settings'] });
   const select = new El('select', { id: 'set-model' });
   p.byId['set-model'] = select;
   const settings = p.mount('desktopSettings', undefined, settingsRoot());
@@ -194,7 +194,7 @@ test('Find models asks the OPERATION and fills the select with what the provider
 });
 
 test('a declared model the provider does NOT serve stays in the list and stays selected', async () => {
-  const p = page({ modules: ['desktop-topbar', 'desktop-settings'] });
+  const p = page({ modules: ['desktop-settings'] });
   const select = new El('select', { id: 'set-model', value: 'qwen3-coder:30b' });
   p.byId['set-model'] = select;
   const settings = p.mount('desktopSettings', undefined, settingsRoot());
@@ -209,7 +209,7 @@ test('a declared model the provider does NOT serve stays in the list and stays s
 });
 
 test('an endpoint that does not answer is reported as that, and fills nothing', async () => {
-  const p = page({ modules: ['desktop-topbar', 'desktop-settings'] });
+  const p = page({ modules: ['desktop-settings'] });
   const select = new El('select', { id: 'set-model' });
   p.byId['set-model'] = select;
   const settings = p.mount('desktopSettings', undefined, settingsRoot());
@@ -223,7 +223,7 @@ test('an endpoint that does not answer is reported as that, and fills nothing', 
 });
 
 test('picking a model is a governed write to the same one writer', async () => {
-  const p = page({ modules: ['desktop-topbar', 'desktop-settings'] });
+  const p = page({ modules: ['desktop-settings'] });
   p.byId['set-model'] = new El('select', { id: 'set-model', value: 'qwen3.8-27b' });
   const settings = p.mount('desktopSettings', undefined, settingsRoot());
   const calls = stubFetch(p, [response(428, { confirm_token: 't-9' }), response(200, { ok: true })]);
@@ -237,7 +237,7 @@ test('picking a model is a governed write to the same one writer', async () => {
 });
 
 test('a refused save is reported with its status, and never says Saved', async () => {
-  const p = page({ modules: ['desktop-topbar', 'desktop-settings'] });
+  const p = page({ modules: ['desktop-settings'] });
   const settings = p.mount('desktopSettings', undefined, settingsRoot());
   stubFetch(p, [response(500, {})]);
 
@@ -250,7 +250,7 @@ test('a refused save is reported with its status, and never says Saved', async (
 });
 
 test('a door with no session takes the browser to sign in instead of painting a badge', async () => {
-  const p = page({ modules: ['desktop-topbar', 'desktop-settings'] });
+  const p = page({ modules: ['desktop-settings'] });
   const settings = p.mount('desktopSettings', undefined, settingsRoot());
   stubFetch(p, [response(401, { signin: '/webauthn/signin' })]);
 
@@ -261,52 +261,8 @@ test('a door with no session takes the browser to sign in instead of painting a 
   assert.equal(p.signal('settings.saved'), null, 'a page that is leaving reports nothing');
 });
 
-test('the Settings theme buttons set the SAME shared theme the chrome toggle does', () => {
-  const html = new El('html');
-  const toggle = new El('button', { id: 'milpa-theme' });
-  html.appendChild(toggle);
-  const p = page({ tree: html, modules: ['desktop-topbar', 'desktop-settings'] });
-  const settings = p.mount('desktopSettings', undefined, settingsRoot());
 
-  settings.setTheme('light');
 
-  assert.equal(html.getAttribute('data-theme'), 'light');
-  assert.equal(p.signal('ui.theme'), 'light');
-  assert.equal(settings.isTheme('light'), true);
-  assert.equal(settings.isTheme('dark'), false);
-  assert.equal(p.storage['milpa.theme'], 'light');
-
-  // The window chrome's toggle moves the one value the buttons bind to — they cannot disagree.
-  toggle.fire('click');
-  assert.equal(p.signal('ui.theme'), 'dark');
-  assert.equal(settings.isTheme('dark'), true);
-});
-
-// ── desktop-topbar (B2) ─────────────────────────────────────────────────────────────────────────────
-test('the theme is restored before Alpine, and system drops the attribute', () => {
-  const html = new El('html');
-  html.setAttribute('data-theme', 'dark');
-  const p = page({ tree: html, modules: [] });
-  p.storage['milpa.theme'] = 'light';
-  p.load(new URL('../../resources/components/desktop-topbar/desktop-topbar.js', import.meta.url).pathname);
-
-  assert.equal(html.getAttribute('data-theme'), 'light', 'the remembered choice is applied at module load');
-
-  p.desktop().theme.set('system');
-  assert.equal(html.getAttribute('data-theme'), null, "'system' hands the choice back to prefers-color-scheme");
-  assert.equal('milpa.theme' in p.storage, false, 'nothing is remembered for system');
-});
-
-test('the topbar badge reads the working signal through its own component', () => {
-  const p = page({ modules: ['desktop-topbar'] });
-  const topbar = p.mount('desktopTopbar');
-
-  assert.equal(topbar.working, false);
-  p.signal('session.working', true);
-  assert.equal(topbar.working, true, 'the getter reads the store, so the binding stays reactive');
-});
-
-// ── desktop-sidebar (B5) + desktop-auth (B5, B8) ────────────────────────────────────────────────────
 /** The shell as the sidebar reaches it: the views it swaps, the search, the session rows, the strip. */
 function shellTree() {
   const html = new El('html');
@@ -327,67 +283,9 @@ function shellTree() {
   return html;
 }
 
-test('the sidebar navigates by signal and swaps the view — never the auth overlay', () => {
-  const html = shellTree();
-  const p = page({ tree: html, modules: ['desktop-sidebar', 'desktop-auth'] });
-  const sidebar = p.mount('desktopSidebar', { active: 'sessions' });
 
-  assert.equal(sidebar.isCurrent('sessions'), true);
-  sidebar.go('settings');
 
-  assert.equal(p.signal('desktop.nav'), 'settings');
-  assert.equal(sidebar.isCurrent('settings'), true);
-  assert.equal(html.querySelector('[data-view="settings"]').hidden, false);
-  assert.equal(html.querySelector('[data-view="session"]').hidden, true);
-  assert.equal(html.querySelector('[data-view="auth"]').hidden, true, 'the overlay opens on demand, never by navigation');
-});
 
-test('the chrome search filters the sidebar session list', () => {
-  const html = shellTree();
-  const p = page({ tree: html, modules: ['desktop-sidebar'] });
-  const search = html.querySelector('#milpa-search');
-
-  search.value = 'publish';
-  search.fire('input');
-
-  const rows = html.querySelectorAll('.milpa-session-item');
-  assert.equal(rows[0].classList.contains('milpa-search-miss'), true, 'filtered out');
-  assert.equal(rows[1].classList.contains('milpa-search-miss'), false, 'the match stays');
-
-  search.value = '';
-  search.fire('input');
-  assert.equal(rows.every((r) => !r.classList.contains('milpa-search-miss')), true, 'an empty search hides nothing');
-});
-
-test('the sidebar keeps its OWN ceremony: its button asks the auth component', () => {
-  const html = shellTree();
-  const p = page({ tree: html, modules: ['desktop-sidebar', 'desktop-auth'] });
-  const sidebar = p.mount('desktopSidebar', { active: 'sessions' });
-
-  sidebar.newSession();
-  assert.equal(p.signal('desktop.auth.open'), true, 'the sidebar asks the auth component');
-});
-
-// 🚨 THIS PAIR ASSERTED THE OPPOSITE AND WAS GREEN. The old tests held that the sidebar's module
-// wired the STRIP's controls — «one ceremony, both surfaces» — which is sound about duplication and
-// wrong about ownership. It cost a dead button: in the admin panel, which paints the strip and has a
-// navigation of its own, the sidebar's module never loads, so the strip's controls fired NOTHING.
-// Measured by clicking it in a real browser (greenhouse decisions/0273).
-test('the strip binds its own button and asks the ROUTE, not another surface', async () => {
-  const html = shellTree();
-  const p = page({ tree: html, modules: ['desktop-session-strip', 'desktop-auth'] });
-  const calls = stubFetch(p, [response(200, { ok: true, id: 'ccc33333' })]);
-
-  html.querySelector('[data-new-session]').fire('click');
-  await settle();
-
-  assert.equal(calls.length, 1, 'the click asked the route');
-  assert.equal(calls[0].url, '/desktop/sessions');
-  assert.equal(calls[0].init.method, 'POST');
-  assert.deepEqual(p.assigned, ['http://localhost/desktop?session=ccc33333'], 'and went to the session it made');
-  // `false`, the value the auth module seeds — the point is that the strip did not OPEN it.
-  assert.equal(p.signal('desktop.auth.open'), false, 'it does NOT reach for the auth overlay a host may not paint');
-});
 
 test('a refused session is REPORTED, never swallowed', async () => {
   const html = shellTree();
@@ -419,64 +317,8 @@ test('picking a session names it in the CURRENT url, keeping every other param',
   assert.deepEqual(p.assigned, ['http://localhost/desktop?session=bbb22222']);
 });
 
-test('the passkey probe degrades the link on a 404 and reports a real failure', async () => {
-  const html = shellTree();
-  const link = new El('a', { id: 'milpa-enroll-link', text: 'Register a passkey' });
-  html.appendChild(link);
-  const p = page({ tree: html, modules: ['desktop-sidebar'] });
-  const sidebar = p.mount('desktopSidebar', { active: 'sessions' });
-  stubFetch(p, [response(404, {}), response(200, {}), response(500, {})]);
 
-  await sidebar.enroll({ currentTarget: link });
-  assert.equal(link.textContent, 'No passkey door in this app');
-  assert.equal(link.getAttribute('aria-disabled'), 'true');
-  assert.equal(link.classList.contains('milpa-enroll--absent'), true);
 
-  await sidebar.enroll({ currentTarget: link });
-  assert.equal(p.sandbox.location.href, '/webauthn/enroll', 'a door that answers is a door to walk through');
-
-  const told = [];
-  p.desktop().onNotice((n) => told.push(n.text));
-  await sidebar.enroll({ currentTarget: link });
-  assert.deepEqual(told, ['The request failed (HTTP 500)'], 'a 500 is a broken door, not a missing one');
-});
-
-test('the entry overlay creates the session through the guard, and NAVIGATES to it only on a 2xx', async () => {
-  const html = shellTree();
-  const p = page({ tree: html, modules: ['desktop-sidebar', 'desktop-auth'] });
-  const auth = p.mount('desktopAuth');
-  const calls = stubFetch(p, [response(201, { ok: true, id: 'desk-0123456789abcdef' }), response(403, { error: 'loopback_only' })]);
-
-  html.querySelector('#milpa-auth-open').fire('click');
-  assert.equal(auth.open, true);
-
-  await auth.enter();
-  assert.equal(calls[0].url, '/desktop/sessions');
-  assert.deepEqual(JSON.parse(calls[0].init.body), { goal: 'New session · getmilpa/framework' });
-  // The session lives in the URL (greenhouse evidence/0561): the page goes to the session it created, it
-  // does not reload into whatever the cookie held.
-  assert.deepEqual(p.assigned, ['?session=desk-0123456789abcdef']);
-  assert.equal(p.reloads(), 0);
-
-  const told = [];
-  p.desktop().onNotice((n) => told.push(n.text));
-  await auth.enter();
-
-  assert.equal(p.assigned.length, 1, 'a refused creation navigates nowhere');
-  assert.equal(auth.open, false, 'the overlay closes so the notice is in view');
-  assert.deepEqual(told, ['Not allowed here (loopback_only)']);
-});
-
-test('in embed mode the entry overlay keeps the embed flag on the session it navigates to', async () => {
-  const html = shellTree();
-  const p = page({ tree: html, modules: ['desktop-sidebar', 'desktop-auth'] });
-  p.sandbox.location.search = '?embed=1';
-  const auth = p.mount('desktopAuth');
-  stubFetch(p, [response(201, { ok: true, id: 'desk-0123456789abcdef' })]);
-
-  await auth.enter();
-  assert.deepEqual(p.assigned, ['?session=desk-0123456789abcdef&embed=1']);
-});
 
 // ── desktop-activity (B6) ───────────────────────────────────────────────────────────────────────────
 test('every live fact of the bus is prepended to the Activity stream, newest first', () => {

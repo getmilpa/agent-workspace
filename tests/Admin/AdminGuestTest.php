@@ -106,7 +106,12 @@ final class AdminGuestTest extends TestCase
 
         // The guest bar keeps its purpose: which door, and the way out to the Desktop's own page.
         self::assertStringContainsString('data-gate="loopback">gate: loopback</span>', $html, 'the guest bar says the Desktop\'s gate');
-        self::assertStringContainsString('href="/desktop" target="_blank" rel="noopener">Open the Desktop</a>', $html);
+        // 🚨 THERE IS NO «Open the Desktop» BUTTON, and nothing replaced it: there is nowhere to open.
+        // It was an `<a target="_blank">` to `/desktop`, which the retirement turned into a link to a
+        // 404 — measured on cattle, the section still painted it while the route answered 404. The
+        // panel IS the workspace now (greenhouse decisions/0283).
+        self::assertStringNotContainsString('desktop-agent__open', $html);
+        self::assertStringNotContainsString('href="/desktop"', $html);
     }
 
     /**
@@ -129,7 +134,7 @@ final class AdminGuestTest extends TestCase
 
         // The GUEST's region, all of it, in the locale the Desktop declared — bar, surfaces, client
         // catalog and seeds alike.
-        self::assertStringContainsString('>Open the Desktop</a>', $spanish, 'the bar');
+        self::assertStringContainsString('gate: loopback', $spanish, 'the bar');
         self::assertStringContainsString('data-gate="loopback">gate: loopback</span>', $spanish, 'and its gate chip');
         self::assertStringContainsString('placeholder="Write to the session…"', $spanish, 'a server-rendered surface');
         self::assertStringNotContainsString('Escribe a la sesión', $spanish);

@@ -15,7 +15,6 @@ declare(strict_types=1);
 namespace Milpa\AgentWorkspace\Tests\Live;
 
 use Milpa\AgentWorkspace\I18n\Catalog;
-use Milpa\AgentWorkspace\Live\Sidebar;
 use Milpa\AgentWorkspace\Live\Tabs;
 use PHPUnit\Framework\TestCase;
 
@@ -34,17 +33,6 @@ use PHPUnit\Framework\TestCase;
  */
 final class EveryNavigationSpeaksTheLocaleTest extends TestCase
 {
-    /** The shell's own nav, in Spanish, painted. */
-    public function testTheSidebarPaintsSpanishWhenTheLocaleIsSpanish(): void
-    {
-        $html = (new Sidebar('test-sidebar-secret-0123456789', null, null, new Catalog('es')))->render();
-
-        self::assertStringContainsString('Sesiones', $html);
-        self::assertStringContainsString('Ajustes', $html);
-        self::assertStringContainsString('Vista previa', $html);
-        self::assertStringNotContainsString('>Sessions<', $html, 'not the English default');
-    }
-
     /** The tablist, in Spanish, painted. */
     public function testTheTablistPaintsSpanishWhenTheLocaleIsSpanish(): void
     {
@@ -57,9 +45,11 @@ final class EveryNavigationSpeaksTheLocaleTest extends TestCase
     }
 
     /** English is the default, and a host that named no locale gets it rather than a fatal. */
-    public function testWithNoCatalogAtAllBothAnswerInEnglish(): void
+    public function testWithNoCatalogAtAllItAnswersInEnglish(): void
     {
-        self::assertStringContainsString('Sessions', (new Sidebar('test-sidebar-secret-0123456789'))->render());
+        // ONE SURFACE, NOT TWO: the sidebar was the page's nav column and went with it. What navigates
+        // the workspace now is the panel's own section list plus this tablist
+        // (greenhouse decisions/0283).
         self::assertStringContainsString('Conversation', (new Tabs('test-tabs-secret-0123456789'))->render());
     }
 
@@ -69,9 +59,9 @@ final class EveryNavigationSpeaksTheLocaleTest extends TestCase
      * Asserted over the source, because a label can be reintroduced as a literal in a fallback or a
      * second list, and a test that only read one render would pass while the literal lived elsewhere.
      */
-    public function testNeitherSurfaceCarriesAnEnglishLabelAsALiteral(): void
+    public function testTheSurfaceCarriesNoEnglishLabelAsALiteral(): void
     {
-        foreach (['Sidebar', 'Tabs'] as $surface) {
+        foreach (['Tabs'] as $surface) {
             $source = (string) file_get_contents(\dirname(__DIR__, 2) . '/src/Live/' . $surface . '.php');
             foreach (["'Sessions'", "'Conversation'", "'Settings'", "'Activity'", "'Context'"] as $literal) {
                 self::assertStringNotContainsString($literal, $source, $surface . ' names a label instead of a catalog key');

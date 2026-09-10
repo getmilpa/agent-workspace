@@ -14,10 +14,12 @@ declare(strict_types=1);
 
 namespace Milpa\AgentWorkspace\Tests\I18n;
 
-use Milpa\AgentWorkspace\Controllers\ShellController;
 use Milpa\AgentWorkspace\I18n\Catalog;
 use Milpa\Eventing\EventDispatcher;
-use Nyholm\Psr7\ServerRequest;
+use Milpa\AgentWorkspace\Admin\AgentView;
+use Milpa\AgentWorkspace\Live\Surfaces;
+use Milpa\AgentWorkspace\Live\DesktopComponents;
+use Milpa\AgentWorkspace\DesktopSettings;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
 
@@ -93,18 +95,28 @@ final class ClientCopyTest extends TestCase
         'agent.baseUrl' => 'the config key the endpoint field writes through config:set',
     ];
 
-    /** The signals the SERVED page declares — seeded and computed — read off the page itself. */
+    /**
+     * The signals the workspace DECLARES — read from the declared view, not scraped off a document.
+     *
+     * 🚨 IT USED TO RENDER THE PAGE AND REGEX ITS TWO SCRIPT TAGS. The page is retired, and the
+     * substitution is better than the original: a `DeclaredView` carries `signals` and `computed` as
+     * ARRAYS, which is what the host seeds those tags from — so this reads the source instead of the
+     * host's rendering of it, and the two script tags become the host's business
+     * (greenhouse decisions/0211, decisions/0283).
+     */
     private static function signalsOfThePage(): array
     {
-        $page = (string) (new ShellController(new EventDispatcher(new NullLogger())))
-            ->shell(new ServerRequest('GET', '/desktop'))->getBody();
+        $events = new EventDispatcher(new NullLogger());
+        $catalog = new Catalog();
+        $live = new DesktopComponents('signing', 'csrf', $events);
+        (new Surfaces(null, $events, $catalog))->declareOn($live);
+
+        $view = AgentView::of($live, new DesktopSettings(), $catalog, null, '', '');
 
         $names = [];
-        foreach (['milpa-live-signals', 'milpa-live-computed'] as $id) {
-            self::assertSame(1, preg_match('/<script id="' . $id . '" type="application\/json">(.*?)<\/script>/s', $page, $m), $id . ' is served');
-            $read = json_decode($m[1], true);
-            self::assertIsArray($read, $id . ' is JSON');
-            foreach (array_keys($read) as $name) {
+        foreach (['milpa-live-signals' => $view->signals, 'milpa-live-computed' => $view->computed] as $id => $declared) {
+            self::assertIsArray($declared, $id . ' is an array of names');
+            foreach (array_keys($declared) as $name) {
                 $names[(string) $name] = $id;
             }
         }

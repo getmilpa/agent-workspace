@@ -90,13 +90,10 @@ final class DesktopAssets
      * @var array<string, list<string>> component name => the extensions the package ships for it
      */
     private const array FILES = [
-        'desktop-sidebar' => ['css', 'js'],
-        'desktop-topbar' => ['css', 'js'],
         'desktop-tabs' => ['css', 'js'],
         'desktop-gate' => ['css', 'js'],
         'desktop-activity' => ['css', 'js'],
         'desktop-settings' => ['css', 'js'],
-        'desktop-auth' => ['css', 'js'],
         'desktop-session-strip' => ['css', 'js'],
         'desktop-composer' => ['css', 'js'],
         'desktop-context' => ['css'],
@@ -118,13 +115,12 @@ final class DesktopAssets
         'desktop-ask-grant' => ['css', 'js'],
         'desktop-compacted' => ['css'],
         // The screens the shell's template used to carry as raw HTML with their behaviour in its inline
-        // script (greenhouse decisions/0211, phase D). `desktop-skills` and `desktop-statusbar` declare a
+        // script (greenhouse decisions/0211, phase D). `desktop-skills` declares a
         // stylesheet and nothing else: they are read-only projections, so they have no module to ship.
         'desktop-capabilities' => ['css', 'js'],
         'desktop-decisions' => ['css', 'js'],
         'desktop-screens' => ['css', 'js'],
         'desktop-skills' => ['css'],
-        'desktop-statusbar' => ['css'],
         // The Agent region of a HOST panel (greenhouse decisions/0211, slice 3): the root of the view
         // this package declares to milpa/admin. It ships the region's frame — the column its surfaces
         // sit in — and no module: the region writes no behaviour of its own, it composes surfaces that

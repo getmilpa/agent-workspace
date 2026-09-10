@@ -10,6 +10,7 @@
         }
     ],
     "require": {
+        "milpa/admin": ">=0.26 <1.0",
         "milpa/core": ">=0.12 <1.0",
         "milpa/http": ">=0.1.5 <1.0",
         "milpa/live": ">=0.18 <1.0",
@@ -22,7 +23,6 @@
     },
     "require-dev": {
         "friendsofphp/php-cs-fixer": "^3.75",
-        "milpa/admin": ">=0.26.0 <1.0",
         "milpa/ai-gateway": ">=0.24 <1.0",
         "milpa/app-runtime": ">=0.147.1 <1.0",
         "milpa/container": ">=0.1 <1.0",
@@ -31,7 +31,6 @@
         "phpunit/phpunit": "^11.5"
     },
     "suggest": {
-        "milpa/admin": "The panel this is a section of. milpa/admin provides the Milpa Desktop — chrome, sections, the gate, settings and i18n — and AgentWorkspacePlugin declares one section named Agent inside it, composed inline in the panel's own document, behind the same door, with one runtime for the page. Without it this package still serves its own routes; with it, the agent lives where the human already is (greenhouse decisions/0211, decisions/0220).",
         "milpa/orchestrator": "Declare agent graphs and answer their decisions from the Desktop inbox (>=0.8)"
     },
     "autoload": {

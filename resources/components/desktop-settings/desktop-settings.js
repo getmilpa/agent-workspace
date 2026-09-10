@@ -14,7 +14,6 @@
  *     (greenhouse decisions/0209). The report is the shared `settings.saved` signal, so the badge is a
  *     BINDING and nothing pokes its text, its class or its hidden.
  *   - `discard()` reloads, which is what "discard" means when the server holds the values.
- *   - `setTheme()` / `isTheme()` are the SHARED `ui.theme` signal the topbar's module owns — these three
  *     buttons and the window chrome's toggle set one value, so they can never disagree.
  *
  * The fields are read from the component's own root, never from the document: this screen owns them.
@@ -37,7 +36,6 @@
   /** The shared signal the save badge is: `{ok, text}` while a save is being reported, else null. */
   var SAVED_SIGNAL = 'settings.saved';
   /** The shared signal the theme is — the topbar's module owns the rule, this screen only sets it. */
-  var THEME_SIGNAL = 'ui.theme';
   /** How long a report stands: long enough to read, short enough not to linger. */
   var HOLD_OK_MS = 2000;
   var HOLD_FAILED_MS = 4000;
@@ -251,15 +249,19 @@
       discard: function () {
         location.reload();
       },
-      /** Choose the shell's theme — the same value the window chrome's toggle sets. */
-      setTheme: function (choice) {
-        var d = desk();
-        if (d && d.theme && typeof d.theme.set === 'function') { d.theme.set(choice); }
-      },
-      /** Whether `choice` is the theme in effect — read INSIDE the effect, so aria-pressed stays reactive. */
-      isTheme: function (choice) {
-        return this.$store.milpa[THEME_SIGNAL] === choice;
-      },
+      /*
+       * NO HAY `setTheme()` NI `isTheme()` AQUÍ, Y SU SALIDA ES LA LECCIÓN.
+       *
+       * 🚨 ESTABAN BIEN ATADOS A UN LECTOR QUE NO ESTÁ EN ESTA SUPERFICIE. Llamaban
+       * `MilpaLive.desktop.theme`, que crea ÚNICAMENTE `desktop-topbar.js` — un módulo que el panel
+       * nunca emite, porque ninguna sección pinta el topbar. En el panel los tres botones no hacían
+       * nada, en silencio, y su test de cliente PASABA porque cargaba `desktop-topbar` a propósito.
+       *
+       * Un test que carga el módulo ausente no puede cazar que falte.
+       *
+       * No volvieron cableados: `milpa/admin` tiene su propio tema sobre el mismo `data-theme` de la
+       * raíz. Un invitado no es dueño del tema del documento (greenhouse decisions/0283).
+       */
     };
   });
 })();

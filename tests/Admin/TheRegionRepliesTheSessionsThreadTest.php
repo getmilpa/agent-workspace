@@ -16,12 +16,14 @@ namespace Milpa\AgentWorkspace\Tests\Admin;
 
 use Milpa\AgentWorkspace\Admin\AgentViewComponent;
 use Milpa\AgentWorkspace\Admin\AgentViewRenderer;
-use Milpa\AgentWorkspace\Controllers\ShellController;
 use Milpa\AgentWorkspace\Data\DesktopData;
 use Milpa\Container\DIContainer;
 use Milpa\Eventing\EventDispatcher;
 use Milpa\Live\ValueObjects\ComponentContext;
 use Milpa\Live\ValueObjects\RenderRequest;
+use Milpa\AgentWorkspace\Live\Surfaces;
+use Milpa\AgentWorkspace\Live\DesktopComponents;
+use Milpa\AgentWorkspace\I18n\Catalog;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
 
@@ -93,12 +95,16 @@ final class TheRegionRepliesTheSessionsThreadTest extends TestCase
         mkdir($dir, 0o777, true);
 
         $events = new EventDispatcher(new NullLogger());
-        // ONE data seam for both, as the plugin wires it: the region composes the SHELL's registry, so
-        // the conversation's renderer reads the shell's data — handing it only to the region would test
-        // a wiring nobody has.
+        // ONE data seam for both, as the plugin wires it: the region composes the registry the HOST
+        // populated, so the conversation's renderer reads the same data.
+        //
+        // 🚨 THIS LINE USED TO BE `new ShellController(...)`, with a comment saying the region composes
+        // «the SHELL's registry» — and that was the coupling in one sentence: the panel's surfaces were
+        // declared as a side effect of the page's controller existing (greenhouse decisions/0283).
         $data = $this->dataFor($dir, $withLedger);
-        $shell = new ShellController($events, null, $data);
-        $renderer = new AgentViewRenderer($shell->components(), $data);
+        $live = new DesktopComponents('signing', 'csrf', $events);
+        (new Surfaces($data, $events, new Catalog()))->declareOn($live);
+        $renderer = new AgentViewRenderer($live, $data);
 
         $html = $renderer->render(
             new AgentViewComponent(),

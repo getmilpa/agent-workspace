@@ -15,21 +15,15 @@ declare(strict_types=1);
 namespace Milpa\AgentWorkspace\Tests;
 
 use Milpa\Container\DIContainer;
-use Milpa\AgentWorkspace\Controllers\LiveController;
 use Milpa\AgentWorkspace\Data\DesktopData;
 use Milpa\AgentWorkspace\Data\DesktopStore;
 use Milpa\AgentWorkspace\I18n\Catalog;
-use Milpa\AgentWorkspace\Live\AuthOverlay;
-use Milpa\AgentWorkspace\Live\AuthOverlayComponent;
-use Milpa\AgentWorkspace\Live\ComposerField;
-use Milpa\AgentWorkspace\Live\DesktopComponents;
 use Milpa\AgentWorkspace\Live\SettingsControls;
 use Milpa\AgentWorkspace\Live\SettingsScreen;
 use Milpa\AgentWorkspace\Live\SettingsScreenComponent;
 use Milpa\Eventing\EventDispatcher;
 use Milpa\Live\ValueObjects\ComponentContext;
 use Milpa\Live\ValueObjects\InteractionRequest;
-use Nyholm\Psr7\ServerRequest;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
 
@@ -54,7 +48,7 @@ final class DeclaredScreensTest extends TestCase
         self::assertStringContainsString('security="signed"', $html);
         self::assertStringContainsString('x-data="desktopSettings()"', $html);
         // The four cards the screen has always shown, by their headings.
-        foreach (['Model and provider', 'Default autonomy', 'Context and storage', 'Appearance'] as $card) {
+        foreach (['Model and provider', 'Default autonomy', 'Context and storage'] as $card) {
             self::assertStringContainsString($card, $html);
         }
         // 🚨 THE IDS COME FROM THE DECLARED CORRESPONDENCE, NOT FROM A LIST KEPT BY HAND. This assertion
@@ -74,12 +68,17 @@ final class DeclaredScreensTest extends TestCase
         self::assertStringContainsString('@click="discard()"', $html);
         self::assertStringContainsString('x-text="savedText" :hidden="!saved"', $html);
         self::assertStringContainsString(":class=\"{ 'mui-badge--success': savedOk, 'mui-badge--warning': !savedOk }\"", $html);
-        // The three theme buttons set the SHARED theme and bind their pressed state to it.
-        foreach (['system', 'dark', 'light'] as $choice) {
-            self::assertStringContainsString('data-theme-set="' . $choice . '"', $html);
-            self::assertStringContainsString('@click="setTheme(\'' . $choice . '\')"', $html);
-            self::assertStringContainsString(':aria-pressed="isTheme(\'' . $choice . '\')"', $html);
-        }
+        // 🚨 THE THREE THEME BUTTONS ARE GONE, AND THIS ASSERTION IS WHY THEY LASTED. It checked that
+        // they bind to `setTheme()`/`isTheme()`, which they did — and the object those call,
+        // `MilpaLive.desktop.theme`, is created ONLY by `desktop-topbar.js`, a module the panel never
+        // emits. So the buttons were correctly bound to a reader that is not on the surface, and in the
+        // panel they did nothing, silently. Measured while mapping the page's retirement.
+        //
+        // They did not come back wired: `milpa/admin` has its own theme over the same `data-theme` root
+        // attribute, so this was two doors for one fact. A guest does not own the document's theme
+        // (greenhouse decisions/0283).
+        self::assertStringNotContainsString('data-theme-set', $html, 'the host owns the document theme');
+        self::assertStringNotContainsString('setTheme(', $html);
         // Its look is a declared file: not one inline style attribute is left.
         self::assertStringNotContainsString('style=', $html);
     }
@@ -157,100 +156,4 @@ final class DeclaredScreensTest extends TestCase
         );
     }
 
-    public function testTheEntryOverlayIsAComponentHiddenBehindItsOwnSignal(): void
-    {
-        $html = (new AuthOverlay('secret'))->render();
-
-        self::assertStringContainsString('data-milpa-component="desktop-auth"', $html);
-        self::assertStringContainsString('data-milpa-state="auth"', $html);
-        self::assertStringContainsString('security="signed"', $html);
-        self::assertStringContainsString('x-data="desktopAuth()"', $html);
-        // A `.view` like the screens it sits over, hidden by the server and bound to its own signal.
-        self::assertStringContainsString('data-view="auth"', $html);
-        self::assertStringContainsString('id="milpa-auth"', $html);
-        self::assertStringContainsString('hidden :hidden="!open"', $html);
-        self::assertStringContainsString('id="auth-app"', $html);
-        self::assertStringContainsString('id="milpa-auth-enter"', $html);
-        self::assertStringContainsString('@click="enter()"', $html);
-        // The honest sentence the overlay exists to say — a system user is NOT a verified identity.
-        self::assertStringContainsString('Your system user is not a verified identity', $html);
-        self::assertStringContainsString('Authorizing in a session grants the operation; it is not signing the call.', $html);
-        // 🚨 THE COMMENT WAS RIGHT AND THE ASSERTION DID THE OPPOSITE. It said «names the app's REAL
-        // model, never a provider it does not have» and then pinned a hardcoded name on a host that
-        // had stopped resolving — so it proved the overlay offered a provider nobody declared
-        // (greenhouse decisions/0266). With nothing declared the option SAYS so.
-        self::assertStringContainsString('Local model · none declared', $html);
-        self::assertStringNotContainsString('llama.local', $html);
-        // Its look is a declared file.
-        self::assertStringNotContainsString('style=', $html);
-    }
-
-    public function testTheEntryOverlayEmitsRenderEventsSoPluginsCanExtendIt(): void
-    {
-        $events = new EventDispatcher(new NullLogger());
-        $events->subscribe(AuthOverlay::BEFORE_RENDER, static function (string $n, array $p): void {
-            $p['auth']->props['app'] = 'acme/app';
-        });
-        $events->subscribe(AuthOverlay::AFTER_RENDER, static function (string $n, array $p): void {
-            $p['auth']->html .= '<!-- auth extended -->';
-        });
-
-        $html = (new AuthOverlay('secret', null, $events))->render();
-
-        self::assertStringContainsString('value="acme/app"', $html, 'before_render changed the props');
-        self::assertStringContainsString('auth extended', $html, 'after_render changed the html');
-    }
-
-    public function testTheAuthComponentMountsClosedAndPutsNothingOnTheWire(): void
-    {
-        $contract = AuthOverlayComponent::contract();
-        self::assertSame('desktop-auth', $contract->name);
-        self::assertSame([], $contract->actions, 'visibility is the client signal; the overlay declares no wire action');
-
-        $component = new AuthOverlayComponent();
-        $state = $component->mount(['app' => 'acme/app', 'provider' => 'Local model'], new ComponentContext('auth'));
-        self::assertFalse($state->data['open'], 'nothing runs on open — the overlay starts closed');
-        self::assertSame('acme/app', $state->meta['app']);
-
-        // Reached directly it echoes; it invents no state the renderer will contradict.
-        $echo = $component->handle(new InteractionRequest('auth', 'desktop-auth', 'open', $state, []));
-        self::assertSame($state, $echo->state);
-        self::assertSame([], $echo->effects);
-    }
-
-    /**
-     * The falsifier for the shared endpoint (greenhouse decisions/0211): the Desktop now serves ONE
-     * registry to `POST /desktop/live`, so every declared component's actions became reachable over the
-     * wire at once. The overlay declares none — measured here by POSTING a real signed envelope with
-     * `open` and reading the refusal, with the composer's `change` as the positive control that the same
-     * endpoint, the same key and the same session DO answer.
-     */
-    public function testTheEndpointRefusesAnOverlayActionAndStillAnswersARealOne(): void
-    {
-        $registry = new DesktopComponents('one-key', 'csrf-key');
-        $registry->declare(new AuthOverlayComponent(), static fn (array $props): string => (new AuthOverlay('one-key'))->render());
-        $controller = new LiveController($registry->endpoint());
-
-        $overlay = (new AuthOverlay('one-key'))->render();
-        self::assertSame(1, preg_match('#(<milpa-state\b.*?</milpa-state>)#s', $overlay, $m));
-        $sid = 'sess-auth-1';
-        $post = static function (string $envelope, string $action) use ($controller, $registry, $sid): array {
-            $body = (string) json_encode(['action' => $action, 'state' => $envelope, 'payload' => [], 'sessionId' => $sid, 'csrfToken' => $registry->csrfToken($sid)]);
-            $decoded = json_decode((string) $controller->live(new ServerRequest('POST', '/desktop/live', [], $body))->getBody(), true);
-
-            return \is_array($decoded) ? $decoded : [];
-        };
-
-        $refused = $post($m[1], 'open');
-        self::assertFalse($refused['ok'] ?? true, 'the overlay opens through its signal, never through the endpoint');
-        self::assertSame('action_not_allowed', $refused['error'] ?? null, 'refused for the RIGHT reason — the contract, not a bad signature');
-
-        // Positive control: the same endpoint, key and session answer a component that DOES declare an action.
-        $field = new ComposerField('one-key', 'csrf-key', registry: $registry);
-        self::assertSame(1, preg_match('#(<milpa-state\b.*?</milpa-state>)#s', $field->render(), $c));
-        $body = (string) json_encode(['action' => 'change', 'state' => $c[1], 'payload' => ['value' => 'hola'], 'sessionId' => $sid, 'csrfToken' => $registry->csrfToken($sid)]);
-        $ok = json_decode((string) $controller->live(new ServerRequest('POST', '/desktop/live', [], $body))->getBody(), true);
-        self::assertIsArray($ok);
-        self::assertTrue($ok['ok'] ?? false, 'the instrument discriminates: a declared action on the same wire is answered');
-    }
 }

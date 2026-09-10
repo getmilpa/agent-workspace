@@ -14,10 +14,8 @@ declare(strict_types=1);
 
 namespace Milpa\AgentWorkspace\Event;
 
-use Milpa\AgentWorkspace\Controllers\ShellController;
 use Milpa\AgentWorkspace\Live\Activity;
 use Milpa\AgentWorkspace\Live\AgentMessage;
-use Milpa\AgentWorkspace\Live\AuthOverlay;
 use Milpa\AgentWorkspace\Live\CapabilitiesScreen;
 use Milpa\AgentWorkspace\Live\ComposerBar;
 use Milpa\AgentWorkspace\Live\ComposerField;
@@ -29,12 +27,9 @@ use Milpa\AgentWorkspace\Live\MessagePrototypes;
 use Milpa\AgentWorkspace\Live\ScreenPreview;
 use Milpa\AgentWorkspace\Live\SessionStrip;
 use Milpa\AgentWorkspace\Live\SettingsScreen;
-use Milpa\AgentWorkspace\Live\Sidebar;
 use Milpa\AgentWorkspace\Live\SkillsScreen;
-use Milpa\AgentWorkspace\Live\StatusBar;
 use Milpa\AgentWorkspace\Live\Tabs;
 use Milpa\AgentWorkspace\Live\Thinking;
-use Milpa\AgentWorkspace\Live\Topbar;
 use Milpa\AgentWorkspace\Live\WorkBoard;
 use Milpa\Interfaces\Event\DeclaresEvents;
 use Milpa\Interfaces\Event\EventDeclaration;
@@ -69,9 +64,7 @@ final class AgentWorkspaceEvents implements DeclaresEvents
     public static function declarations(): array
     {
         return [
-            ...ShellController::events(),
-            ...Sidebar::events(),
-            ...Topbar::events(),
+            ...\Milpa\AgentWorkspace\ShellComposition::events(),
             ...SessionStrip::events(),
             ...Tabs::events(),
             ...Conversation::events(),
@@ -89,8 +82,6 @@ final class AgentWorkspaceEvents implements DeclaresEvents
             ...SkillsScreen::events(),
             ...ScreenPreview::events(),
             ...DecisionsInbox::events(),
-            ...StatusBar::events(),
-            ...AuthOverlay::events(),
         ];
     }
 }

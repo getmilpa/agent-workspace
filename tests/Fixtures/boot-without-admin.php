@@ -15,7 +15,7 @@ declare(strict_types=1);
 /*
  * The fresh app WITHOUT milpa/admin, measured (greenhouse decisions/0210): a separate process in which every
  * `Milpa\Admin\*` name is UNLOADABLE — composer's loader is replaced by one that refuses that prefix and delegates
- * the rest — boots the runtime with the Desktop plugin and serves `/desktop?embed=1`. Run by
+ * the rest — boots the runtime with the workspace plugin and asks one surviving route. Run by
  * `tests/Admin/AdminAbsentBootTest.php`; prints one JSON line.
  */
 
@@ -31,13 +31,12 @@ spl_autoload_register(static function (string $class) use ($loader): void {
 
 $kernel = \Milpa\Runtime\Kernel::boot(['root' => sys_get_temp_dir(), 'plugins' => [\Milpa\AgentWorkspace\AgentWorkspacePlugin::class]]);
 $response = (new \Milpa\Runtime\Http\RequestHandler($kernel, new \Nyholm\Psr7\Factory\Psr17Factory()))
-    ->handle(new \Nyholm\Psr7\ServerRequest('GET', '/desktop?embed=1', [], null, '1.1', ['REMOTE_ADDR' => '127.0.0.1']));
+    ->handle(new \Nyholm\Psr7\ServerRequest('GET', '/desktop/hub', [], null, '1.1', ['REMOTE_ADDR' => '127.0.0.1']));
 $plugin = $kernel->plugins()[0] ?? null;
 
 echo json_encode([
     'booted' => $kernel->bootedPluginNames(),
     'status' => $response->getStatusCode(),
-    'embed' => str_contains((string) $response->getBody(), 'data-embed="1"'),
     'admin_interface' => interface_exists('Milpa\\Admin\\Section\\AdminSectionProvider'),
     'admin_section' => class_exists('Milpa\\Admin\\Section\\AdminSection'),
     'guest' => $plugin instanceof \Milpa\AgentWorkspace\Admin\AdminGuest,

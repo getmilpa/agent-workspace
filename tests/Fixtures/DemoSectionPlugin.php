@@ -15,7 +15,6 @@ declare(strict_types=1);
 namespace Milpa\AgentWorkspace\Tests\Fixtures;
 
 use Milpa\Attributes\PluginMetadata;
-use Milpa\AgentWorkspace\Controllers\ShellController;
 use Milpa\AgentWorkspace\ShellComposition;
 use Milpa\Interfaces\Di\DIContainerInterface;
 use Milpa\Interfaces\Event\MilpaEventDispatcherInterface;
@@ -25,7 +24,7 @@ use Milpa\Interfaces\Plugin\PluginInterface;
  * A second plugin that contributes UI into the desktop shell — the witness for the 0188 seam.
  *
  * It knows nothing about `AgentWorkspacePlugin`; the two meet only at the event name
- * {@see ShellController::COMPOSE_EVENT}. In its own `boot()` it subscribes to that event and, when the
+ * {@see ShellComposition::EVENT}. In its own `boot()` it subscribes to that event and, when the
  * shell renders, appends a section carrying {@see MARKER}. If the marker shows up in the served page,
  * a foreign plugin modified the same UI through the seam — and if it does not show up when this plugin
  * is absent, the section is proven to come from here and nowhere else.
@@ -51,7 +50,7 @@ final class DemoSectionPlugin implements PluginInterface
     {
         $events = $this->container->get(MilpaEventDispatcherInterface::class);
         if ($events instanceof MilpaEventDispatcherInterface) {
-            $events->subscribe(ShellController::COMPOSE_EVENT, [$this, 'onCompose']);
+            $events->subscribe(ShellComposition::EVENT, [$this, 'onCompose']);
         }
     }
 

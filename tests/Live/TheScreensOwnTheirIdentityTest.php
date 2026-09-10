@@ -78,7 +78,12 @@ final class TheScreensOwnTheirIdentityTest extends TestCase
         }
         self::assertNotSame([], $glyphs, 'this would prove nothing with no glyphs declared');
 
-        foreach (['Live/Sidebar.php', 'Live/Topbar.php', 'Live/StatusBar.php', 'AgentWorkspacePlugin.php'] as $host) {
+        // 🚨 ONE HOST LEFT, AND THE OTHER THREE ARE GONE RATHER THAN EXEMPTED. This read the sidebar,
+        // the topbar and the status bar — the page's chrome — and they were retired with the page. A
+        // list of files that no longer exist does not fail: `file_get_contents` warns and returns
+        // false, and the assertion then passes on an empty string. `failOnWarning` is what caught it
+        // (greenhouse decisions/0281, decisions/0283).
+        foreach (['AgentWorkspacePlugin.php', 'Live/Surfaces.php'] as $host) {
             $source = (string) file_get_contents(\dirname(__DIR__, 2) . '/src/' . $host);
             foreach ($glyphs as $glyph) {
                 self::assertStringNotContainsString(

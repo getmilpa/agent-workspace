@@ -187,19 +187,6 @@ test('Preview builds the path from the live route the SERVER wrote on the button
   assert.equal(screen.frame.src, '/wire/page?component=board', 'the route is data, not a constant in the module');
 });
 
-test('a screen the wire does not serve is REPORTED — never a blank frame with nothing said', async () => {
-  // Measured on the cattle: `/live/page?component=…` answers 404 with a ZERO-byte body for a name the
-  // wire does not know, and an iframe pointed at that just goes white.
-  const { screen, instance, told } = screens('/live', [response(404, {})]);
-  screen.frame.src = '/live/page?component=board';
-  screen.name.value = 'desktop-statusbar';
-
-  instance.onClick({ target: screen.root.querySelector('#milpa-preview-go') });
-  await settle();
-
-  assert.deepEqual(told, ['The wire does not serve «desktop-statusbar» (HTTP 404)']);
-  assert.equal(screen.frame.src, '/live/page?component=board', 'the frame keeps what it was showing');
-});
 
 test('an empty name previews nothing rather than blanking the frame', () => {
   const { screen, instance } = screens('/live', []);
@@ -271,27 +258,4 @@ test('a page that renders no inbox (embed mode) ignores the fact instead of thro
   assert.equal(p.desktop().decisions.parked('anything'), null);
 });
 
-test("the badge is the SIDEBAR's, and the sidebar's own module ticks it", () => {
-  const html = new El('html');
-  const nav = html.appendChild(decisionsNav({ badge: 2 }));
-  const p = page({ tree: html, bus: true, modules: ['desktop-sidebar'] });
 
-  p.bus().emit('decision.parked', { question: 'x' });
-
-  const badge = nav.querySelector('.mui-sidebar__item-badge');
-  assert.equal(badge.textContent, '3');
-  assert.equal(badge.hidden, false);
-});
-
-test('a sidebar that never rendered a badge grows one on the first parked question', () => {
-  const html = new El('html');
-  const nav = html.appendChild(decisionsNav());
-  const p = page({ tree: html, bus: true, modules: ['desktop-sidebar'] });
-
-  p.bus().emit('decision.parked', { question: 'x' });
-
-  const badge = nav.querySelector('.mui-sidebar__item-badge');
-  assert.ok(badge, 'the row grew its own badge');
-  assert.equal(badge.textContent, '1');
-  assert.equal(badge.classList.contains('mui-badge--warning'), true);
-});

@@ -15,6 +15,8 @@ declare(strict_types=1);
 namespace Milpa\AgentWorkspace\Admin;
 
 use Milpa\AgentWorkspace\Data\DesktopData;
+use Milpa\AgentWorkspace\ShellComposition;
+use Milpa\Interfaces\Event\MilpaEventDispatcherInterface;
 use Milpa\AgentWorkspace\DesktopSettings;
 use Milpa\AgentWorkspace\I18n\Catalog;
 use Milpa\AgentWorkspace\Live\CommandListView;
@@ -157,6 +159,21 @@ final class AgentViewRenderer implements ComponentRendererInterface, DeclaresCli
         private readonly ?Catalog $catalog = null,
         /** The app's signing secret — what seals this region's session ticket (greenhouse decisions/0256). */
         private readonly string $signingSecret = '',
+        /**
+         * The dispatcher this region composes through — how a third-party plugin still gets into the
+         * Context tab now that the page is gone.
+         *
+         * 🚨 THE COMPOSE SEAM HAD EXACTLY ONE HOST AND IT WAS THE PAGE. `ShellController` was the only
+         * dispatcher of `desktop.shell.compose` AND the only renderer of the sections it collects, so
+         * retiring `/desktop` would have taken a published extension point with it — silently, because
+         * a contribution nobody paints looks identical to a plugin that contributed nothing. This region
+         * deliberately passed `'sections' => []`, which was honest while the page existed and would have
+         * become the whole story (greenhouse decisions/0283).
+         *
+         * Optional: a host that hands over no dispatcher composes no third-party sections, which is the
+         * same answer this region gave before — it just is not the only answer any more.
+         */
+        private readonly ?MilpaEventDispatcherInterface $events = null,
     ) {
     }
 
@@ -275,8 +292,11 @@ final class AgentViewRenderer implements ComponentRendererInterface, DeclaresCli
     private function bar(StateSnapshot $state, Catalog $catalog, string $gate): string
     {
         return '<div class="desktop-agent__bar">'
+            // 🚨 NO HAY BOTÓN «Open the Desktop», Y NO ES QUE SE HAYA MOVIDO: no hay a dónde abrir.
+            // Este `<a target="_blank">` apuntaba a `/desktop`, y con la página retirada apuntaba a una
+            // 404 — medido en ganado: la sección seguía pintando el botón y la ruta contestaba 404. El
+            // panel ES el workspace ahora (greenhouse decisions/0283).
             . '<span class="mui-badge desktop-chip desktop-chip--gate" data-gate="' . self::attr($gate) . '">' . self::attr($catalog->tr('chip.gate', $catalog->tr('gate.kind.' . $gate))) . '</span>'
-            . '<a class="mui-btn mui-btn--sm desktop-agent__open" href="' . self::attr(self::meta($state, 'open', AgentViewComponent::DEFAULT_OPEN)) . '" target="_blank" rel="noopener">' . self::attr($catalog->tr('agent.open')) . '</a>'
             . '</div>';
     }
 
@@ -327,10 +347,27 @@ final class AgentViewRenderer implements ComponentRendererInterface, DeclaresCli
      *
      * @return array<string, array<string, mixed>>
      */
+    /**
+     * The sections third-party plugins contributed, gathered the way the page used to gather them.
+     *
+     * @return list<array{id: string, title: string|null, html: string}>
+     */
+    private function contributedSections(): array
+    {
+        if ($this->events === null) {
+            return [];
+        }
+        $composition = new ShellComposition();
+        $this->events->dispatch(ShellComposition::EVENT, [ShellComposition::SUBJECT_KEY => $composition]);
+
+        return $composition->sections();
+    }
+
+    /** @return array<string, array<string, mixed>> */
     private function propsFor(?StateSnapshot $state = null): array
     {
         return [
-            'desktop-context' => ['sections' => []],
+            'desktop-context' => ['sections' => $this->contributedSections()],
             // THE CONVERSATION IS THE SESSION'S, NOT THE DEVICE'S (greenhouse decisions/0258).
             //
             // The seam was always here — `ConversationComponent` takes an `agent` prop and replays that

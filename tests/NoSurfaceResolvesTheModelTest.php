@@ -41,9 +41,7 @@ final class NoSurfaceResolvesTheModelTest extends TestCase
     /** Every file that used to carry its own copy of the answer. */
     private const SURFACES = [
         'src/Data/DesktopData.php',
-        'src/Live/AuthOverlay.php',
         'src/Live/ComposerBar.php',
-        'src/Live/StatusBar.php',
         'src/Live/SettingsScreen.php',
     ];
 
