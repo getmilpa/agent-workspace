@@ -151,6 +151,38 @@ final class DesktopAssets
         );
     }
 
+    /**
+     * THE SHARED MODULES A DESKTOP SURFACE NEEDS IN ORDER TO BEHAVE, as a view declares them.
+     *
+     * 🚨 A SHIPPED SCREEN HAD A DEAD BUTTON BECAUSE OF THIS. `Save settings` in the panel's Settings
+     * section fired NO request and the console said «desktop-guard not loaded»: the guard is one of
+     * {@see runtimeModules()}, which have no surface to be painted, so the declared-view contract —
+     * which collects assets by walking the components a view RENDERS — never emitted them. The
+     * `/desktop` page emitted them by hand, in its template, which is why the same screen worked
+     * there and not here (greenhouse decisions/0211, caught measuring decisions/0272).
+     *
+     * {@see of()} stays narrow — «never another component's» — and a test holds that invariant, because
+     * a renderer declaring its neighbours' files would leave nobody able to say which surface owns
+     * which. So these belong to the VIEW: `DeclaredView::$assets` is where a guest names files no
+     * single component of it owns (milpa/admin ≥ 0.26). Safe for every host: `LiveBoot` emits each URL
+     * once, so a page whose template already carried the modules gets them once all the same.
+     *
+     * 🚨 AND THE CONSOLE WAS CLEAN BEFORE THE CLICK. Every check of that page reported no errors,
+     * because nothing had called `save()` yet. A console read without interaction proves the page
+     * loaded, never that it is wired.
+     */
+    public static function runtimeAssets(): ClientAssets
+    {
+        $runtime = [];
+        foreach (self::runtimeModules() as $module) {
+            $runtime[] = self::url($module, 'js');
+        }
+
+        // In the order runtimeModules() declares: the guard creates `MilpaLive.desktop` and the rest
+        // hang off it, so nothing that hangs off it may run first.
+        return new ClientAssets(scripts: $runtime);
+    }
+
     /** The URL one file is served at: `/desktop/assets/c/<component>.<ext>`. */
     public static function url(string $component, string $extension): string
     {

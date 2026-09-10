@@ -14,6 +14,7 @@ declare(strict_types=1);
 
 namespace Milpa\AgentWorkspace\Admin;
 
+use Milpa\AgentWorkspace\Live\DesktopAssets;
 use Milpa\AgentWorkspace\Live\DesktopComponents;
 use Milpa\AgentWorkspace\Live\ShellSignals;
 use Milpa\AgentWorkspace\I18n\Catalog;
@@ -70,6 +71,12 @@ final class ScreenView
             definitions: $definitions,
             renderers: $renderers,
             props: $props === [] ? [] : [$name => $props],
+            // 🚨 THE VIEW DECLARES THE DESKTOP RUNTIME, because no component of it owns those modules —
+            // they have no surface to paint. The standalone page emitted them by hand in its template,
+            // so the same screens worked there and shipped DEAD here: the panel's Settings section
+            // rendered perfectly and its Save button fired nothing, the console saying the guard module
+            // was not loaded (greenhouse decisions/0272).
+            assets: DesktopAssets::runtimeAssets(),
             signals: ShellSignals::of($catalog, null),
             computed: ShellSignals::computed(),
         );

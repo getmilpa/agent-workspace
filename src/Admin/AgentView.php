@@ -18,6 +18,7 @@ use Milpa\Admin\Section\DeclaredView;
 use Milpa\AgentWorkspace\Data\DesktopData;
 use Milpa\AgentWorkspace\DesktopSettings;
 use Milpa\AgentWorkspace\I18n\Catalog;
+use Milpa\AgentWorkspace\Live\DesktopAssets;
 use Milpa\AgentWorkspace\Live\DesktopComponents;
 use Milpa\AgentWorkspace\Live\ShellSignals;
 use Milpa\Live\Contracts\Component\ComponentDefinitionInterface;
@@ -97,6 +98,12 @@ final class AgentView
                 'gate' => $settings->gateLabel(),
                 'signin' => $signin,
             ]],
+            // 🚨 THE VIEW DECLARES THE DESKTOP RUNTIME, because no component of it owns those modules —
+            // they have no surface to paint. The standalone page emitted them by hand in its template,
+            // so the same screens worked there and shipped DEAD here: the panel's Settings section
+            // rendered perfectly and its Save button fired nothing, the console saying the guard module
+            // was not loaded (greenhouse decisions/0272).
+            assets: DesktopAssets::runtimeAssets(),
             signals: ShellSignals::of($catalog, $data),
             computed: ShellSignals::computed(),
         );
