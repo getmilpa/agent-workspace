@@ -3,6 +3,13 @@
 All notable changes to milpa/desktop-app are documented here. This project adheres to
 [Semantic Versioning](https://semver.org/) and [Keep a Changelog](https://keepachangelog.com/).
 
+## [0.74.0](https://github.com/getmilpa/agent-workspace/compare/v0.73.3...v0.74.0) (2026-09-10)
+
+
+### Features
+
+* the tab named Context shows the context ([#76](https://github.com/getmilpa/agent-workspace/issues/76)) ([fc96489](https://github.com/getmilpa/agent-workspace/commit/fc96489bd7510b9be1051aca52e7853f919e589d))
+
 ## [0.73.3](https://github.com/getmilpa/agent-workspace/compare/v0.73.2...v0.73.3) (2026-09-10)
 
 
