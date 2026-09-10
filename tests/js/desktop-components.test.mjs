@@ -242,28 +242,64 @@ test('the chrome search filters the sidebar session list', () => {
   assert.equal(rows.every((r) => !r.classList.contains('milpa-search-miss')), true, 'an empty search hides nothing');
 });
 
-test('«New session» is ONE ceremony: the sidebar button and the embed strip run the same one', () => {
+test('the sidebar keeps its OWN ceremony: its button asks the auth component', () => {
   const html = shellTree();
   const p = page({ tree: html, modules: ['desktop-sidebar', 'desktop-auth'] });
   const sidebar = p.mount('desktopSidebar', { active: 'sessions' });
 
   sidebar.newSession();
   assert.equal(p.signal('desktop.auth.open'), true, 'the sidebar asks the auth component');
-
-  p.desktop().auth.close();
-  html.querySelector('[data-new-session]').fire('click');
-  assert.equal(p.signal('desktop.auth.open'), true, 'the strip control runs the same handler');
 });
 
-test('picking a session in the embed strip navigates, keeping the frame a frame', () => {
+// 🚨 THIS PAIR ASSERTED THE OPPOSITE AND WAS GREEN. The old tests held that the sidebar's module
+// wired the STRIP's controls — «one ceremony, both surfaces» — which is sound about duplication and
+// wrong about ownership. It cost a dead button: in the admin panel, which paints the strip and has a
+// navigation of its own, the sidebar's module never loads, so the strip's controls fired NOTHING.
+// Measured by clicking it in a real browser (greenhouse decisions/0273).
+test('the strip binds its own button and asks the ROUTE, not another surface', async () => {
   const html = shellTree();
-  const p = page({ tree: html, modules: ['desktop-sidebar'] });
+  const p = page({ tree: html, modules: ['desktop-session-strip', 'desktop-auth'] });
+  const calls = stubFetch(p, [response(200, { ok: true, id: 'ccc33333' })]);
+
+  html.querySelector('[data-new-session]').fire('click');
+  await settle();
+
+  assert.equal(calls.length, 1, 'the click asked the route');
+  assert.equal(calls[0].url, '/desktop/sessions');
+  assert.equal(calls[0].init.method, 'POST');
+  assert.deepEqual(p.assigned, ['http://localhost/desktop?session=ccc33333'], 'and went to the session it made');
+  // `false`, the value the auth module seeds — the point is that the strip did not OPEN it.
+  assert.equal(p.signal('desktop.auth.open'), false, 'it does NOT reach for the auth overlay a host may not paint');
+});
+
+test('a refused session is REPORTED, never swallowed', async () => {
+  const html = shellTree();
+  const p = page({ tree: html, modules: ['desktop-session-strip'], bus: true });
+  stubFetch(p, [response(403, { ok: false })]);
+  // Subscribed, not scraped: being TOLD is the contract, and the bus stub dispatches rather than
+  // recording — so a listener is the faithful way to ask.
+  const told = [];
+  p.bus().on('session.create_failed', (data) => told.push(data));
+
+  html.querySelector('[data-new-session]').fire('click');
+  await settle();
+
+  assert.deepEqual(p.assigned, [], 'nowhere to go: no session was made');
+  assert.equal(told.length, 1, 'and the surfaces are told');
+  assert.match(told[0].reason, /403/, 'with the status the route answered, not a guess');
+});
+
+test('picking a session names it in the CURRENT url, keeping every other param', () => {
+  const html = shellTree();
+  const p = page({ tree: html, modules: ['desktop-session-strip'] });
   const pick = html.querySelector('#milpa-embed-session');
 
   pick.value = 'bbb22222';
   pick.fire('change');
 
-  assert.deepEqual(p.assigned, ['?session=bbb22222&embed=1']);
+  // Host-agnostic: the panel stays on its section path, the page stays on /desktop. The old handler
+  // hardcoded `?session=<id>&embed=1` — a mode that was retired and a path that is one of two hosts.
+  assert.deepEqual(p.assigned, ['http://localhost/desktop?session=bbb22222']);
 });
 
 test('the passkey probe degrades the link on a 404 and reports a real failure', async () => {
