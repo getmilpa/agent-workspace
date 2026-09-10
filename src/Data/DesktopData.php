@@ -18,6 +18,7 @@ use Milpa\Attributes\PluginMetadata;
 use Milpa\AgentWorkspace\Live\ShellEventLog;
 use Milpa\Interfaces\Di\DIContainerInterface;
 use Milpa\Runtime\Config;
+use Milpa\AppRuntime\Config\AgentEndpoint;
 use Milpa\Runtime\Kernel;
 
 /**
@@ -210,10 +211,16 @@ final class DesktopData
 
         $answer = \Milpa\AppRuntime\Support\Capabilities::answer();
 
+        // NO DEFENSIVE CHECKS HERE ANY MORE. They were re-asserting a shape the authority's own
+        // return type already guarantees — invisible while `milpa/app-runtime` was not installed for
+        // analysis, so phpstan saw `mixed` and the guards looked prudent. With the authority in
+        // require-dev it says they can never fail, which means they were never reading anything: a
+        // guard that cannot fire is a claim that the caller does not trust a contract it depends on
+        // (greenhouse decisions/0266).
         return [
-            'installed' => is_array($answer['installed'] ?? null) ? array_values($answer['installed']) : [],
-            'available' => is_array($answer['available'] ?? null) ? array_values($answer['available']) : [],
-            'source' => is_string($answer['source'] ?? null) ? $answer['source'] : '',
+            'installed' => $answer['installed'],
+            'available' => $answer['available'],
+            'source' => $answer['source'],
         ];
     }
 
@@ -551,11 +558,9 @@ final class DesktopData
 
         $out = [];
         foreach (\Milpa\AppRuntime\Web\ScreenStore::fromConfig($live, $kernel->root())->catalogue() as $row) {
-            $out[] = [
-                'name' => is_string($row['name'] ?? null) ? $row['name'] : '',
-                'type' => is_string($row['type'] ?? null) ? $row['type'] : '',
-                'served_at' => is_string($row['servedAt'] ?? null) ? $row['servedAt'] : '',
-            ];
+            // Same as above: `ScreenStore::catalogue()` declares these three as strings, so casting
+            // them «just in case» was distrust of a contract this file consumes on purpose.
+            $out[] = ['name' => $row['name'], 'type' => $row['type'], 'served_at' => $row['servedAt']];
         }
 
         return $out;
@@ -572,19 +577,63 @@ final class DesktopData
     }
 
     /**
-     * The configured model provider and endpoint (real config, with env fallbacks).
+     * WHICH MODEL THIS APP TALKS TO — asked of the authority, and asked of the PROVIDER.
      *
-     * @return array{model: string, endpoint: string}
+     * ── THIS METHOD USED TO RESOLVE, AND IT RESOLVED WRONG ───────────────────────────────────────
+     *
+     * It read `agent.base_url` — a key `AgentKeys` does not declare; the authority reads
+     * `agent.baseUrl` — so it never once saw the value the TURN uses. It fell through to the
+     * environment, and from there to `'http://llama.local:11438'`, a host that stopped resolving
+     * when that machine moved to Tailscale. And it hardcoded `'qwen3.8-27b'` as the model, so every
+     * surface reading it printed a model name whether or not anything was listening.
+     *
+     * `AgentEndpoint` exists for exactly this defect and its docblock had already ruled on it:
+     * a precedence written twice disagreed, a human who configured through the governed path was
+     * told they had configured nothing, and the remedy was that **the surface loses the right to
+     * resolve** — «because patching it would have left THREE copies of the precedence instead of
+     * two» (greenhouse evidence/0165). This package arrived after that rule and made seven
+     * (decisions/0266).
+     *
+     * ── SO IT ASKS, AND IT REPORTS WHAT IT CANNOT SAY ────────────────────────────────────────────
+     *
+     * `model` and `endpoint` are `null` when nobody declared one. NOT a default: a surface that
+     * names a host the reader never chose sends them to fix a machine that was never theirs, which
+     * is how `llama.local` survived in this file long after it stopped existing.
+     *
+     * `reached` is `null` when the question could not be asked at all — no endpoint, or no reader
+     * — and `false` only when something was asked and nothing answered. `serves_declared` is the
+     * arm nothing was checking: a provider that answers with a catalogue lacking the configured
+     * model fails every turn AT the provider, and the failure looks like a bug in the turn.
+     *
+     * WITHOUT THE AUTHORITY INSTALLED it says everything is undeclared rather than inventing. A
+     * Desktop shipped without `milpa/app-runtime` has no governed configuration to read, and «I do
+     * not know» is the only true answer it can give.
+     *
+     * @return array{model: null|string, endpoint: null|string, model_from: string, endpoint_from: string, reached: null|bool, models: list<string>, serves_declared: null|bool}
      */
     public function model(): array
     {
         $config = $this->container->has(Config::class) ? $this->container->get(Config::class) : null;
-        $model = $config instanceof Config ? $config->get('agent.model') : null;
-        $endpoint = $config instanceof Config ? $config->get('agent.base_url') : null;
+        $config = $config instanceof Config ? $config : null;
+
+        if (!class_exists(AgentEndpoint::class)) {
+            return [
+                'model' => null, 'endpoint' => null,
+                'model_from' => 'none', 'endpoint_from' => 'none',
+                'reached' => null, 'models' => [], 'serves_declared' => null,
+            ];
+        }
+
+        $reach = AgentEndpoint::providerReach($config);
 
         return [
-            'model' => is_string($model) && $model !== '' ? $model : (getenv('MILPA_AGENT_MODEL') ?: 'qwen3.8-27b'),
-            'endpoint' => is_string($endpoint) && $endpoint !== '' ? $endpoint : (getenv('MILPA_AGENT_BASE_URL') ?: 'http://llama.local:11438'),
+            'model' => AgentEndpoint::model($config),
+            'endpoint' => AgentEndpoint::baseUrl($config),
+            'model_from' => AgentEndpoint::modelSource($config),
+            'endpoint_from' => AgentEndpoint::baseUrlSource($config),
+            'reached' => $reach === null ? null : $reach['reached'],
+            'models' => $reach['models'] ?? [],
+            'serves_declared' => $reach['serves_declared'] ?? null,
         ];
     }
 

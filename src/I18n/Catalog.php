@@ -98,6 +98,15 @@ final class Catalog
             'auth.identity.verified' => 'Signature-verified principal',
             'auth.identity.verified_hint' => 'Requires an external mechanism.',
             'auth.provider' => 'Model provider',
+            // WHAT A SURFACE SAYS WHEN NOBODY DECLARED A MODEL. Not a default name: this package
+            // printed `qwen3.8-27b` in five places and `http://llama.local:11438` in two, so every
+            // one of them asserted a model it had never asked — on a host that stopped resolving
+            // when that machine moved (greenhouse decisions/0266). «I do not know» is the only true
+            // answer a surface has when the authority has nothing to give it.
+            'model.undeclared' => 'no model declared',
+            'model.unreachable' => '%s · not answering',
+            'model.not_served' => '%s · this provider does not serve it',
+            'auth.provider.undeclared' => 'Local model · none declared',
             'auth.provider.local' => 'Local model · %s (%s)',
             'auth.warning.title' => 'Your system user is not a verified identity',
             'auth.warning.desc' => 'Authorizing in a session grants the operation; it is not signing the call.',
@@ -304,6 +313,10 @@ final class Catalog
             'auth.identity.verified' => 'Principal con firma verificada',
             'auth.identity.verified_hint' => 'Requiere un mecanismo externo.',
             'auth.provider' => 'Proveedor de modelo',
+            'model.undeclared' => 'sin modelo declarado',
+            'model.unreachable' => '%s · no contesta',
+            'model.not_served' => '%s · este proveedor no lo sirve',
+            'auth.provider.undeclared' => 'Modelo local · ninguno declarado',
             'auth.provider.local' => 'Modelo local · %s (%s)',
             'auth.warning.title' => 'Tu usuario del sistema no es una identidad verificada',
             'auth.warning.desc' => 'Autorizar en una sesión concede la operación; no es firmar la llamada.',

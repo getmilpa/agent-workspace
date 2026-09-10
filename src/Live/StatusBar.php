@@ -70,7 +70,9 @@ final class StatusBar
     /** The bar, with its signed envelope, after the render events a plugin may extend it through. */
     public function render(): string
     {
-        $subject = new ComposerRender(['model' => $this->data?->model()['model'] ?? 'qwen3.8-27b']);
+        // ONE LABEL, SAID ONCE — this file carried the hardcoded name twice, in two methods
+        // (greenhouse decisions/0266).
+        $subject = new ComposerRender(['model' => ComposerBar::modelLabel($this->data?->model() ?? [], $this->catalog)]);
         $this->events?->dispatch(self::BEFORE_RENDER, [self::SUBJECT_KEY => $subject]);
 
         $state = (new StatusBarComponent())->mount($subject->props, new ComponentContext(componentId: self::COMPONENT_ID));
@@ -85,7 +87,7 @@ final class StatusBar
     private function markup(array $props): string
     {
         $catalog = $this->catalog ?? new Catalog();
-        $model = \is_string($props['model'] ?? null) && $props['model'] !== '' ? (string) $props['model'] : 'qwen3.8-27b';
+        $model = \is_string($props['model'] ?? null) && $props['model'] !== '' ? (string) $props['model'] : $catalog->tr('model.undeclared');
         $counters = $this->data?->counters() ?? ['turns' => 0, 'steps' => 0, 'tokens' => 0, 'tool_calls' => 0, 'state' => 'idle'];
         $seed = \sprintf('%d turns · %d steps · %d tokens · %d tool calls', $counters['turns'], $counters['steps'], $counters['tokens'], $counters['tool_calls']);
 
