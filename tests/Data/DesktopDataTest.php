@@ -19,6 +19,7 @@ use Milpa\AgentWorkspace\Data\DesktopData;
 use Milpa\AgentWorkspace\AgentWorkspacePlugin;
 use Milpa\AgentWorkspace\Live\ShellEvent;
 use Milpa\AgentWorkspace\Live\ShellEventLog;
+use Milpa\AppRuntime\Config\AgentEndpoint;
 use Milpa\Runtime\Kernel;
 use PHPUnit\Framework\TestCase;
 
@@ -177,8 +178,50 @@ final class DesktopDataTest extends TestCase
 
         self::assertNull($model['endpoint'], 'snake_case declares nothing');
         self::assertSame('none', $model['endpoint_from']);
-        self::assertNull($model['reached'], 'no endpoint, no question');
-        self::assertSame([], $model['models']);
+        // Whether anything answers is a SEPARATE question, because asking costs a round trip a
+        // paint must not pay (greenhouse decisions/0266). With no endpoint it is «never asked».
+        $reach = (new DesktopData($kernel->container()))->modelReach();
+        self::assertNull($reach['reached'], 'no endpoint, no question');
+        self::assertSame([], $reach['models']);
+    }
+
+    /**
+     * 🚨 PAINTING MAKES NO REQUEST, and this counts them.
+     *
+     * The first version of this asked the provider inside `model()`, so rendering the composer paid
+     * for a round trip: 102 ms with the provider up and **5 002 ms with it down**, measured on a
+     * published build. Trading «a wrong value instantly» for «the right value after five seconds» is
+     * a worse deal than the lie it replaced — a surface nobody can look at has not stopped lying, it
+     * has stopped answering (greenhouse decisions/0266).
+     */
+    public function testPaintingTheModelMakesNoRequestAndAskingMakesExactlyOne(): void
+    {
+        if (!class_exists(\Milpa\AiGateway\ProviderReach::class)) {
+            self::markTestSkipped('no reader, no question');
+        }
+        $calls = 0;
+        AgentEndpoint::useProviderFetcher(static function () use (&$calls): ?string {
+            ++$calls;
+
+            return '{"data":[{"id":"m"}]}';
+        });
+
+        $kernel = Kernel::boot([
+            'root' => sys_get_temp_dir(),
+            'plugins' => [],
+            'config' => ['agent' => ['baseUrl' => 'http://provider.test:1', 'model' => 'm']],
+        ]);
+        $kernel->container()->registerService(Kernel::class, $kernel);
+        $data = new DesktopData($kernel->container());
+
+        $data->model();
+        $data->model();
+        self::assertSame(0, $calls, 'a paint never goes out on the wire');
+
+        self::assertTrue($data->modelReach()['reached']);
+        self::assertSame(1, $calls, 'and asking asks once');
+
+        AgentEndpoint::useProviderFetcher(null);
     }
 
     /** Nothing declared anywhere is said, never filled in with a name the reader never chose. */
@@ -188,8 +231,11 @@ final class DesktopDataTest extends TestCase
 
         self::assertNull($model['model']);
         self::assertNull($model['endpoint']);
-        self::assertNull($model['reached']);
-        self::assertNull($model['serves_declared']);
+        self::assertArrayNotHasKey('reached', $model, 'painting does not ask');
+
+        $reach = (new DesktopData(new DIContainer()))->modelReach();
+        self::assertNull($reach['reached']);
+        self::assertNull($reach['serves_declared']);
     }
 
     public function testToArrayCarriesEveryDataSource(): void
