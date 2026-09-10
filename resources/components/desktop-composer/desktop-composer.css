@@ -31,6 +31,8 @@
 /* The way out is a link, and it looks like one: underlined at rest, because a link that only reveals
    itself on hover is a link nobody knows is there. */
 .composer-degraded__link { color: inherit; text-decoration: underline; text-underline-offset: 2px; }
+/* The way out for an app with no panel: a command, not a link (greenhouse decisions/0282). */
+.composer-degraded__cmd { flex: none; padding: 0 var(--space-1); border-radius: var(--radius-sm); background: var(--surface-sunken); color: inherit; }
 .composer-degraded__link:hover, .composer-degraded__link:focus-visible { text-decoration-thickness: 2px; }
 
 /* ── the mode chip and its menu ──────────────────────────────────────────────────────────────────── */

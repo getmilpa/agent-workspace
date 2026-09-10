@@ -64,6 +64,9 @@ final class CatalogTest extends TestCase
             // ungovernable fields name the same capability, because both are gated by the same thing:
             // nothing in the app can say who may configure the agent (greenhouse decisions/0280).
             'settings.model.key.unjudgeable_command', 'settings.model.endpoint.unjudgeable_command',
+            // `coa stack` is the way out for an app with no panel: the same command in every locale
+            // (greenhouse decisions/0282).
+            'conn.degraded.command',
             // «Skills» is the word this house uses in Spanish too — the same reason «endpoint» is
             // here. Translating it to «habilidades» would name a thing nobody in the project calls
             // that, and the screen it titles is the same screen in both languages.

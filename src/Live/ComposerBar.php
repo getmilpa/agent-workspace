@@ -169,16 +169,26 @@ final class ComposerBar
      * red would teach someone to ignore reds, which is how a gate gets turned off (greenhouse
      * decisions/0252) — so it takes the tier between quiet and alarming, which is what was missing.
      *
-     * Two catalog keys, not one with markup in it: a translator moves the words, never an anchor tag. And
-     * with no panel installed the sentence stands alone rather than linking to a page this app does not
-     * serve — the destination is a prop, so this method never asks whether the panel is there.
+     * Two catalog keys, not one with markup in it: a translator moves the words, never an anchor tag.
+     *
+     * 🚨 AND WITH NO PANEL IT USED TO SAY NOTHING AT ALL. The reasoning was right about the LINK — never
+     * point at a page this app does not serve — and wrong about the consequence: it dropped the way out
+     * instead of naming a different one, so the person was told something is broken and nothing about
+     * what to do. Measured on fresh cattle with a hub ALREADY RUNNING on the declared port, which is the
+     * cruellest version of it: the answer was one command away and the app said nothing
+     * (greenhouse decisions/0282).
+     *
+     * There is a way out every app has now: `coa stack` reads what the plugins declared and probes it,
+     * with no panel installed. The command is its own key because A COMMAND IS NOT COPY — translating it
+     * tells someone to type something that does not run (greenhouse decisions/0277).
      */
     private function degradedNotice(): string
     {
         $said = $this->tr('conn.degraded');
         $where = $this->tr('conn.degraded.where');
         if ($this->stackUrl === '') {
-            return $said;
+            return $said . ' ' . $this->tr('conn.degraded.how')
+                . ' <code class="composer-degraded__cmd">' . $this->tr('conn.degraded.command') . '</code>';
         }
 
         return $said . ' <a class="composer-degraded__link" href="' . htmlspecialchars($this->stackUrl, ENT_QUOTES) . '">' . $where . '</a>';

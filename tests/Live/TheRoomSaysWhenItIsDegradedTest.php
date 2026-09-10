@@ -93,18 +93,34 @@ final class TheRoomSaysWhenItIsDegradedTest extends TestCase
     }
 
     /**
-     * THE CONTROL: an app with no panel gets the sentence and NO link.
+     * AN APP WITH NO PANEL GETS A WAY OUT THAT IS NOT A LINK — and no dead anchor either.
      *
-     * The Desktop does not depend on milpa/admin on purpose, so an anchor to a section this app does not
-     * serve would be worse than the prose it replaced — a way out that goes nowhere.
+     * 🚨 IT USED TO GET NOTHING, and this test used to certify that as correct. The reasoning was right
+     * about the anchor — never point at a section this app does not serve — and wrong about the
+     * consequence: dropping the way out told a person something was broken and nothing about what to do.
+     * Measured on fresh cattle with a hub ALREADY RUNNING on the declared port, which is the cruellest
+     * version: the answer was one command away and the app said nothing (greenhouse decisions/0282).
+     *
+     * `coa stack` is the way out every app has, panel or not.
      */
-    public function testWithNoPanelItSaysTheStateAndOffersNoDeadLink(): void
+    public function testWithNoPanelItNamesTheCommandInsteadOfOfferingADeadLink(): void
     {
         $html = $this->markup('');
 
         self::assertStringContainsString('updates arrive on a poll', $html, 'the state is still said');
+        self::assertStringContainsString('coa stack', $html, 'the way out every app has');
+        self::assertStringContainsString('See what this app declared with', $html);
         self::assertStringNotContainsString('composer-degraded__link', $html);
         self::assertStringNotContainsString('<a', substr($html, (int) strpos($html, 'composer-degraded')), 'no anchor after the notice');
+    }
+
+    /** And with a panel it links there and does NOT also print the command — one way out, not two. */
+    public function testWithAPanelTheLinkIsTheWayOutAndTheCommandIsNotAlsoPrinted(): void
+    {
+        $html = $this->markup('/milpa/admin/s/stack');
+
+        self::assertStringContainsString('composer-degraded__link', $html);
+        self::assertStringNotContainsString('coa stack', $html, 'two ways out is a choice a person did not ask for');
     }
 
     /** And the link honours the route the app DECLARED, never a copied default. */
