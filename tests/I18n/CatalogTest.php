@@ -63,7 +63,9 @@ final class CatalogTest extends TestCase
             // and translating a command is telling them to type something that does not run. Both
             // ungovernable fields name the same capability, because both are gated by the same thing:
             // nothing in the app can say who may configure the agent (greenhouse decisions/0280).
-            'settings.model.key.unjudgeable_command', 'settings.model.endpoint.unjudgeable_command',
+            // The two sentences a field says when a write cannot be authorized name COMMANDS and CONFIG
+            // KEYS, and neither translates (greenhouse decisions/0285).
+            'settings.write.no_policy_command', 'settings.write.no_door_command',
             // `coa stack` is the way out for an app with no panel: the same command in every locale
             // (greenhouse decisions/0282).
             'conn.degraded.command',
