@@ -249,6 +249,9 @@ final class Catalog
             // Its own key so a translator moves WORDS, never an anchor tag: the renderer wraps this half
             // in the link when this app has a panel to link to (greenhouse decisions/0255).
             'conn.degraded.where' => 'Open the Stack section to start it',
+            // The way out for an app with NO panel — every app has this one.
+            'conn.degraded.how' => 'See what this app declared with',
+            'conn.degraded.command' => 'coa stack',
             'conn.live' => '◉ live',
             'conn.offline' => '○ offline',
             'conn.connecting' => '○ connecting…',
@@ -475,6 +478,8 @@ final class Catalog
             'op.hint.failed' => 'la operación falló',
             'conn.degraded' => 'El hub en vivo no está conectado — las actualizaciones llegan por sondeo, no al instante.',
             'conn.degraded.where' => 'Abre la sección Stack para levantarlo',
+            'conn.degraded.how' => 'Mira lo que esta app declaró con',
+            'conn.degraded.command' => 'coa stack',
             'conn.live' => '◉ en vivo',
             'conn.offline' => '○ sin conexión',
             'conn.connecting' => '○ conectando…',
