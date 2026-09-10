@@ -23,6 +23,7 @@ use Milpa\AgentWorkspace\Live\CapabilitiesScreen;
 use Milpa\AgentWorkspace\Live\ComposerRender;
 use Milpa\AgentWorkspace\Live\DecisionsInbox;
 use Milpa\AgentWorkspace\Live\ScreenPreview;
+use Milpa\AgentWorkspace\Live\SettingsScreen;
 use Milpa\AgentWorkspace\Live\ShellEvent;
 use Milpa\AgentWorkspace\Live\ShellEventLog;
 use Milpa\AgentWorkspace\ShellComposition;
@@ -179,6 +180,21 @@ final class DomContractTest extends TestCase
 
         unlink($dir . '/s1.json');
         unlink($dir . '/events.log');
+        // …AND THE SETTINGS SCREEN IN THE STATE WHERE IT ACCEPTS A KEY. The field is offered only when
+        // something in the app can judge WHO may write a credential — an app with no
+        // `OperationHttpPolicy` cannot expose `provider:declare` at all, so offering the field there
+        // would be a control that lies while you type into it (greenhouse decisions/0276). Its id is
+        // resolved by a module, so this gate must render the state that paints it: a page census that
+        // covers only the states a fixture happens to reach is a census with holes.
+        $pages .= (new SettingsScreen(
+            'dom-contract-secret-0123456789',
+            $data,
+            null,
+            null,
+            static fn (): bool => true,
+            static fn (): bool => false,
+        ))->render(hidden: false);
+
         rmdir($dir);
 
         return $pages;

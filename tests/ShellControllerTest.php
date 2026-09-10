@@ -1053,7 +1053,11 @@ final class ShellControllerTest extends TestCase
         // And in the modules, every fetch is guarded — `d.guarded` is the same discipline by another name.
         // The commands module makes TWO calls (a GET read and a POST mutation) through ONE guarded `request`;
         // the capabilities module makes two because the house's confirm gate is a two-STEP, not two calls.
-        foreach (['desktop-auth' => 1, 'desktop-settings' => 1, 'desktop-sidebar' => 1, 'desktop-turn' => 1, 'desktop-composer' => 1, 'desktop-commands' => 2, 'desktop-capabilities' => 2, 'desktop-work-board' => 1] as $component => $calls) {
+        // `desktop-settings` calls TWO endpoints on purpose: the form goes to `POST /desktop/settings`,
+        // and the API key goes to `provider:declare` — a different door because it demands identity and
+        // writes where git cannot see, while the settings file IS committed on a real app
+        // (greenhouse decisions/0276). Like `desktop-capabilities`, its second count is a two-step flow.
+        foreach (['desktop-auth' => 1, 'desktop-settings' => 2, 'desktop-sidebar' => 1, 'desktop-turn' => 1, 'desktop-composer' => 1, 'desktop-commands' => 2, 'desktop-capabilities' => 2, 'desktop-work-board' => 1] as $component => $calls) {
             $module = self::module($component);
             self::assertSame($calls, preg_match_all('/\bfetch\((?!\))/', $module), $component);
             self::assertGreaterThanOrEqual(1, substr_count($module, '.then(d.guarded)'), $component . ' guards every call');

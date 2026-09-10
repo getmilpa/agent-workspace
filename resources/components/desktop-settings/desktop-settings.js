@@ -100,6 +100,54 @@
           self.report(false, tr('settings.save_failed', (err && err.status) || 0));
         });
       },
+      /**
+       * 🚨 THE KEY GOES THROUGH ITS OWN OPERATION, NEVER THROUGH `save()`.
+       *
+       * `POST /desktop/settings` writes `.milpa/desktop-settings.json`, and on a real app's own
+       * `.gitignore` — checked on a fresh repository with the template's rules — THAT FILE IS
+       * COMMITTED. A key riding along with the endpoint and the theme would be a key in somebody's git
+       * history (greenhouse decisions/0276).
+       *
+       * `provider:declare` writes it where the code reads it and git does not, and demands identity to
+       * do so — two same-origin POSTs once wrote a credential with no session at all until that was
+       * closed (greenhouse decisions/0274). The confirm gate's 428 is part of that flow, which is why
+       * this uses `guardedFlow` and carries the token back.
+       *
+       * THE INPUT IS CLEARED WHETHER IT WORKED OR NOT: a key left sitting in a field is a key in the
+       * next screenshot, and a key that failed to save is not a key worth keeping around to retry
+       * blind.
+       */
+      declareKey: function () {
+        var d = desk();
+        if (!d) { return Promise.reject(new Error('desktop-guard not loaded')); }
+        var self = this;
+        var input = document.getElementById('set-key');
+        var value = input ? String(input.value || '') : '';
+        if (value === '') { return Promise.resolve(); }
+
+        var send = function (token) {
+          var headers = { 'Content-Type': 'application/json' };
+          if (token) { headers['Confirm-Token'] = token; }
+
+          return fetch('/provider/declare', {
+            method: 'POST',
+            headers: headers,
+            body: JSON.stringify({ key: 'agent.apiKey', value: value }),
+          });
+        };
+
+        return send(null).then(d.guardedFlow).then(function (r) {
+          if (r.status !== 428) { return r; }
+
+          return r.json().then(function (body) { return send(body && body.confirm_token).then(d.guarded); });
+        }).then(function () {
+          if (input) { input.value = ''; }
+          self.report(true, tr('settings.model.key.saved'));
+        }).catch(function (err) {
+          if (input) { input.value = ''; }
+          self.report(false, tr('settings.model.key.refused', (err && err.status) || 0));
+        });
+      },
       /** Discard: the persisted values are the server's, so reloading IS the discard. */
       discard: function () {
         location.reload();
