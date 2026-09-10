@@ -3,6 +3,13 @@
 All notable changes to milpa/desktop-app are documented here. This project adheres to
 [Semantic Versioning](https://semver.org/) and [Keep a Changelog](https://keepachangelog.com/).
 
+## [0.73.1](https://github.com/getmilpa/agent-workspace/compare/v0.73.0...v0.73.1) (2026-09-10)
+
+
+### Bug Fixes
+
+* **settings:** a field is offered when a write can be AUTHORIZED, not when a judge exists ([#70](https://github.com/getmilpa/agent-workspace/issues/70)) ([548dd6f](https://github.com/getmilpa/agent-workspace/commit/548dd6f5fdc205c35ab0edd7e0988ffd5fee5d19))
+
 ## [0.73.0](https://github.com/getmilpa/agent-workspace/compare/v0.72.0...v0.73.0) (2026-09-10)
 
 
