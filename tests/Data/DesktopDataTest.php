@@ -128,12 +128,24 @@ final class DesktopDataTest extends TestCase
         self::assertSame('/live', $data->liveRoute());
     }
 
-    public function testTheModelComesFromConfigWithEnvFallback(): void
+    /**
+     * 🚨 THIS TEST CARRIED THE DEFECT IN ITS OWN NAME AND IN ITS FIXTURE.
+     *
+     * It declared `agent.base_url` — snake_case, a key `AgentKeys` DOES NOT DECLARE; the authority
+     * reads `agent.baseUrl` — and asserted the source returned it. So it proved that a surface read
+     * a key nobody can set, which is why every real house fell through to the environment and, with
+     * no environment, to a hardcoded `http://llama.local:11438` that had stopped resolving
+     * (greenhouse decisions/0266).
+     *
+     * The source asks {@see AgentEndpoint} now: one precedence, resolved once, in the class that
+     * exists because it was written twice (evidence/0165).
+     */
+    public function testTheModelIsWhatTheAuthorityResolvesAndNotAKeyNobodyDeclares(): void
     {
         $kernel = Kernel::boot([
             'root' => sys_get_temp_dir(),
             'plugins' => [],
-            'config' => ['agent' => ['model' => 'qwen-test', 'base_url' => 'http://hub.test:9000']],
+            'config' => ['agent' => ['model' => 'qwen-test', 'baseUrl' => 'http://hub.test:9000']],
         ]);
         $kernel->container()->registerService(Kernel::class, $kernel);
 
@@ -141,6 +153,43 @@ final class DesktopDataTest extends TestCase
 
         self::assertSame('qwen-test', $model['model']);
         self::assertSame('http://hub.test:9000', $model['endpoint']);
+        self::assertSame('config', $model['model_from'], 'and it says where the value came from');
+        self::assertSame('config', $model['endpoint_from']);
+    }
+
+    /**
+     * THE CONTROL: the key this file used to read returns NOTHING, because nothing declares it.
+     *
+     * Without this the fix looks like a rename. What it actually is: the surface stopped reading a
+     * key that never existed, and a house that declares only the wrong spelling now hears «no model
+     * declared» instead of being handed a dead host.
+     */
+    public function testTheKeyItUsedToReadDeclaresNothing(): void
+    {
+        $kernel = Kernel::boot([
+            'root' => sys_get_temp_dir(),
+            'plugins' => [],
+            'config' => ['agent' => ['base_url' => 'http://hub.test:9000']],
+        ]);
+        $kernel->container()->registerService(Kernel::class, $kernel);
+
+        $model = (new DesktopData($kernel->container()))->model();
+
+        self::assertNull($model['endpoint'], 'snake_case declares nothing');
+        self::assertSame('none', $model['endpoint_from']);
+        self::assertNull($model['reached'], 'no endpoint, no question');
+        self::assertSame([], $model['models']);
+    }
+
+    /** Nothing declared anywhere is said, never filled in with a name the reader never chose. */
+    public function testWithNothingDeclaredItSaysNothingRatherThanNamingAHost(): void
+    {
+        $model = (new DesktopData(new DIContainer()))->model();
+
+        self::assertNull($model['model']);
+        self::assertNull($model['endpoint']);
+        self::assertNull($model['reached']);
+        self::assertNull($model['serves_declared']);
     }
 
     public function testToArrayCarriesEveryDataSource(): void

@@ -72,9 +72,14 @@ final class AdminGuestTest extends TestCase
             '~<a class="mui-sidebar__item" href="/milpa/admin/s/agent"( aria-current="page")?><span class="mui-sidebar__item-icon" aria-hidden="true">◈</span><span class="mui-sidebar__item-label">Agent</span></a>~',
             $indexHtml,
         );
-        // Order 60 sits after the host's own sections: the panel opens on Plugins, never on the guest.
-        self::assertSame('plugins', $catalogue->first()?->id);
-        self::assertStringContainsString('href="/milpa/admin/s/plugins" aria-current="page"', $indexHtml);
+        // ORDER 60 SITS AFTER THE HOST'S OWN SECTIONS, and what the panel opens on is the host's
+        // decision, not this guest's. It used to be Plugins because `order: 10` won a flat sort and
+        // nobody chose it; milpa/admin 0.23 made the landing a decision (greenhouse decisions/0264).
+        // What this test is FOR is unchanged and is the sentence below: the panel never opens on the
+        // guest.
+        self::assertNotSame('agent', $catalogue->first()?->id, 'the panel never opens on the guest');
+        self::assertSame('house', $catalogue->first()?->id, 'and the host decided which of its own it opens on');
+        self::assertStringContainsString('href="/milpa/admin/s/house" aria-current="page"', $indexHtml);
 
         $section = self::dispatch($kernel, '/milpa/admin/s/agent');
         self::assertSame(200, $section->getStatusCode());

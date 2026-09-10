@@ -45,9 +45,6 @@ final class SettingsScreen
     /** The payload key both render events carry their mutable {@see ComposerRender} under. */
     public const string SUBJECT_KEY = 'settings';
 
-    /** The default endpoint a Desktop with no configuration talks to. */
-    private const string DEFAULT_ENDPOINT = 'http://llama.local:11438';
-
     private readonly SignedXhtmlStateTransferCodec $codec;
 
     private readonly Catalog $catalog;
@@ -95,13 +92,25 @@ final class SettingsScreen
         return $subject->html;
     }
 
-    /** The model endpoint: the persisted setting if one was saved (0483), else the configured one. */
+    /**
+     * The model endpoint: the persisted setting if one was saved (0483), else the configured one,
+     * else EMPTY.
+     *
+     * The default it used to fall to was `http://llama.local:11438` — a host that stopped resolving
+     * when that machine moved to Tailscale (greenhouse decisions/0266). A form pre-filled with a
+     * dead address is worse than an empty field: it reads as «this is what you are talking to», and
+     * saving the form without touching it would DECLARE it. An empty field asks the question.
+     */
     private function endpoint(): string
     {
         $settings = $this->data?->settings() ?? [];
         $saved = $settings['endpoint'] ?? null;
+        if (\is_string($saved) && $saved !== '') {
+            return $saved;
+        }
+        $configured = $this->data?->model()['endpoint'] ?? null;
 
-        return \is_string($saved) && $saved !== '' ? $saved : ($this->data?->model()['endpoint'] ?? self::DEFAULT_ENDPOINT);
+        return \is_string($configured) ? $configured : '';
     }
 
     /** @param array<string, mixed> $props */

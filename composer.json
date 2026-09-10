@@ -1,73 +1,74 @@
 {
-  "name": "milpa/agent-workspace",
-  "description": "The agent's workspace for the Milpa PHP framework: the conversation, the composer, the gate, the work board and the decisions inbox \u2014 the room where a human meets the agent, declared as a section of the Milpa panel. Opt-in: an app has a panel without it.",
-  "type": "milpa-capability",
-  "license": "Apache-2.0",
-  "authors": [
-    {
-      "name": "Rodrigo Vicente - TeamX Agency",
-      "homepage": "https://teamx.agency"
-    }
-  ],
-  "require": {
-    "milpa/core": ">=0.12 <1.0",
-    "milpa/http": ">=0.1.5 <1.0",
-    "milpa/live": ">=0.18 <1.0",
-    "milpa/live-web": ">=0.14 <1.0",
-    "milpa/mercure": ">=0.1.0 <1.0",
-    "milpa/runtime": ">=0.10 <1.0",
-    "nyholm/psr7": "^1.8",
-    "php": ">=8.3",
-    "psr/http-message": "^1.1 || ^2.0"
-  },
-  "require-dev": {
-    "friendsofphp/php-cs-fixer": "^3.75",
-    "milpa/admin": ">=0.17 <1.0",
-    "milpa/container": ">=0.1 <1.0",
-    "phpstan/phpdoc-parser": "^2.3",
-    "phpstan/phpstan": "^2.1",
-    "phpunit/phpunit": "^11.5"
-  },
-  "suggest": {
-    "milpa/admin": "The panel this is a section of. milpa/admin provides the Milpa Desktop \u2014 chrome, sections, the gate, settings and i18n \u2014 and AgentWorkspacePlugin declares one section named Agent inside it, composed inline in the panel's own document, behind the same door, with one runtime for the page. Without it this package still serves its own routes; with it, the agent lives where the human already is (greenhouse decisions/0211, decisions/0220).",
-    "milpa/orchestrator": "Declare agent graphs and answer their decisions from the Desktop inbox (>=0.8)"
-  },
-  "autoload": {
-    "psr-4": {
-      "Milpa\\AgentWorkspace\\": "src/"
-    }
-  },
-  "autoload-dev": {
-    "psr-4": {
-      "Milpa\\AgentWorkspace\\Tests\\": "tests/"
+    "name": "milpa/agent-workspace",
+    "description": "The agent's workspace for the Milpa PHP framework: the conversation, the composer, the gate, the work board and the decisions inbox — the room where a human meets the agent, declared as a section of the Milpa panel. Opt-in: an app has a panel without it.",
+    "type": "milpa-capability",
+    "license": "Apache-2.0",
+    "authors": [
+        {
+            "name": "Rodrigo Vicente - TeamX Agency",
+            "homepage": "https://teamx.agency"
+        }
+    ],
+    "require": {
+        "milpa/core": ">=0.12 <1.0",
+        "milpa/http": ">=0.1.5 <1.0",
+        "milpa/live": ">=0.18 <1.0",
+        "milpa/live-web": ">=0.14 <1.0",
+        "milpa/mercure": ">=0.1.0 <1.0",
+        "milpa/runtime": ">=0.10 <1.0",
+        "nyholm/psr7": "^1.8",
+        "php": ">=8.3",
+        "psr/http-message": "^1.1 || ^2.0"
     },
-    "exclude-from-classmap": [
-      "tests/Fixtures/app-runtime-passkey-gate.php"
-    ]
-  },
-  "extra": {
-    "milpa": {
-      "events": [
-        "Milpa\\AgentWorkspace\\Event\\AgentWorkspaceEvents"
-      ],
-      "capability": {
-        "id": "agent-workspace",
-        "title": "The room where a human meets the agent \u2014 a section of the panel, not the panel",
-        "unlocks": [],
-        "provides": [
-          "agent-workspace"
-        ],
-        "plugins": [
-          "Milpa\\AgentWorkspace\\AgentWorkspacePlugin"
-        ],
-        "briefing": "This app gains the agent's workspace: conversation, composer, gate, work board, activity and decisions inbox, declared as a section of the Milpa panel and served over the app's own origin. The panel itself comes from milpa/admin; this is a tenant of it, and an app without this capability still has a panel."
-      }
-    }
-  },
-  "config": {
-    "sort-packages": true,
-    "allow-plugins": {}
-  },
-  "minimum-stability": "dev",
-  "prefer-stable": true
+    "require-dev": {
+        "friendsofphp/php-cs-fixer": "^3.75",
+        "milpa/admin": ">=0.17 <1.0",
+        "milpa/app-runtime": ">=0.147.1 <1.0",
+        "milpa/container": ">=0.1 <1.0",
+        "phpstan/phpdoc-parser": "^2.3",
+        "phpstan/phpstan": "^2.1",
+        "phpunit/phpunit": "^11.5"
+    },
+    "suggest": {
+        "milpa/admin": "The panel this is a section of. milpa/admin provides the Milpa Desktop — chrome, sections, the gate, settings and i18n — and AgentWorkspacePlugin declares one section named Agent inside it, composed inline in the panel's own document, behind the same door, with one runtime for the page. Without it this package still serves its own routes; with it, the agent lives where the human already is (greenhouse decisions/0211, decisions/0220).",
+        "milpa/orchestrator": "Declare agent graphs and answer their decisions from the Desktop inbox (>=0.8)"
+    },
+    "autoload": {
+        "psr-4": {
+            "Milpa\\AgentWorkspace\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Milpa\\AgentWorkspace\\Tests\\": "tests/"
+        },
+        "exclude-from-classmap": [
+            "tests/Fixtures/app-runtime-passkey-gate.php"
+        ]
+    },
+    "extra": {
+        "milpa": {
+            "events": [
+                "Milpa\\AgentWorkspace\\Event\\AgentWorkspaceEvents"
+            ],
+            "capability": {
+                "id": "agent-workspace",
+                "title": "The room where a human meets the agent — a section of the panel, not the panel",
+                "unlocks": [],
+                "provides": [
+                    "agent-workspace"
+                ],
+                "plugins": [
+                    "Milpa\\AgentWorkspace\\AgentWorkspacePlugin"
+                ],
+                "briefing": "This app gains the agent's workspace: conversation, composer, gate, work board, activity and decisions inbox, declared as a section of the Milpa panel and served over the app's own origin. The panel itself comes from milpa/admin; this is a tenant of it, and an app without this capability still has a panel."
+            }
+        }
+    },
+    "config": {
+        "sort-packages": true,
+        "allow-plugins": {}
+    },
+    "minimum-stability": "dev",
+    "prefer-stable": true
 }

@@ -98,9 +98,16 @@ final class AuthOverlay
     /** The real model label for the provider option: "Local model · <model> (<endpoint>)", in the locale. */
     private function providerLabel(): string
     {
-        $model = $this->data?->model() ?? ['model' => 'qwen3.8-27b', 'endpoint' => 'http://llama.local:11438'];
+        // NO FALLBACK. This line used to carry its own copy of a model name and a host — the host
+        // had stopped resolving — so the option offered a provider nobody had declared
+        // (greenhouse decisions/0266). Undeclared is said, not filled in.
+        $model = $this->data?->model() ?? [];
+        $name = \is_string($model['model'] ?? null) ? (string) $model['model'] : '';
+        $where = \is_string($model['endpoint'] ?? null) ? (string) $model['endpoint'] : '';
 
-        return $this->catalog->tr('auth.provider.local', (string) $model['model'], (string) $model['endpoint']);
+        return $name === '' || $where === ''
+            ? $this->catalog->tr('auth.provider.undeclared')
+            : $this->catalog->tr('auth.provider.local', $name, $where);
     }
 
     /**

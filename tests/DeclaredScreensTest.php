@@ -88,10 +88,14 @@ final class DeclaredScreensTest extends TestCase
         self::assertStringContainsString('value="http://persisted.test/v1"', $html, 'the persisted endpoint wins');
         self::assertStringContainsString('>Guardado</span>', $html, 'the badge seed speaks the declared locale');
 
-        // With no persisted endpoint the configured one stands; with no data seam at all, the default.
+        // With no persisted endpoint and nothing configured, THE FIELD IS EMPTY. It used to be
+        // pre-filled with `http://llama.local:11438` — a host that had stopped resolving — and a
+        // form pre-filled with a dead address is worse than an empty one: it reads as «this is what
+        // you are talking to», and saving without touching it would DECLARE it
+        // (greenhouse decisions/0266). An empty field asks the question.
         $configured = (new SettingsScreen('secret', new DesktopData(new DIContainer(), null, '', new DesktopStore($dir . '/s2', $dir . '/none.json'))))->render();
-        self::assertMatchesRegularExpression('/id="set-end"[^>]*value="http/', $configured);
-        self::assertStringContainsString('value="http://llama.local:11438"', (new SettingsScreen('secret'))->render());
+        self::assertMatchesRegularExpression('/id="set-end"[^>]*value=""/', $configured);
+        self::assertStringNotContainsString('llama.local', (new SettingsScreen('secret'))->render(), 'no surface names a host the reader never chose');
 
         unlink($dir . '/settings.json');
         rmdir($dir);
@@ -152,8 +156,12 @@ final class DeclaredScreensTest extends TestCase
         // The honest sentence the overlay exists to say — a system user is NOT a verified identity.
         self::assertStringContainsString('Your system user is not a verified identity', $html);
         self::assertStringContainsString('Authorizing in a session grants the operation; it is not signing the call.', $html);
-        // The provider option names the app's REAL model, never a provider it does not have.
-        self::assertStringContainsString('Local model · qwen3.8-27b (http://llama.local:11438)', $html);
+        // 🚨 THE COMMENT WAS RIGHT AND THE ASSERTION DID THE OPPOSITE. It said «names the app's REAL
+        // model, never a provider it does not have» and then pinned a hardcoded name on a host that
+        // had stopped resolving — so it proved the overlay offered a provider nobody declared
+        // (greenhouse decisions/0266). With nothing declared the option SAYS so.
+        self::assertStringContainsString('Local model · none declared', $html);
+        self::assertStringNotContainsString('llama.local', $html);
         // Its look is a declared file.
         self::assertStringNotContainsString('style=', $html);
     }

@@ -189,7 +189,10 @@ final class ComposerBar
         $degraded = $this->degradedNotice();
         $ctx = $this->data?->context() ?? ['tokens' => 0, 'window' => 32768, 'used_pct' => 0, 'free' => 32768];
         $c = $this->data?->counters() ?? ['turns' => 0, 'steps' => 0, 'tokens' => 0, 'tool_calls' => 0, 'state' => 'idle'];
-        $model = htmlspecialchars($this->data?->model()['model'] ?? 'qwen3.8-27b', ENT_QUOTES);
+        // THE LINE THAT LIED. It printed a hardcoded model name whether or not anything was
+        // listening; now it says what the authority says, and says the absence when there is one
+        // (greenhouse decisions/0266).
+        $model = htmlspecialchars(self::modelLabel($this->data?->model() ?? [], $this->catalog), ENT_QUOTES);
         $tokens = $this->kfmt((int) $ctx['tokens']);
         $window = $this->kfmt((int) $ctx['window']);
         $free = $this->kfmt((int) $ctx['free']);
@@ -284,5 +287,32 @@ HTML;
     private function envelope(StateSnapshot $state): string
     {
         return '<script type="application/milpa+xhtml" data-milpa-state="' . self::COMPONENT_ID . '">' . $this->codec->encodeState($state) . '</script>';
+    }
+
+    /**
+     * WHAT A HUMAN READS ABOUT THE MODEL, absence and silence included.
+     *
+     * Three facts, three sentences, and none of them a default name: nothing declared says so;
+     * declared-and-not-answering says so, because a name alone would claim a working provider;
+     * declared-and-not-served is the arm nothing was checking, where every turn fails AT the
+     * provider and the failure looks like a bug in the turn (greenhouse decisions/0266).
+     *
+     * @param array<string, mixed> $model as {@see \Milpa\AgentWorkspace\Data\DesktopData::model()} answers
+     */
+    public static function modelLabel(array $model, ?Catalog $catalog = null): string
+    {
+        $catalog ??= new Catalog();
+        $name = \is_string($model['model'] ?? null) && $model['model'] !== '' ? (string) $model['model'] : '';
+        if ($name === '') {
+            return $catalog->tr('model.undeclared');
+        }
+        if (($model['reached'] ?? null) === false) {
+            return $catalog->tr('model.unreachable', $name);
+        }
+        if (($model['serves_declared'] ?? null) === false) {
+            return $catalog->tr('model.not_served', $name);
+        }
+
+        return $name;
     }
 }
