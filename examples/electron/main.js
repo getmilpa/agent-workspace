@@ -1,4 +1,4 @@
-// A minimal Electron host for a Milpa app that runs milpa/desktop-app.
+// A minimal Electron host for a Milpa app that runs milpa/agent-workspace.
 //
 // The Milpa Desktop is NOT an Electron app that drives a separate Milpa — it is a Milpa that serves
 // its own shell over HTTP (`GET /desktop`). This host does exactly two things: it starts the app's
@@ -21,6 +21,14 @@
 //   MILPA_PORT      port for the app server. Default: an OS-chosen free port.
 //   MILPA_PHP       php binary. Default: "php".
 //   MILPA_CAPTURE   if set, write a PNG of the loaded window to this path and quit (headless proof).
+//   MILPA_PATH      what the window opens. Default: the admin panel, '/milpa/admin'.
+//
+// 🚨 THE WINDOW OPENS THE PANEL, NOT A SECOND SHELL. It used to load `GET /desktop`, a page with its
+// own sidebar, its own topbar, its own gate and its own translations — a second door to the same
+// house, kept in sync by hand. The panel now holds everything that page held (the conversation, and
+// settings/skills/subagents/preview behind the Agent section's gear) AND everything it never did: the
+// house, the plugins, the routes, the stack, the dev tools. Opening the panel is what makes the
+// native window the whole product instead of one room of it (greenhouse decisions/0271).
 
 'use strict';
 
@@ -33,6 +41,7 @@ const fs = require('node:fs');
 
 const APP_DIR = process.env.MILPA_APP_DIR || path.resolve(__dirname, '..', '..');
 const PHP = process.env.MILPA_PHP || 'php';
+const PATH_ = process.env.MILPA_PATH || '/milpa/admin';
 
 let phpProc = null;
 
@@ -92,19 +101,19 @@ async function createWindow() {
   const port = Number(process.env.MILPA_PORT) || (await freePort());
   startPhp(port);
   // Probe the socket the server is bound on; only the window goes through the name.
-  await waitForServer('http://127.0.0.1:' + port + '/desktop', 15000);
+  await waitForServer('http://127.0.0.1:' + port + PATH_, 15000);
   const base = 'http://localhost:' + port;
 
   const win = new BrowserWindow({
     width: 1280,
     height: 840,
     backgroundColor: '#1a140f',
-    title: 'Milpa Desktop',
+    title: 'Milpa',
     autoHideMenuBar: true,
     webPreferences: { contextIsolation: true, nodeIntegration: false },
   });
 
-  await win.loadURL(base + '/desktop');
+  await win.loadURL(base + PATH_);
 
   if (process.env.MILPA_CAPTURE) {
     // Headless proof: the native window actually rendered the served shell.

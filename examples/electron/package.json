@@ -2,7 +2,7 @@
   "name": "milpa-desktop-electron",
   "version": "0.1.0",
   "private": true,
-  "description": "A minimal Electron host for a Milpa app running milpa/agent-workspace: it serves the app over HTTP and loads its /desktop shell in a native window at a real origin.",
+  "description": "A minimal Electron host for a Milpa app running milpa/agent-workspace: it serves the app over HTTP and loads its admin panel in a native window at a real origin, so the passkey ceremony works and the whole house \u2014 not one room of it \u2014 is what the window shows.",
   "license": "Apache-2.0",
   "author": "Rodrigo Vicente - TeamX Agency",
   "main": "main.js",
@@ -10,6 +10,6 @@
     "start": "electron ."
   },
   "devDependencies": {
-    "electron": "^32.0.0"
+    "electron": "^32.3.3"
   }
 }

@@ -4,7 +4,7 @@ A minimal, generic Electron host for any Milpa app running `milpa/agent-workspac
 
 1. starts the app's HTTP server (PHP's built-in server bound on `127.0.0.1`, via the app's
    `public/router.php` — bound on the IP because that server listens on one address family only), and
-2. loads `GET /desktop` in a native window at a **real origin** (`http://localhost:<port>` — `localhost`,
+2. loads `GET /milpa/admin` in a native window at a **real origin** (`http://localhost:<port>` — `localhost`,
    not an IP: WebAuthn accepts it as a relying-party id, and a passkey gate declared under
    `desktop.middleware` matches it with `passkey.rpId = 'localhost'`).
 
@@ -29,3 +29,15 @@ MILPA_APP_DIR=/path/to/your/milpa-app npm start
 | `MILPA_CAPTURE` | If set, write a PNG of the loaded window to this path and quit (headless proof). | — |
 
 The window's lifecycle owns the server: closing the window (or the server dying) quits the app.
+
+## Why the panel and not `/desktop`
+
+The window used to load `GET /desktop`: a page with its own sidebar, its own topbar, its own gate and
+its own translations — a second door to the same house, kept in sync by hand.
+
+The panel now holds everything that page held (the conversation, and settings / skills / subagents /
+preview behind the Agent section's gear) **and** everything it never did: the house, the plugins, the
+routes, the stack, the dev tools. Opening the panel is what makes the native window the whole product
+instead of one room of it (greenhouse `decisions/0271`).
+
+`MILPA_PATH` overrides what the window opens, for a host that wants a different landing.
