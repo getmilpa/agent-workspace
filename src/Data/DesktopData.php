@@ -600,9 +600,9 @@ final class DesktopData
      * names a host the reader never chose sends them to fix a machine that was never theirs, which
      * is how `llama.local` survived in this file long after it stopped existing.
      *
-     * IT TOUCHES NOTHING ON THE WIRE. Whether the provider answers is {@see modelReach()}, and it
-     * is a separate method because asking costs a round trip that a paint must not pay — measured
-     * at five seconds against a provider that was down.
+     * IT TOUCHES NOTHING ON THE WIRE. Whether the provider answers is the `agent:model` operation's
+     * question, not this method's — asking costs a round trip that a paint must not pay, measured at
+     * five seconds against a provider that was down, and the operation is what declares that egress.
      *
      * WITHOUT THE AUTHORITY INSTALLED it says everything is undeclared rather than inventing. A
      * Desktop shipped without `milpa/app-runtime` has no governed configuration to read, and «I do
@@ -627,36 +627,23 @@ final class DesktopData
         ];
     }
 
-    /**
-     * WHETHER THE PROVIDER ANSWERS — asked explicitly, because asking costs a round trip.
+    /*
+     * NO HAY `modelReach()` AQUÍ, Y ES UNA DECISIÓN.
      *
-     * 🚨 THIS USED TO LIVE IN `model()`, AND PAINTING PAID FOR IT. Measured on a published build:
-     * 102 ms to render with the provider up, and **5 002 ms with it down** — the probe's own five
-     * second ceiling, spent inside a synchronous paint. That trades «a wrong value instantly» for
-     * «the right value after five seconds», which is a worse deal than the lie it replaced: a
-     * surface nobody can look at has not stopped lying, it has stopped answering
-     * (greenhouse decisions/0266).
+     * Existió unas horas: separaba «lo declarado» de «lo que contesta», que era correcto y sigue
+     * siéndolo. Lo que no era correcto es que viviera aquí. `agent:model` —la operación gobernada—
+     * le pregunta directo a `AgentEndpoint::providerReach()`, así que este método quedó siendo una
+     * SEGUNDA forma de hacer una pregunta, que es exactamente lo que esta rebanada retiró de las
+     * cinco superficies de este paquete (greenhouse decisions/0266).
      *
-     * So the two questions are separated by cost, not by taste. {@see model()} reads declarations and
-     * touches nothing; this one goes out on the wire and is called by whoever ASKED — an operation,
-     * a wizard deciding whether to open, a page fetching after it has already painted. The same
-     * boundary `ProviderWindow` already has: the compaction budget asks it, no painter does.
+     * Quien quiera saber si el proveedor contesta —el wizard que abre cuando no hay modelo, el chip
+     * del composer— pide la OPERACIÓN. Que además es lo que debe: pasa por la compuerta, declara su
+     * `externality: third_party`, y deja rastro. Un lector propio en este paquete se saltaría las
+     * tres cosas.
      *
-     * @return array{reached: null|bool, models: list<string>, serves_declared: null|bool}
+     * Lo cachó el censo de piezas sin cablear, no yo (decisions/0213).
      */
-    public function modelReach(): array
-    {
-        $config = $this->container->has(Config::class) ? $this->container->get(Config::class) : null;
-        $reach = class_exists(AgentEndpoint::class)
-            ? AgentEndpoint::providerReach($config instanceof Config ? $config : null)
-            : null;
 
-        return [
-            'reached' => $reach === null ? null : $reach['reached'],
-            'models' => $reach['models'] ?? [],
-            'serves_declared' => $reach['serves_declared'] ?? null,
-        ];
-    }
 
     /**
      * The app's sessions, read from the on-disk session store (each `*.json` file is one session).
