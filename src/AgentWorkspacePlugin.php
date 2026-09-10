@@ -266,9 +266,17 @@ final class AgentWorkspacePlugin implements PluginInterface, RouteProviderInterf
         $activity = new \Milpa\AgentWorkspace\Live\Activity($this->liveSecret('signing'), $data, $events);
         $this->container->registerService(\Milpa\AgentWorkspace\Live\Activity::class, $activity);
 
-        // The Context tab is the shell's sixth pure-Milpa-Components surface (greenhouse decisions/0189): the
-        // container of plugin-contributed panels, as a signed component with lifecycle events.
-        $context = new \Milpa\AgentWorkspace\Live\Context($this->liveSecret('signing'), $events);
+        // The Context tab is the shell's sixth pure-Milpa-Components surface (greenhouse decisions/0189).
+        //
+        // 🚨 IT GETS `$data`, AND FOR TWO YEARS IT DID NOT. Read the line above: `Activity` is built with
+        // `$data` and so is every sibling; `Context` was built without it, so the tab NAMED Context was
+        // the one surface in this region with nothing of its own to read. It rendered only what plugins
+        // contributed — and an app with no contributing plugin opened «Context» and got a note about
+        // `ShellComposition::addPanel()`, which answers a question about the extension mechanism to
+        // somebody asking what the agent can see. Rod, on seeing it: «ahí deberían aparecer los datos
+        // del contexto». The panels are still an addition; the context is now the content
+        // (greenhouse decisions/0288).
+        $context = new \Milpa\AgentWorkspace\Live\Context($this->liveSecret('signing'), $events, $data, $catalog);
         $this->container->registerService(\Milpa\AgentWorkspace\Live\Context::class, $context);
 
         // The consent gate is the shell's seventh and last pure-Milpa-Components surface (greenhouse

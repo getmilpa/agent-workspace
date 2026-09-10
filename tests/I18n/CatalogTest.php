@@ -73,6 +73,11 @@ final class CatalogTest extends TestCase
             // here. Translating it to «habilidades» would name a thing nobody in the project calls
             // that, and the screen it titles is the same screen in both languages.
             'nav.skills',
+            // And the Context card that COUNTS them, for the same reason as the screen's title.
+            'context.carries.skills',
+            // «Endpoint» is likewise the word in use: the Settings field, the `agent.baseUrl` docs and
+            // every acta call it that in both languages.
+            'context.model.endpoint',
         ];
         foreach (array_keys($en->all()) as $key) {
             if (!\in_array($key, $sameInBoth, true)) {
