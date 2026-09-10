@@ -3,6 +3,13 @@
 All notable changes to milpa/desktop-app are documented here. This project adheres to
 [Semantic Versioning](https://semver.org/) and [Keep a Changelog](https://keepachangelog.com/).
 
+## [0.70.1](https://github.com/getmilpa/agent-workspace/compare/v0.70.0...v0.70.1) (2026-09-10)
+
+
+### Bug Fixes
+
+* **i18n:** one catalog for both doors, so a screen section has words at all ([#57](https://github.com/getmilpa/agent-workspace/issues/57)) ([0b21aed](https://github.com/getmilpa/agent-workspace/commit/0b21aedad51208fb3189c953fa0dc387e14ef677))
+
 ## [0.70.0](https://github.com/getmilpa/agent-workspace/compare/v0.69.1...v0.70.0) (2026-09-10)
 
 
