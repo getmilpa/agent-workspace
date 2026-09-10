@@ -316,7 +316,43 @@ final class AgentWorkspacePlugin implements PluginInterface, RouteProviderInterf
         // The two screens that were still raw HTML in the shell's template become declared views too
         // (greenhouse decisions/0211, phase B): the Settings screen — whose Save says «Saved» only when
         // the door did — and the entry overlay, the one ceremony every «New session» control runs.
-        $settingsScreen = new \Milpa\AgentWorkspace\Live\SettingsScreen($this->liveSecret('signing'), $data, $events, $catalog);
+        // 🚨 THE TWO FACTS THE KEY FIELD NEEDS, ASKED OF THE APP AND NOT ASSUMED.
+        //
+        // Whether anything can JUDGE who may write a credential: an `OperationHttpPolicy` is what
+        // matches an operation's scopes against the caller's, and an app without one cannot expose
+        // `provider:declare` at all — the framework refuses to boot rather than publish it unguarded
+        // (greenhouse decisions/0275). Asked of the UNDERLYING container, like the gate and the
+        // sections above: the wrapper's has() also says yes to anything it could auto-wire, and a
+        // policy is not auto-wireable.
+        //
+        // And whether a key is already declared — WHETHER, never which. `SecretOverlay::declared()`
+        // answers paths; nothing in the framework can read a value back (greenhouse decisions/0267).
+        $container = $this->container;
+        $settingsScreen = new \Milpa\AgentWorkspace\Live\SettingsScreen(
+            $this->liveSecret('signing'),
+            $data,
+            $events,
+            $catalog,
+            // Asked of the UNDERLYING container: the wrapper's has() also says yes to anything it could
+            // auto-wire, and a policy is not auto-wireable.
+            static fn (): bool => $container->getContainer()->has(\Milpa\Command\OperationHttpPolicy::class),
+            static function () use ($container): bool {
+                if (!class_exists(\Milpa\AppRuntime\Config\SecretOverlay::class)) {
+                    return false;
+                }
+                // `AppRoot` and not the kernel: measured on cattle, the kernel is not registered while a
+                // plugin boots but the app's root already is (greenhouse decisions/0276).
+                $root = $container->getContainer()->has(\Milpa\Plugin\Contracts\AppRoot::class)
+                    ? $container->get(\Milpa\Plugin\Contracts\AppRoot::class)
+                    : null;
+                // A PROPERTY, not a method — `AppRoot` is a readonly value object. `method_exists`
+                // here returned false forever and the field would have reported «no key» always: a
+                // silently wrong answer, which is worse than a loud one.
+                $path = $root instanceof \Milpa\Plugin\Contracts\AppRoot ? $root->path : '';
+
+                return $path !== '' && \in_array('agent.apiKey', \Milpa\AppRuntime\Config\SecretOverlay::declared($path), true);
+            },
+        );
         $this->container->registerService(\Milpa\AgentWorkspace\Live\SettingsScreen::class, $settingsScreen);
         $authOverlay = new \Milpa\AgentWorkspace\Live\AuthOverlay($this->liveSecret('signing'), $data, $events, $catalog);
         $this->container->registerService(\Milpa\AgentWorkspace\Live\AuthOverlay::class, $authOverlay);

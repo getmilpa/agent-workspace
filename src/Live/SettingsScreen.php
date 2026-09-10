@@ -57,6 +57,38 @@ final class SettingsScreen
         private readonly ?DesktopData $data = null,
         private readonly ?MilpaEventDispatcherInterface $events = null,
         ?Catalog $catalog = null,
+        /**
+         * Whether anything in this app can say WHO may write a credential — ASKED, not told.
+         *
+         * An `OperationHttpPolicy` is what judges an operation's scopes against the caller's, and an app
+         * without one cannot expose `provider:declare` at all: the framework refuses to boot rather than
+         * publish it unguarded (greenhouse decisions/0275). So the screen does not offer a field it
+         * knows nothing can accept — a permission problem discovered on submit is a control that lied
+         * while you typed into it.
+         *
+         * 🚨 A CLOSURE AND NOT A BOOLEAN, BECAUSE OF WHEN IT IS KNOWN. The policy is registered by
+         * whichever plugin brings it, so whether it is there depends on BOOT ORDER — an app that lists
+         * this plugin before the one with the policy would have been told «nobody can judge» forever.
+         * Measured on cattle in the same session: `Kernel` is not registered while a plugin boots
+         * either, which is the same trap one layer over (greenhouse decisions/0269, decisions/0276).
+         *
+         * A closure and not the container: the screen gets a QUESTION IT CAN ASK, not a world it can
+         * explore.
+         *
+         * @var (\Closure(): bool)|null
+         */
+        private readonly ?\Closure $canJudge = null,
+        /**
+         * Whether a credential is already declared — WHETHER, never which.
+         *
+         * From `SecretOverlay::declared()`, which answers paths and has no reader that returns a value,
+         * so this screen cannot echo a key even by mistake (greenhouse decisions/0267). A closure for
+         * the same reason as above, and because a key declared while the app runs must show as declared
+         * on the next render rather than on the next restart.
+         *
+         * @var (\Closure(): bool)|null
+         */
+        private readonly ?\Closure $keyDeclared = null,
     ) {
         $this->codec = new SignedXhtmlStateTransferCodec(new XhtmlStateTransferCodec(), new HmacStateSigner($signingSecret), null);
         $this->catalog = $catalog ?? new Catalog();
@@ -155,7 +187,62 @@ final class SettingsScreen
             . '<option>' . $this->t('settings.provider.local') . '</option><option>' . $this->t('settings.provider.lan') . '</option><option>' . $this->t('settings.provider.external') . '</option></select></span></div>'
             . '<div class="mui-field"><label class="mui-field__label" for="set-end">' . $this->t('settings.model.endpoint') . '</label><input id="set-end" class="mui-input milpa-settings__mono" value="' . $endpoint . '"><span class="mui-field__hint">' . $this->t('settings.model.endpoint_hint') . '</span></div>'
             . '<div class="mui-field mui-field--row milpa-settings__row"><label class="mui-field__label" for="set-stream">' . $this->t('settings.model.stream') . '</label><input class="mui-switch" type="checkbox" id="set-stream" checked="checked"></div>'
+            . $this->keyField()
             . '</div></div>';
+    }
+
+    /**
+     * WHERE A PROVIDER CREDENTIAL IS ACCEPTED — and the three states are all measured facts.
+     *
+     * 🚨 IT DOES NOT RIDE IN THE SETTINGS BLOB, and that is measured rather than preferred: `POST
+     * /desktop/settings` writes `.milpa/desktop-settings.json`, and on a real app's `.gitignore` —
+     * checked on a fresh repository with the template's own rules — that file IS COMMITTED, while
+     * `.milpa/secrets.json` is not. A key riding along with the endpoint and the theme would be a key
+     * in somebody's git history (greenhouse decisions/0267, decisions/0276).
+     *
+     * So it goes through `provider:declare`, which demands identity for exactly this reason — two
+     * same-origin POSTs once wrote a credential with no session at all until that was closed
+     * (greenhouse decisions/0274).
+     *
+     * THE THREE STATES:
+     *   - NOBODY CAN JUDGE: this app registered no `OperationHttpPolicy`, so nothing here can say who
+     *     may write a credential. The field is not offered — it is not a permission problem to discover
+     *     on submit — and the screen names the capability that brings one.
+     *   - NO KEY: the field, empty and writable.
+     *   - A KEY IS THERE: said, never shown. `SecretOverlay` has no reader that can return a value, so
+     *     this screen cannot echo one even by mistake; what it knows is that a path holds one.
+     */
+    /** One of the two questions, asked now — false when nobody handed it over. */
+    private function ask(?\Closure $question): bool
+    {
+        return $question instanceof \Closure && $question() === true;
+    }
+
+    private function keyField(): string
+    {
+        if (!$this->ask($this->canJudge)) {
+            return '<div class="mui-field milpa-settings__key" data-key-state="unjudgeable">'
+                . '<span class="mui-field__label">' . $this->t('settings.model.key') . '</span>'
+                . '<div class="mui-alert mui-alert--warning" role="note">'
+                . '<span class="mui-alert__icon" aria-hidden="true">⚠</span>'
+                . '<div class="mui-alert__content"><p class="mui-alert__desc">' . $this->t('settings.model.key.unjudgeable') . '</p>'
+                . '<p class="mui-alert__desc"><code>' . $this->t('settings.model.key.unjudgeable_command') . '</code></p></div>'
+                . '</div></div>';
+        }
+
+        $held = $this->ask($this->keyDeclared);
+
+        return '<div class="mui-field milpa-settings__key" data-key-state="' . ($held ? 'held' : 'absent') . '">'
+            . '<label class="mui-field__label" for="set-key">' . $this->t('settings.model.key') . '</label>'
+            . '<input id="set-key" class="mui-input milpa-settings__mono" type="password" autocomplete="off"'
+            . ' placeholder="' . $this->t($held ? 'settings.model.key.replace' : 'settings.model.key.placeholder') . '">'
+            . '<span class="mui-field__hint">' . $this->t($held ? 'settings.model.key.held' : 'settings.model.key.hint') . '</span>'
+            // The verb, not a listener: the screen's root carries `x-data="desktopSettings()"`, so the
+            // button asks the module the same way Save does — one runtime, no second wiring
+            // (greenhouse decisions/0273: a surface owns the controls it prints).
+            . '<button type="button" class="mui-btn mui-btn--sm milpa-settings__key-save" data-declare-key'
+            . ' @click="declareKey()">' . $this->t('settings.model.key.save') . '</button>'
+            . '</div>';
     }
 
     /**

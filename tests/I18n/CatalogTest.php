@@ -55,6 +55,13 @@ final class CatalogTest extends TestCase
         $sameInBoth = [
             'gate.kind.loopback', 'gate.kind.passkey', 'settings.model.endpoint',
             'composer.tokens', 'op.failed', 'op.detail',
+            // «API key» is the word this house uses in Spanish too, like «endpoint» below: the field
+            // names a thing every provider's own docs call an API key, and «llave de API» would name
+            // something the person is not looking for on their provider's dashboard.
+            'settings.model.key',
+            // A COMMAND IS NOT COPY. `coa capabilities:enable milpa/auth --sign` is what a person types,
+            // and translating a command is telling them to type something that does not run.
+            'settings.model.key.unjudgeable_command',
             // «Skills» is the word this house uses in Spanish too — the same reason «endpoint» is
             // here. Translating it to «habilidades» would name a thing nobody in the project calls
             // that, and the screen it titles is the same screen in both languages.
