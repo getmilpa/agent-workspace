@@ -53,7 +53,7 @@
 
   /** Ask the route for a session, then go to it. A refusal is REPORTED, never swallowed. */
   function newSession() {
-    return fetch('/desktop/sessions', {
+    return fetch('/workspace/sessions', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ goal: '' }),

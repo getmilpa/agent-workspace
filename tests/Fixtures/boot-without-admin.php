@@ -31,7 +31,7 @@ spl_autoload_register(static function (string $class) use ($loader): void {
 
 $kernel = \Milpa\Runtime\Kernel::boot(['root' => sys_get_temp_dir(), 'plugins' => [\Milpa\AgentWorkspace\AgentWorkspacePlugin::class]]);
 $response = (new \Milpa\Runtime\Http\RequestHandler($kernel, new \Nyholm\Psr7\Factory\Psr17Factory()))
-    ->handle(new \Nyholm\Psr7\ServerRequest('GET', '/desktop/hub', [], null, '1.1', ['REMOTE_ADDR' => '127.0.0.1']));
+    ->handle(new \Nyholm\Psr7\ServerRequest('GET', '/workspace/hub', [], null, '1.1', ['REMOTE_ADDR' => '127.0.0.1']));
 $plugin = $kernel->plugins()[0] ?? null;
 
 echo json_encode([

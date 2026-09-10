@@ -113,7 +113,7 @@ test('the mode chip writes BOTH signals and persists through the door — and /m
   assert.equal(p.signal('composer.mode'), 'auto', 'the VALUE every turn sends');
   assert.equal(p.signal('composer.mode.label'), 'Continue automatically', 'and the label the chip shows');
   assert.equal(composer.isMode('auto'), true);
-  assert.equal(calls[0].url, '/desktop/settings');
+  assert.equal(calls[0].url, '/workspace/settings');
   assert.deepEqual(JSON.parse(calls[0].init.body), { mode: 'auto' }, 'a partial post that merges');
 
   p.desktop().commands.run({ name: 'mode', args: 'ASK' });
@@ -156,7 +156,7 @@ test('a mode the door refuses is rolled back — the chip never disagrees with t
   composer.pick('ask');
   await settle();
 
-  assert.equal(calls[0].url, '/desktop/settings', 'the save was attempted');
+  assert.equal(calls[0].url, '/workspace/settings', 'the save was attempted');
   assert.equal(p.signal('composer.mode'), 'auto', 'the VALUE every turn sends is the one the server still holds');
   assert.equal(p.signal('composer.mode.label'), 'Continue automatically', 'and the chip says the same');
   assert.equal(composer.isMode('auto'), true);

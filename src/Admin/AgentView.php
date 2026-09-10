@@ -68,7 +68,6 @@ final class AgentView
      * @param DesktopSettings   $settings      the judged door, for the gate chip and the guard's sign-in path
      * @param Catalog           $catalog       the Desktop's copy in its declared locale
      * @param DesktopData|null  $data          the session seam the composed surfaces read
-     * @param string            $open          where «Open the Desktop» goes — the shell's own path
      * @param string            $signin        the app's sign-in door, for the signed-out state
      * @param string            $signingSecret the app's signing secret, for the session ticket the region carries (greenhouse decisions/0256)
      */
@@ -77,7 +76,6 @@ final class AgentView
         DesktopSettings $settings,
         Catalog $catalog,
         ?DesktopData $data,
-        string $open,
         string $signin,
         string $signingSecret = '',
     ): DeclaredView {
@@ -94,7 +92,6 @@ final class AgentView
             definitions: $definitions,
             renderers: $renderers,
             props: [AgentViewComponent::NAME => [
-                'open' => $open,
                 'gate' => $settings->gateLabel(),
                 'signin' => $signin,
             ]],

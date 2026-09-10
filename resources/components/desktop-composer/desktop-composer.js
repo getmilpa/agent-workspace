@@ -352,7 +352,7 @@
         signal('composer.mode', key);
         signal('composer.mode.label', this.modeLabel(key));
 
-        return fetch('/desktop/settings', {
+        return fetch('/workspace/settings', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ mode: key }),

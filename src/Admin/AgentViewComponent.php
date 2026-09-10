@@ -77,7 +77,11 @@ final class AgentViewComponent implements ComponentDefinitionInterface
     /** milpa/admin's default mount point, used when the context carries no route. */
     public const string DEFAULT_ADMIN_ROUTE = '/milpa/admin';
 
-    public const string DEFAULT_OPEN = '/desktop';
+    /*
+     * NO HAY `DEFAULT_OPEN` NI EL PROP `open`, Y EL BOTÓN QUE ALIMENTABAN SE FUE CON LA PÁGINA.
+     * Era `/desktop`, un `target="_blank"` que tras el retiro apuntaba a una 404 — medido en ganado
+     * (greenhouse decisions/0283). El panel ES el workspace; no hay a dónde abrir.
+     */
     public const string DEFAULT_SIGNIN = '/webauthn/signin';
 
     /**
@@ -91,7 +95,6 @@ final class AgentViewComponent implements ComponentDefinitionInterface
             contractVersion: self::VERSION,
             summary: "The Milpa Desktop's Agent as one region of the admin panel: the conversation composed inline, behind the same door.",
             propsSchema: [
-                'open' => ['type' => 'string', 'default' => self::DEFAULT_OPEN],
                 'gate' => ['type' => 'string', 'default' => DesktopSettings::GATE_LOOPBACK],
                 'signin' => ['type' => 'string', 'default' => self::DEFAULT_SIGNIN],
                 'query' => ['type' => 'array', 'default' => []],
@@ -126,7 +129,6 @@ final class AgentViewComponent implements ComponentDefinitionInterface
             self::VERSION,
             ['state' => $signedOut ? self::STATE_SIGNED_OUT : self::STATE_LIVE],
             [
-                'open' => self::string($props, 'open', self::DEFAULT_OPEN),
                 'gate' => $gate,
                 'signin' => self::string($props, 'signin', self::DEFAULT_SIGNIN),
                 'next' => self::sectionPath($context->route) . (\is_string($lang) && $lang !== '' ? '?lang=' . rawurlencode($lang) : ''),

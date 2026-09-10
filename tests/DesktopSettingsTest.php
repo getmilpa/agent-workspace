@@ -46,7 +46,7 @@ final class DesktopSettingsTest extends TestCase
     public function testDeclaredValuesWin(): void
     {
         $settings = DesktopSettings::fromConfig(new Config([
-            'desktop' => ['locale' => 'es', 'middleware' => []],
+            'workspace' => ['locale' => 'es', 'middleware' => []],
         ]));
 
         self::assertSame('es', $settings->locale);
@@ -61,7 +61,7 @@ final class DesktopSettingsTest extends TestCase
     public function testRejectsWhatItCannotUseWithoutPaintingItDefault(): void
     {
         $settings = DesktopSettings::fromConfig(new Config([
-            'desktop' => ['locale' => 'fr', 'middleware' => 'not-a-list', 'mercure' => ['hub_url' => 'http://hub']],
+            'workspace' => ['locale' => 'fr', 'middleware' => 'not-a-list', 'mercure' => ['hub_url' => 'http://hub']],
         ]));
 
         self::assertSame('en', $settings->locale, 'a locale the catalog lacks is not the Desktop\'s locale');
@@ -72,25 +72,25 @@ final class DesktopSettingsTest extends TestCase
         self::assertSame(['locale' => 'rejected', 'middleware' => 'rejected'], $settings->sources(), 'what the app wrote and the Desktop refused is a third state, never default');
         self::assertSame(['locale' => 'fr', 'middleware' => 'string'], $settings->rejected());
 
-        $typed = DesktopSettings::fromConfig(new Config(['desktop' => ['locale' => 42, 'middleware' => true]]));
+        $typed = DesktopSettings::fromConfig(new Config(['workspace' => ['locale' => 42, 'middleware' => true]]));
         self::assertSame(['locale' => 'int', 'middleware' => 'bool'], $typed->rejected(), 'the type for a non-string');
-        self::assertSame('(empty)', DesktopSettings::fromConfig(new Config(['desktop' => ['locale' => '']]))->rejected()['locale'], 'an empty string is named as such');
+        self::assertSame('(empty)', DesktopSettings::fromConfig(new Config(['workspace' => ['locale' => '']]))->rejected()['locale'], 'an empty string is named as such');
     }
 
     public function testRecordsPerKeyWhetherTheAppDeclaredItTheDefaultIsRunningOrTheDesktopRefusedIt(): void
     {
-        $declared = DesktopSettings::fromConfig(new Config(['desktop' => ['middleware' => [LoopbackOnlyMiddleware::class]]]));
+        $declared = DesktopSettings::fromConfig(new Config(['workspace' => ['middleware' => [LoopbackOnlyMiddleware::class]]]));
         self::assertTrue($declared->declared());
         self::assertSame('config', $declared->sources()['middleware'], 'declaring the default value is still declaring');
         self::assertSame('default', $declared->sources()['locale']);
         self::assertSame('loopback', $declared->gateKind(), 'the strict gate, declared, is still the strict gate');
 
-        $nulls = DesktopSettings::fromConfig(new Config(['desktop' => ['locale' => null, 'middleware' => null]]));
+        $nulls = DesktopSettings::fromConfig(new Config(['workspace' => ['locale' => null, 'middleware' => null]]));
         self::assertSame(['locale' => 'default', 'middleware' => 'default'], $nulls->sources(), 'null is not a declaration');
         self::assertSame([], $nulls->rejected());
 
-        self::assertTrue(DesktopSettings::fromConfig(new Config(['desktop' => []]))->declared(), 'an empty desktop key exists');
-        self::assertTrue(DesktopSettings::fromConfig(new Config(['desktop' => ['mercure' => []]]))->declared(), 'the key other wiring declares counts too');
+        self::assertTrue(DesktopSettings::fromConfig(new Config(['workspace' => []]))->declared(), 'an empty desktop key exists');
+        self::assertTrue(DesktopSettings::fromConfig(new Config(['workspace' => ['mercure' => []]]))->declared(), 'the key other wiring declares counts too');
         self::assertFalse(DesktopSettings::fromConfig(new Config(['desktop' => 'yes']))->declared(), 'a key the Desktop cannot read is not a declaration');
 
         $direct = new DesktopSettings(sources: ['locale' => 'config', 'middleware' => 'weird']);
@@ -103,7 +103,7 @@ final class DesktopSettingsTest extends TestCase
     }
 
     /**
-     * Every shape of `desktop.middleware` that is not a list of PSR-15 middleware class names — each one
+     * Every shape of `workspace.middleware` that is not a list of PSR-15 middleware class names — each one
      * a way a looser rule would let the Desktop open from the LAN, or die with a 500.
      *
      * @return iterable<string, array{0: mixed, 1: list<string>, 2: bool}> the declaration, what `unresolvedMiddleware()` names, whether it was not a list at all
@@ -137,7 +137,7 @@ final class DesktopSettingsTest extends TestCase
     #[DataProvider('misdeclaredGates')]
     public function testEveryMisdeclarationFallsBackToLoopbackOnlyAndIsNamed(mixed $declared, array $unresolved, bool $malformed): void
     {
-        $settings = DesktopSettings::fromConfig(new Config(['desktop' => ['middleware' => $declared]]));
+        $settings = DesktopSettings::fromConfig(new Config(['workspace' => ['middleware' => $declared]]));
 
         self::assertSame([LoopbackOnlyMiddleware::class], $settings->effectiveMiddleware(), 'the strict gate, and only it — never open, never the half that loads');
         self::assertSame('fallback', $settings->gateKind());
@@ -155,19 +155,19 @@ final class DesktopSettingsTest extends TestCase
 
     public function testThePositiveControlsALiterallyEmptyListOpensAndARealMiddlewareIsCarried(): void
     {
-        $open = DesktopSettings::fromConfig(new Config(['desktop' => ['middleware' => []]]));
+        $open = DesktopSettings::fromConfig(new Config(['workspace' => ['middleware' => []]]));
         self::assertSame('open', $open->gateKind());
         self::assertSame([], $open->effectiveMiddleware(), 'the one declaration that opens: a literally empty list');
         self::assertSame([], $open->unresolvedMiddleware());
         self::assertFalse($open->malformed());
         self::assertSame('config', $open->sources()['middleware']);
 
-        $custom = DesktopSettings::fromConfig(new Config(['desktop' => ['middleware' => [AllowAllMiddleware::class]]]));
+        $custom = DesktopSettings::fromConfig(new Config(['workspace' => ['middleware' => [AllowAllMiddleware::class]]]));
         self::assertSame('custom', $custom->gateKind());
         self::assertSame([AllowAllMiddleware::class], $custom->effectiveMiddleware(), 'a real PSR-15 class is carried as declared');
         self::assertSame([], $custom->unresolvedMiddleware());
 
-        $stacked = DesktopSettings::fromConfig(new Config(['desktop' => ['middleware' => [LoopbackOnlyMiddleware::class, AllowAllMiddleware::class]]]));
+        $stacked = DesktopSettings::fromConfig(new Config(['workspace' => ['middleware' => [LoopbackOnlyMiddleware::class, AllowAllMiddleware::class]]]));
         self::assertSame('custom', $stacked->gateKind(), 'loopback plus something else is the app\'s own stack');
         self::assertSame([LoopbackOnlyMiddleware::class, AllowAllMiddleware::class], $stacked->effectiveMiddleware());
 
@@ -208,14 +208,14 @@ final class DesktopSettingsTest extends TestCase
         // gate is a fallback here — until a stand-in bearing its exact name is loaded, below, and the string
         // rule is exercised end to end, case-insensitively.
         if (!class_exists(DesktopSettings::PASSKEY_GATE, false)) {
-            $unloadable = DesktopSettings::fromConfig(new Config(['desktop' => ['middleware' => [DesktopSettings::PASSKEY_GATE]]]));
+            $unloadable = DesktopSettings::fromConfig(new Config(['workspace' => ['middleware' => [DesktopSettings::PASSKEY_GATE]]]));
             self::assertSame('fallback', $unloadable->gateKind(), 'a passkey gate that cannot be loaded is a fallback like any other');
             self::assertSame('fallback', $unloadable->gateLabel());
 
             require_once __DIR__ . '/Fixtures/app-runtime-passkey-gate.php';
         }
 
-        $passkey = DesktopSettings::fromConfig(new Config(['desktop' => ['middleware' => [DesktopSettings::PASSKEY_GATE]]]));
+        $passkey = DesktopSettings::fromConfig(new Config(['workspace' => ['middleware' => [DesktopSettings::PASSKEY_GATE]]]));
         self::assertSame('custom', $passkey->gateKind(), 'the kind is unchanged: it is the app\'s own stack');
         self::assertSame('passkey', $passkey->gateLabel(), 'the label names it');
         self::assertSame([DesktopSettings::PASSKEY_GATE], $passkey->effectiveMiddleware(), 'the routes carry the class as declared');

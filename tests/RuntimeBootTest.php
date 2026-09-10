@@ -43,7 +43,7 @@ final class RuntimeBootTest extends TestCase
             'plugins' => [],
         ]);
 
-        $response = self::dispatch($kernel, 'GET', '/desktop/hub', '127.0.0.1');
+        $response = self::dispatch($kernel, 'GET', '/workspace/hub', '127.0.0.1');
 
         self::assertSame(404, $response->getStatusCode());
     }
@@ -54,11 +54,11 @@ final class RuntimeBootTest extends TestCase
         // plugin registered, and a LAN address is refused — a page for a browser, JSON for the shell's calls.
         $kernel = Kernel::boot(['root' => sys_get_temp_dir(), 'plugins' => [AgentWorkspacePlugin::class]]);
 
-        $page = self::dispatch($kernel, 'GET', '/desktop/hub', '203.0.113.9', ['Accept' => 'text/html']);
+        $page = self::dispatch($kernel, 'GET', '/workspace/hub', '203.0.113.9', ['Accept' => 'text/html']);
         self::assertSame(403, $page->getStatusCode());
-        self::assertStringContainsString('desktop.middleware', (string) $page->getBody());
+        self::assertStringContainsString('workspace.middleware', (string) $page->getBody(), 'the refusal names the key to declare, under this package\'s own namespace (greenhouse decisions/0284)');
 
-        $call = self::dispatch($kernel, 'POST', '/desktop/settings', '203.0.113.9', ['Content-Type' => 'application/json']);
+        $call = self::dispatch($kernel, 'POST', '/workspace/settings', '203.0.113.9', ['Content-Type' => 'application/json']);
         self::assertSame(403, $call->getStatusCode());
         self::assertSame(['ok' => false, 'error' => 'loopback_only'], json_decode((string) $call->getBody(), true));
 
@@ -69,7 +69,7 @@ final class RuntimeBootTest extends TestCase
         // THE ONLY PUBLIC ASSETS LEFT ARE THE COMPONENTS'. The page's own five went with it, and the
         // panel serves its runtimes from its own routes - measured: zero references to
         // /desktop/assets/alpine.min.js in a rendered panel. What stays public is
-        // /desktop/assets/c/{file}, where the PANEL loads every workspace file from
+        // /workspace/assets/c/{file}, where the PANEL loads every workspace file from
         // (greenhouse decisions/0283).
         foreach (DesktopAssets::declared() as $component) {
             $declared = DesktopAssets::of($component);
@@ -77,10 +77,10 @@ final class RuntimeBootTest extends TestCase
                 self::assertSame(200, self::dispatch($kernel, 'GET', $url, '203.0.113.9')->getStatusCode(), $url . ' is served to anyone');
             }
         }
-        self::assertSame(404, self::dispatch($kernel, 'GET', '/desktop/assets/c/nope.css', '127.0.0.1')->getStatusCode(), 'a name no renderer declared is a 404');
+        self::assertSame(404, self::dispatch($kernel, 'GET', '/workspace/assets/c/nope.css', '127.0.0.1')->getStatusCode(), 'a name no renderer declared is a 404');
 
         // No address at all fails closed.
-        self::assertSame(403, self::dispatch($kernel, 'GET', '/desktop/hub', '')->getStatusCode());
+        self::assertSame(403, self::dispatch($kernel, 'GET', '/workspace/hub', '')->getStatusCode());
     }
 
     public function testADeclaredEmptyListOpensTheDoorOnPurpose(): void
@@ -89,10 +89,10 @@ final class RuntimeBootTest extends TestCase
         $kernel = Kernel::boot([
             'root' => sys_get_temp_dir(),
             'plugins' => [AgentWorkspacePlugin::class],
-            'config' => ['desktop' => ['middleware' => []]],
+            'config' => ['workspace' => ['middleware' => []]],
         ]);
 
-        $response = self::dispatch($kernel, 'GET', '/desktop/hub', '203.0.113.9', ['Accept' => 'text/html']);
+        $response = self::dispatch($kernel, 'GET', '/workspace/hub', '203.0.113.9', ['Accept' => 'text/html']);
 
         self::assertSame(200, $response->getStatusCode());
     }
@@ -102,11 +102,11 @@ final class RuntimeBootTest extends TestCase
         $kernel = Kernel::boot([
             'root' => sys_get_temp_dir(),
             'plugins' => [AgentWorkspacePlugin::class],
-            'config' => ['desktop' => ['middleware' => ['Acme\\Nope']]],
+            'config' => ['workspace' => ['middleware' => ['Acme\\Nope']]],
         ]);
 
-        self::assertSame(403, self::dispatch($kernel, 'GET', '/desktop/hub', '203.0.113.9')->getStatusCode(), 'the LAN is refused, not served by a half-loaded gate');
-        $local = self::dispatch($kernel, 'GET', '/desktop/hub', '127.0.0.1');
+        self::assertSame(403, self::dispatch($kernel, 'GET', '/workspace/hub', '203.0.113.9')->getStatusCode(), 'the LAN is refused, not served by a half-loaded gate');
+        $local = self::dispatch($kernel, 'GET', '/workspace/hub', '127.0.0.1');
         self::assertSame(200, $local->getStatusCode(), 'loopback still works — no 500 hiding the cause');
     }
 

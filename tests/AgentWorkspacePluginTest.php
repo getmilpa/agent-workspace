@@ -48,12 +48,12 @@ final class AgentWorkspacePluginTest extends TestCase
      *
      * 🚨 IT USED TO BE SIX. The page's own five — its tokens, its bundle and the three runtimes — went
      * with it; the panel serves its runtimes from `/milpa/admin/assets/…`, measured on a rendered panel
-     * as ZERO references to the workspace's. What stays public is `/desktop/assets/c/{file}`, which is
+     * as ZERO references to the workspace's. What stays public is `/workspace/assets/c/{file}`, which is
      * where the panel loads every workspace stylesheet and behaviour module from — deleting it would
      * gut the panel in total silence, since a 404 to a `<link>` or a deferred `<script>` throws nothing
      * (greenhouse decisions/0283).
      */
-    private const ASSETS = ['/desktop/assets/c/{file}'];
+    private const ASSETS = ['/workspace/assets/c/{file}'];
 
     public function testItMountsTheShellEventsAndAssetRoutes(): void
     {
@@ -67,7 +67,7 @@ final class AgentWorkspacePluginTest extends TestCase
         }
         $paths = array_map(static fn (Route $r): string => $r->path, $routes);
         self::assertSame(
-            ['/desktop/hub', '/desktop/assets/c/{file}', '/desktop/settings', '/desktop/sessions', '/desktop/work'],
+            ['/workspace/hub', '/workspace/assets/c/{file}', '/workspace/settings', '/workspace/sessions', '/workspace/work'],
             $paths,
         );
     }
@@ -77,7 +77,7 @@ final class AgentWorkspacePluginTest extends TestCase
         $plugin = new AgentWorkspacePlugin(new DIContainer());
 
         self::assertSame([LoopbackOnlyMiddleware::class], $plugin->settings()->effectiveMiddleware());
-        self::assertSame(['/desktop/hub', '/desktop/settings', '/desktop/sessions', '/desktop/work'], self::gatedPaths($plugin->routes()));
+        self::assertSame(['/workspace/hub', '/workspace/settings', '/workspace/sessions', '/workspace/work'], self::gatedPaths($plugin->routes()));
         foreach ($plugin->routes() as $route) {
             $isAsset = \in_array($route->path, self::ASSETS, true);
             self::assertSame($isAsset ? [] : [LoopbackOnlyMiddleware::class], $route->middleware, $route->path);
@@ -86,18 +86,18 @@ final class AgentWorkspacePluginTest extends TestCase
 
     public function testTheDeclaredGateReachesEveryNonAssetRouteAndTheAssetsStayPublic(): void
     {
-        $custom = self::withConfig(['desktop' => ['middleware' => [AllowAllMiddleware::class]]]);
+        $custom = self::withConfig(['workspace' => ['middleware' => [AllowAllMiddleware::class]]]);
         foreach ($custom->routes() as $route) {
             self::assertSame(\in_array($route->path, self::ASSETS, true) ? [] : [AllowAllMiddleware::class], $route->middleware, $route->path);
         }
 
-        $open = self::withConfig(['desktop' => ['middleware' => []]]);
+        $open = self::withConfig(['workspace' => ['middleware' => []]]);
         foreach ($open->routes() as $route) {
             self::assertSame([], $route->middleware, $route->path . ' — a literally empty list opens the Desktop on purpose');
         }
         self::assertSame('open', $open->settings()->gateKind());
 
-        $typo = self::withConfig(['desktop' => ['middleware' => [AllowAllMiddleware::class, 'Acme\\Nope']]]);
+        $typo = self::withConfig(['workspace' => ['middleware' => [AllowAllMiddleware::class, 'Acme\\Nope']]]);
         self::assertSame([LoopbackOnlyMiddleware::class], $typo->routes()[0]->middleware, 'the whole stack falls to loopback-only — never the half that loads');
         self::assertSame(4, \count(self::gatedPaths($typo->routes())));
         self::assertSame('fallback', $typo->settings()->gateKind());
@@ -127,14 +127,14 @@ final class AgentWorkspacePluginTest extends TestCase
 
         $container = new DIContainer();
         $container->registerService(MilpaEventDispatcherInterface::class, new EventDispatcher(new NullLogger()));
-        $container->registerService(Config::class, new Config(['desktop' => ['locale' => 'es']]));
+        $container->registerService(Config::class, new Config(['workspace' => ['locale' => 'es']]));
         $plugin = new AgentWorkspacePlugin($container);
         $plugin->boot();
         self::assertSame('es', $plugin->settings()->locale);
         $gate = $container->get(LoopbackOnlyMiddleware::class);
         self::assertInstanceOf(LoopbackOnlyMiddleware::class, $gate);
         $refusal = $gate->process(
-            new \Nyholm\Psr7\ServerRequest('GET', '/desktop', ['Accept' => 'text/html'], null, '1.1', ['REMOTE_ADDR' => '10.0.0.1']),
+            new \Nyholm\Psr7\ServerRequest('GET', '/workspace/hub', ['Accept' => 'text/html'], null, '1.1', ['REMOTE_ADDR' => '10.0.0.1']),
             new class () implements \Psr\Http\Server\RequestHandlerInterface {
                 public function handle(\Psr\Http\Message\ServerRequestInterface $request): \Psr\Http\Message\ResponseInterface
                 {
@@ -161,7 +161,7 @@ final class AgentWorkspacePluginTest extends TestCase
     {
         $container = new DIContainer();
         $container->registerService(Config::class, new Config([
-            'desktop' => ['mercure' => ['hub_url' => 'http://127.0.0.1:3010/.well-known/mercure']],
+            'workspace' => ['mercure' => ['hub_url' => 'http://127.0.0.1:3010/.well-known/mercure']],
         ]));
 
         $services = (new AgentWorkspacePlugin($container))->services();
@@ -203,7 +203,7 @@ final class AgentWorkspacePluginTest extends TestCase
         $view = $agent->view;
         self::assertInstanceOf(\Milpa\Admin\Section\DeclaredView::class, $view);
         self::assertSame('<milpa:desktop-agent id="milpa-agent"/>', $view->markup, 'ONE root: the region contains and governs its own surfaces');
-        self::assertSame(['open' => '/desktop', 'gate' => 'loopback', 'signin' => '/webauthn/signin'], $view->props['desktop-agent']);
+        self::assertSame(['gate' => 'loopback', 'signin' => '/webauthn/signin'], $view->props['desktop-agent'], 'no `open` prop: the button it fed went with the page (greenhouse decisions/0283)');
         self::assertInstanceOf(AgentViewComponent::class, $view->definitions['desktop-agent']);
         self::assertInstanceOf(AgentViewRenderer::class, $view->renderers['desktop-agent']);
         self::assertFalse($view->seedsNothing(), 'the view seeds the signals its surfaces read');
@@ -211,7 +211,7 @@ final class AgentWorkspacePluginTest extends TestCase
         self::assertArrayHasKey('session.summary', $view->computed);
 
         // The props follow the declared door and locale — the gate the topbar chip says, the title in Spanish.
-        $es = self::withConfig(['desktop' => ['locale' => 'es', 'middleware' => []]])->adminSections()[0];
+        $es = self::withConfig(['workspace' => ['locale' => 'es', 'middleware' => []]])->adminSections()[0];
         self::assertSame('Agente', $es->title);
         self::assertSame('open', $es->view?->props['desktop-agent']['gate']);
     }
@@ -241,7 +241,7 @@ final class AgentWorkspacePluginTest extends TestCase
 
         self::assertCount(5, $plugin->routes(), 'the hub a headerless surface asks, the per-component assets the panel loads, and the three write endpoints — ten routes went with the page (greenhouse decisions/0283)');
         $paths = array_map(static fn ($r): string => $r->path, $plugin->routes());
-        self::assertContains('/desktop/work', $paths, 'the session export (autopsy/video material)');
+        self::assertContains('/workspace/work', $paths, 'the session export (autopsy/video material)');
     }
 
     /**

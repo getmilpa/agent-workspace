@@ -48,7 +48,7 @@ final class RequestPrincipalTest extends TestCase
 
     public function testEverythingElseIsNobody(): void
     {
-        self::assertNull(RequestPrincipal::of(new ServerRequest('GET', '/desktop')), 'no gate ran: no attribute');
+        self::assertNull(RequestPrincipal::of(new ServerRequest('GET', '/workspace/hub')), 'no gate ran: no attribute');
         self::assertNull(RequestPrincipal::of(self::with('passkey:rod')), 'a bare string is not a context — never trusted');
         self::assertNull(RequestPrincipal::of(self::with(['actor' => ['id' => 'passkey:rod']])), 'nor an array');
         self::assertNull(RequestPrincipal::of(self::with(new \stdClass())), 'an object that cannot say it is authenticated is not');
@@ -203,6 +203,6 @@ final class RequestPrincipalTest extends TestCase
 
     private static function with(mixed $context): ServerRequest
     {
-        return (new ServerRequest('GET', '/desktop'))->withAttribute(RequestPrincipal::ATTRIBUTE, $context);
+        return (new ServerRequest('GET', '/workspace/hub'))->withAttribute(RequestPrincipal::ATTRIBUTE, $context);
     }
 }

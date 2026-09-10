@@ -65,9 +65,9 @@ final class SessionOwnershipCrossesTheBoundaryOnceTest extends TestCase
 
         $attempts = [
             'query' => new ServerRequest('GET', '/desktop/hub?session=' . $theirs, [SessionTicket::HEADER => $ticket]),
-            'header' => new ServerRequest('GET', '/desktop/hub', [SessionTicket::HEADER => $ticket, 'X-Milpa-Session' => $theirs]),
-            'cookie' => (new ServerRequest('GET', '/desktop/hub', [SessionTicket::HEADER => $ticket]))->withCookieParams(['milpa_agent_sid' => $theirs]),
-            'body' => (new ServerRequest('GET', '/desktop/hub', [SessionTicket::HEADER => $ticket]))->withParsedBody(['session' => $theirs]),
+            'header' => new ServerRequest('GET', '/workspace/hub', [SessionTicket::HEADER => $ticket, 'X-Milpa-Session' => $theirs]),
+            'cookie' => (new ServerRequest('GET', '/workspace/hub', [SessionTicket::HEADER => $ticket]))->withCookieParams(['milpa_agent_sid' => $theirs]),
+            'body' => (new ServerRequest('GET', '/workspace/hub', [SessionTicket::HEADER => $ticket]))->withParsedBody(['session' => $theirs]),
         ];
 
         foreach ($attempts as $how => $request) {
@@ -110,7 +110,7 @@ final class SessionOwnershipCrossesTheBoundaryOnceTest extends TestCase
      */
     public function testWithNoTicketTheTransportMintsNothing(): void
     {
-        $body = (string) $this->controller()->connect(new ServerRequest('GET', '/desktop/hub'))->getBody();
+        $body = (string) $this->controller()->connect(new ServerRequest('GET', '/workspace/hub'))->getBody();
 
         self::assertSame('{}', $body, 'sin sobre, no se inventa una sesión');
         self::assertStringNotContainsString('milpa/sessions/', $body);
@@ -132,7 +132,7 @@ final class SessionOwnershipCrossesTheBoundaryOnceTest extends TestCase
 
     private function connect(string $ticket): ResponseInterface
     {
-        return $this->controller()->connect(new ServerRequest('GET', '/desktop/hub', [SessionTicket::HEADER => $ticket]));
+        return $this->controller()->connect(new ServerRequest('GET', '/workspace/hub', [SessionTicket::HEADER => $ticket]));
     }
 
     /** @return list<string> the exact topics the subscribe URL carries */

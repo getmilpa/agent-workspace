@@ -111,7 +111,7 @@ test('Save posts the form through the guard and says Saved only on a 2xx', async
   await settings.save();
 
   assert.equal(calls.length, 1);
-  assert.equal(calls[0].url, '/desktop/settings');
+  assert.equal(calls[0].url, '/workspace/settings');
   assert.equal(calls[0].init.method, 'POST');
   assert.deepEqual(JSON.parse(calls[0].init.body), { mode: 'auto' },
     'the form is read from the component\'s own root, checked radio and all');

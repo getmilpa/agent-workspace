@@ -90,7 +90,7 @@
         if (!d) { return Promise.reject(new Error('desktop-guard not loaded')); }
         var self = this;
 
-        return fetch('/desktop/settings', {
+        return fetch('/workspace/settings', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(this.values()),

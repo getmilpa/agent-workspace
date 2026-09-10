@@ -35,7 +35,7 @@
   }
 
   /** The board's mutation — the one door a moved card goes through. */
-  var ROUTE = '/desktop/work';
+  var ROUTE = '/workspace/work';
 
   function desk() { return live.desktop || null; }
   function tr(key) { var d = desk(); return d ? d.tr.apply(null, arguments) : key; }

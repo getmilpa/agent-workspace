@@ -30,14 +30,14 @@ final class MercureConfigTest extends TestCase
     {
         self::assertNull(MercureConfig::fromConfig(new Config([])));
         self::assertNull(MercureConfig::fromConfig(new Config([
-            'desktop' => ['mercure' => ['hub_url' => 'http://hub/.well-known/mercure']],
+            'workspace' => ['mercure' => ['hub_url' => 'http://hub/.well-known/mercure']],
         ])), 'the keys are still missing');
     }
 
     public function testItReadsTheWiringAndDefaultsThePublicUrlAndTopic(): void
     {
         $mercure = MercureConfig::fromConfig(new Config([
-            'desktop' => ['mercure' => [
+            'workspace' => ['mercure' => [
                 'hub_url' => 'http://hub/.well-known/mercure',
                 'publisher_key' => 'pub',
                 'subscriber_key' => 'sub',
@@ -54,7 +54,7 @@ final class MercureConfigTest extends TestCase
     public function testItHonorsAnExplicitPublicUrlAndTopicAndMintsASubscriberJwt(): void
     {
         $mercure = MercureConfig::fromConfig(new Config([
-            'desktop' => ['mercure' => [
+            'workspace' => ['mercure' => [
                 'hub_url' => 'http://internal/.well-known/mercure',
                 'public_url' => 'https://public.example/.well-known/mercure',
                 'publisher_key' => 'pub',

@@ -38,7 +38,7 @@ use Milpa\Live\ValueObjects\ClientAssets;
 final class DesktopAssets
 {
     /** Where the per-component files are served from — one segment, so the router's `{file}` captures `<name>.<ext>`. */
-    public const string BASE = '/desktop/assets/c/';
+    public const string BASE = '/workspace/assets/c/';
 
     /** The shared runtime module (greenhouse decisions/0211, A4): the guard, the copy, the dismiss signal. Not a component. */
     public const string GUARD = 'desktop-guard';

@@ -14,6 +14,7 @@ declare(strict_types=1);
 
 namespace Milpa\AgentWorkspace;
 
+use Milpa\AgentWorkspace\Config\WorkspaceKeys;
 use Milpa\AgentWorkspace\Event\AgentWorkspaceEvents;
 use Milpa\Attributes\PluginMetadata;
 use Milpa\AgentWorkspace\Admin\AdminGuest;
@@ -70,7 +71,7 @@ use Milpa\Runtime\Support\RootResolver;
  * the host can list it, probe it and project a compose fragment without this plugin knowing who asks.
  *
  * The Desktop stands behind the same door as the admin (greenhouse decisions/0209): every shell route carries
- * the middleware the app declared under `desktop.middleware` — judged by {@see DesktopSettings}, loopback-only
+ * the middleware the app declared under `workspace.middleware` — judged by {@see DesktopSettings}, loopback-only
  * by default, `[]` open on purpose, anything misdeclared falling to loopback-only — except the assets, which
  * stay public package files: a JSON 401 to a `<link>` or `<script>` would break the page silently.
  *
@@ -170,7 +171,6 @@ final class AgentWorkspacePlugin implements PluginInterface, RouteProviderInterf
         'preview' => Live\ScreenPreviewComponent::class,
     ];
 
-    public const SHELL_PATH = '/desktop';
 
     /** The sign-in door the admin section offers a signed-out human — app-runtime's default, the one the shell's guard reads from the 401 too. */
     public const SIGNIN_PATH = '/webauthn/signin';
@@ -194,6 +194,12 @@ final class AgentWorkspacePlugin implements PluginInterface, RouteProviderInterf
      */
     public function boot(): void
     {
+        // 🚨 REFUSE WHILE THE APP STILL DECLARES `desktop`, and refuse HERE — first thing, before a
+        // single service is registered. The error has to reach whoever wrote `config/app.php`, which is
+        // the same reasoning as the framework's boot guard for an unjudgeable operation
+        // (greenhouse decisions/0279, decisions/0284).
+        WorkspaceKeys::refuseLegacy($this->configBag());
+
         $events = $this->container->get(MilpaEventDispatcherInterface::class);
         assert($events instanceof MilpaEventDispatcherInterface);
 
@@ -409,7 +415,7 @@ final class AgentWorkspacePlugin implements PluginInterface, RouteProviderInterf
             // panel is a DeclaredView: it contributes markup to somebody else's response and never owns
             // the headers, so it cannot mint the cookie the hub reads (greenhouse decisions/0253).
             new Route(
-                path: '/desktop/hub',
+                path: '/workspace/hub',
                 methods: HttpMethod::GET,
                 name: 'desktop.hub',
                 middleware: $middleware,
@@ -426,21 +432,21 @@ final class AgentWorkspacePlugin implements PluginInterface, RouteProviderInterf
                 handler: new HandlerReference(AssetsController::class, 'component'),
             ),
             new Route(
-                path: '/desktop/settings',
+                path: '/workspace/settings',
                 methods: HttpMethod::POST,
                 name: 'desktop.settings.save',
                 middleware: $middleware,
                 handler: new HandlerReference(MutationController::class, 'saveSettings'),
             ),
             new Route(
-                path: '/desktop/sessions',
+                path: '/workspace/sessions',
                 methods: HttpMethod::POST,
                 name: 'desktop.sessions.create',
                 middleware: $middleware,
                 handler: new HandlerReference(MutationController::class, 'createSession'),
             ),
             new Route(
-                path: '/desktop/work',
+                path: '/workspace/work',
                 methods: HttpMethod::POST,
                 name: 'desktop.work.move',
                 middleware: $middleware,
@@ -507,7 +513,6 @@ final class AgentWorkspacePlugin implements PluginInterface, RouteProviderInterf
                     $settings,
                     $catalog,
                     $data instanceof DesktopData ? $data : null,
-                    self::SHELL_PATH,
                     self::SIGNIN_PATH,
                     $this->liveSecret('signing'),
                 ),
@@ -574,8 +579,8 @@ final class AgentWorkspacePlugin implements PluginInterface, RouteProviderInterf
     }
 
     /**
-     * The door as the app declared it, judged (greenhouse decisions/0209): `desktop.middleware` and
-     * `desktop.locale` from the runtime's config bag, the defaults when the plugin has no bag (booted
+     * The door as the app declared it, judged (greenhouse decisions/0209): `workspace.middleware` and
+     * `workspace.locale` from the runtime's config bag, the defaults when the plugin has no bag (booted
      * without a kernel, as in unit tests) — read on demand, so `routes()` answers before `boot()` too.
      */
     public function settings(): DesktopSettings
@@ -589,7 +594,7 @@ final class AgentWorkspacePlugin implements PluginInterface, RouteProviderInterf
      * The backing services this plugin needs the host to run (greenhouse decisions/0201): the Mercure hub the
      * shell and the agent sessions stream through. Declared, not started — an admin panel lists it, probes its
      * port and projects a compose fragment; running it is the operator's call. The declaration reads the
-     * wiring's `desktop.mercure.*` keys (plus the optional, declaration-only `cors_origin`), so the hub it
+     * wiring's `workspace.mercure.*` keys (plus the optional, declaration-only `cors_origin`), so the hub it
      * describes is the hub the app publishes to; the keys travel as secret config references, never as values.
      *
      * @return list<ServiceDeclaration>
@@ -601,7 +606,7 @@ final class AgentWorkspacePlugin implements PluginInterface, RouteProviderInterf
         return [MercureServiceDeclaration::fromConfig($config instanceof Config ? $config : null)];
     }
 
-    /** The Mercure hub wiring, when the app configured `desktop.mercure.*`; null otherwise (log-only). */
+    /** The Mercure hub wiring, when the app configured `workspace.mercure.*`; null otherwise (log-only). */
     private function mercure(): ?MercureConfig
     {
         $config = $this->container->get(Config::class);
@@ -640,34 +645,34 @@ final class AgentWorkspacePlugin implements PluginInterface, RouteProviderInterf
         return (new RootResolver())->resolve();
     }
 
-    /** Where persisted Desktop settings live: `desktop.settings.path` in config, else `.milpa/desktop-settings.json`. */
+    /** Where persisted Desktop settings live: `workspace.settings.path` in config, else `.milpa/desktop-settings.json`. */
     private function settingsPath(): string
     {
         $config = $this->container->get(Config::class);
-        $configured = $config instanceof Config ? $config->get('desktop.settings.path') : null;
+        $configured = WorkspaceKeys::read($config instanceof Config ? $config : null, 'settings.path');
 
         return is_string($configured) && $configured !== '' ? $configured : $this->root() . '/.milpa/desktop-settings.json';
     }
 
-    /** Where the app's session store lives: `desktop.sessions.path` in config, else `.milpa/sessions/`. */
+    /** Where the app's session store lives: `workspace.sessions.path` in config, else `.milpa/sessions/`. */
     private function sessionsPath(): string
     {
         $config = $this->container->get(Config::class);
-        $configured = $config instanceof Config ? $config->get('desktop.sessions.path') : null;
+        $configured = WorkspaceKeys::read($config instanceof Config ? $config : null, 'sessions.path');
 
         return is_string($configured) && $configured !== '' ? $configured : $this->root() . '/.milpa/sessions';
     }
 
-    /** Where the shared event log lives: `desktop.events.log` in config, else a per-app temp file. */
+    /** Where the shared event log lives: `workspace.events.log` in config, else a per-app temp file. */
     /**
      * The HMAC secret every Desktop component signs its state envelope and its CSRF token with.
      *
-     * ONE signing key per page (greenhouse decisions/0211): `desktop.live.<kind>_secret` still wins when the
+     * ONE signing key per page (greenhouse decisions/0211): `workspace.live.<kind>_secret` still wins when the
      * app declares it, but the DEFAULT is now the house's own `live.secret` — the key every other milpa/live
      * endpoint in the app verifies with, so an envelope signed by a Desktop surface is not, to the house's
      * endpoint, a tampered one. Only when the house declares neither does it fall back to a stable value
      * derived from this package's path, which is a per-install default and not a secret: declare `live.secret`
-     * (or `desktop.live.*_secret`) for a real deployment.
+     * (or `workspace.live.*_secret`) for a real deployment.
      */
     private function liveSecret(string $kind): string
     {
@@ -676,7 +681,7 @@ final class AgentWorkspacePlugin implements PluginInterface, RouteProviderInterf
             return hash('sha256', __DIR__ . '|milpa-live|' . $kind);
         }
 
-        $configured = $config->get('desktop.live.' . $kind . '_secret');
+        $configured = WorkspaceKeys::read($config, 'live.' . $kind . '_secret');
         if (is_string($configured) && $configured !== '') {
             return $configured;
         }
@@ -692,7 +697,7 @@ final class AgentWorkspacePlugin implements PluginInterface, RouteProviderInterf
     private function logPath(): string
     {
         $config = $this->container->get(Config::class);
-        $configured = $config instanceof Config ? $config->get('desktop.events.log') : null;
+        $configured = WorkspaceKeys::read($config instanceof Config ? $config : null, 'events.log');
 
         return is_string($configured) && $configured !== ''
             ? $configured

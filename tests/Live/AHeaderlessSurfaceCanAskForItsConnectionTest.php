@@ -53,7 +53,7 @@ final class AHeaderlessSurfaceCanAskForItsConnectionTest extends TestCase
     /** A request carrying the house's sealed decision, which is the only way to name a session at all. */
     private function withTicket(string $sessionId, string $principal = ''): ServerRequest
     {
-        return new ServerRequest('GET', '/desktop/hub', [SessionTicket::HEADER => SessionTicket::issue(self::SECRET, $sessionId, $principal)]);
+        return new ServerRequest('GET', '/workspace/hub', [SessionTicket::HEADER => SessionTicket::issue(self::SECRET, $sessionId, $principal)]);
     }
 
     private function hub(): HubController
@@ -101,7 +101,7 @@ final class AHeaderlessSurfaceCanAskForItsConnectionTest extends TestCase
     public function testACookieNoLongerNamesTheSession(): void
     {
         foreach (['desk-0123456789abcdef', '../../etc/passwd'] as $cookie) {
-            $request = (new ServerRequest('GET', '/desktop/hub'))->withCookieParams([HubConnection::SESSION_COOKIE => $cookie]);
+            $request = (new ServerRequest('GET', '/workspace/hub'))->withCookieParams([HubConnection::SESSION_COOKIE => $cookie]);
 
             self::assertSame('{}', (string) $this->hub()->connect($request)->getBody(), 'a cookie decides nothing');
         }
