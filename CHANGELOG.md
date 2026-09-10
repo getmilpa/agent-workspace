@@ -3,6 +3,13 @@
 All notable changes to milpa/desktop-app are documented here. This project adheres to
 [Semantic Versioning](https://semver.org/) and [Keep a Changelog](https://keepachangelog.com/).
 
+## [0.66.2](https://github.com/getmilpa/agent-workspace/compare/v0.66.1...v0.66.2) (2026-09-10)
+
+
+### Bug Fixes
+
+* no surface of this package resolves the model any more ([#36](https://github.com/getmilpa/agent-workspace/issues/36)) ([1058d02](https://github.com/getmilpa/agent-workspace/commit/1058d02c1e3086f8faaad845f01e8baafc677fdc))
+
 ## [0.66.1](https://github.com/getmilpa/agent-workspace/compare/v0.66.0...v0.66.1) (2026-09-09)
 
 
