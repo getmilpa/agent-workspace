@@ -600,16 +600,15 @@ final class DesktopData
      * names a host the reader never chose sends them to fix a machine that was never theirs, which
      * is how `llama.local` survived in this file long after it stopped existing.
      *
-     * `reached` is `null` when the question could not be asked at all — no endpoint, or no reader
-     * — and `false` only when something was asked and nothing answered. `serves_declared` is the
-     * arm nothing was checking: a provider that answers with a catalogue lacking the configured
-     * model fails every turn AT the provider, and the failure looks like a bug in the turn.
+     * IT TOUCHES NOTHING ON THE WIRE. Whether the provider answers is {@see modelReach()}, and it
+     * is a separate method because asking costs a round trip that a paint must not pay — measured
+     * at five seconds against a provider that was down.
      *
      * WITHOUT THE AUTHORITY INSTALLED it says everything is undeclared rather than inventing. A
      * Desktop shipped without `milpa/app-runtime` has no governed configuration to read, and «I do
      * not know» is the only true answer it can give.
      *
-     * @return array{model: null|string, endpoint: null|string, model_from: string, endpoint_from: string, reached: null|bool, models: list<string>, serves_declared: null|bool}
+     * @return array{model: null|string, endpoint: null|string, model_from: string, endpoint_from: string}
      */
     public function model(): array
     {
@@ -617,20 +616,42 @@ final class DesktopData
         $config = $config instanceof Config ? $config : null;
 
         if (!class_exists(AgentEndpoint::class)) {
-            return [
-                'model' => null, 'endpoint' => null,
-                'model_from' => 'none', 'endpoint_from' => 'none',
-                'reached' => null, 'models' => [], 'serves_declared' => null,
-            ];
+            return ['model' => null, 'endpoint' => null, 'model_from' => 'none', 'endpoint_from' => 'none'];
         }
-
-        $reach = AgentEndpoint::providerReach($config);
 
         return [
             'model' => AgentEndpoint::model($config),
             'endpoint' => AgentEndpoint::baseUrl($config),
             'model_from' => AgentEndpoint::modelSource($config),
             'endpoint_from' => AgentEndpoint::baseUrlSource($config),
+        ];
+    }
+
+    /**
+     * WHETHER THE PROVIDER ANSWERS — asked explicitly, because asking costs a round trip.
+     *
+     * 🚨 THIS USED TO LIVE IN `model()`, AND PAINTING PAID FOR IT. Measured on a published build:
+     * 102 ms to render with the provider up, and **5 002 ms with it down** — the probe's own five
+     * second ceiling, spent inside a synchronous paint. That trades «a wrong value instantly» for
+     * «the right value after five seconds», which is a worse deal than the lie it replaced: a
+     * surface nobody can look at has not stopped lying, it has stopped answering
+     * (greenhouse decisions/0266).
+     *
+     * So the two questions are separated by cost, not by taste. {@see model()} reads declarations and
+     * touches nothing; this one goes out on the wire and is called by whoever ASKED — an operation,
+     * a wizard deciding whether to open, a page fetching after it has already painted. The same
+     * boundary `ProviderWindow` already has: the compaction budget asks it, no painter does.
+     *
+     * @return array{reached: null|bool, models: list<string>, serves_declared: null|bool}
+     */
+    public function modelReach(): array
+    {
+        $config = $this->container->has(Config::class) ? $this->container->get(Config::class) : null;
+        $reach = class_exists(AgentEndpoint::class)
+            ? AgentEndpoint::providerReach($config instanceof Config ? $config : null)
+            : null;
+
+        return [
             'reached' => $reach === null ? null : $reach['reached'],
             'models' => $reach['models'] ?? [],
             'serves_declared' => $reach['serves_declared'] ?? null,
