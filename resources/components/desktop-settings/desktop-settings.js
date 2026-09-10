@@ -151,48 +151,101 @@
         });
       },
       /**
-       * 🚨 THE AGENT'S ADDRESS GOES THROUGH `config:set`, NEVER THROUGH `save()`.
+       * Report what the SHARED governed writer answered — the flow itself lives in the guard.
        *
-       * `agent.baseUrl` is where every prompt and every piece of context this app sends will go. Two
-       * same-origin POSTs once moved it with no session at all, WITH a policy registered, because
-       * `config:set` declared no scope for the policy to match; it declares `config:write` now and the
-       * framework refuses at boot to publish it unjudged (greenhouse decisions/0278, decisions/0279).
-       *
-       * Which is exactly why it cannot ride in `POST /desktop/settings`: that door writes a file, and
-       * the agent does not read that file. The screen was posting to a place nothing read.
-       *
-       * The confirm gate's 428 is part of a consent-demanding operation's flow, so this carries the
-       * token back the way the key does. The field is NOT cleared: unlike a key, an endpoint is
-       * something you want to still see after saving it.
+       * 🚨 IT USED TO LIVE HERE, AND MOVING IT IS THE POINT. The composer's model chip writes the same
+       * key through the same confirm gate, and two copies of a two-step is how one of them forgets to
+       * carry the token back (greenhouse decisions/0281). What stays here is the COPY: which sentence
+       * this screen says when the door answers, in the declared locale.
        */
-      declareEndpoint: function () {
+      declareConfig: function (key, value, okKey, failKey) {
         var d = desk();
         if (!d) { return Promise.reject(new Error('desktop-guard not loaded')); }
         var self = this;
-        var input = document.getElementById('set-end');
-        var value = input ? String(input.value || '') : '';
         if (value === '') { return Promise.resolve(); }
 
-        var send = function (token) {
-          var headers = { 'Content-Type': 'application/json' };
-          if (token) { headers['Confirm-Token'] = token; }
-
-          return fetch('/config/set', {
-            method: 'POST',
-            headers: headers,
-            body: JSON.stringify({ key: 'agent.baseUrl', value: value }),
-          });
-        };
-
-        return send(null).then(d.guardedFlow).then(function (r) {
-          if (r.status !== 428) { return r; }
-
-          return r.json().then(function (body) { return send(body && body.confirm_token).then(d.guarded); });
-        }).then(function () {
-          self.report(true, tr('settings.model.endpoint.saved'));
+        return d.config.set(key, value).then(function () {
+          self.report(true, tr(okKey));
         }).catch(function (err) {
-          self.report(false, tr('settings.model.endpoint.refused', (err && err.status) || 0));
+          self.report(false, tr(failKey, (err && err.status) || 0));
         });
+      },
+      /**
+       * The endpoint, written where the agent reads it.
+       *
+       * The field is NOT cleared: unlike a key, an address is something you want to still see after
+       * saving it.
+       */
+      declareEndpoint: function () {
+        var input = document.getElementById('set-end');
+
+        return this.declareConfig(
+          'agent.baseUrl',
+          input ? String(input.value || '') : '',
+          'settings.model.endpoint.saved',
+          'settings.model.endpoint.refused',
+        );
+      },
+      /** The model, written the same governed way — the select's change IS the intent. */
+      declareModel: function () {
+        var select = document.getElementById('set-model');
+
+        return this.declareConfig(
+          'agent.model',
+          select ? String(select.value || '') : '',
+          'settings.model.model.saved',
+          'settings.model.model.refused',
+        );
+      },
+      /**
+       * ASK THE ENDPOINT WHAT IT SERVES — the only control on this screen that goes out on the wire.
+       *
+       * 🚨 IT IS A VERB AND NOT A RENDER, AND THE TIMING IS WHY. Measured against a dead endpoint
+       * (TEST-NET 192.0.2.1): the probe costs 5.0 s and `ask=false` costs 0.06 s. A screen that
+       * populated this list while painting would reintroduce, at the operation, the exact five seconds
+       * greenhouse decisions/0266 took out of five surfaces. The list arrives when a person asks.
+       *
+       * The request is the guard's, so the composer's chip and this field ask the same way, once.
+       */
+      findModels: function () {
+        var d = desk();
+        if (!d) { return Promise.reject(new Error('desktop-guard not loaded')); }
+        var self = this;
+
+        return d.models().then(function (report) {
+          var models = (report && report.models) || [];
+          if (!report || report.reached !== true || models.length === 0) {
+            self.report(false, tr('settings.model.model.unreachable'));
+
+            return;
+          }
+          self.fill(models);
+          self.report(true, tr('settings.model.model.found', models.length));
+        }).catch(function (err) { self.report(false, tr('settings.model.model.refused', (err && err.status) || 0)); });
+      },
+      /**
+       * Put what the provider serves in the select, KEEPING the declared model selected when it is one
+       * of them.
+       *
+       * A declared model the provider does NOT serve stays in the list and stays selected: dropping it
+       * would silently change what this app is configured to talk to, and «the provider does not serve
+       * what you declared» is a fact a person needs to SEE rather than have tidied away — it is the arm
+       * `serves_declared` exists to report (greenhouse decisions/0266).
+       */
+      fill: function (models) {
+        var select = document.getElementById('set-model');
+        if (!select) { return; }
+        var declared = String(select.value || '');
+        var names = models.slice();
+        if (declared !== '' && names.indexOf(declared) === -1) { names.unshift(declared); }
+        select.innerHTML = '';
+        for (var i = 0; i < names.length; i += 1) {
+          var option = document.createElement('option');
+          option.value = names[i];
+          option.textContent = names[i];
+          if (names[i] === declared) { option.selected = true; }
+          select.appendChild(option);
+        }
       },
       /** Discard: the persisted values are the server's, so reloading IS the discard. */
       discard: function () {

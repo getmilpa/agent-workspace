@@ -48,6 +48,7 @@ final class ShellSignals
     public static function of(Catalog $catalog, ?DesktopData $data = null): array
     {
         $settings = $data?->settings() ?? [];
+        $model = $data?->model() ?? [];
         $modeKey = \is_string($settings['mode'] ?? null) && isset(ComposerBar::MODE_KEYS[$settings['mode']]) ? (string) $settings['mode'] : 'ask';
         $counters = $data?->counters();
         $ctx = $data?->context() ?? ['tokens' => 0, 'window' => 32768];
@@ -77,6 +78,16 @@ final class ShellSignals
             // in the browser.
             'composer.mode' => $modeKey,
             'composer.mode.label' => ComposerBar::modeLabel($catalog, $modeKey),
+            // The MODEL is a signal pair for the same reason the mode is: the chip in the composer and
+            // any other surface that names the model read one value, and switching it writes one place
+            // (greenhouse decisions/0281).
+            //
+            // 🚨 SEEDED FROM WHAT WAS DECLARED, WITH NO PROBE. `DesktopData::model()` is a config read —
+            // it never calls `providerReach()` — and that is deliberate: measured against a dead
+            // endpoint the probe costs 5.0 s, and this runs on every page. Whether the provider ANSWERS
+            // is what the chip's menu asks when a person opens it (greenhouse decisions/0266).
+            'agent.model' => \is_string($model['model'] ?? null) ? (string) $model['model'] : '',
+            'agent.model.label' => ComposerBar::modelLabel($model, $catalog),
             // Every counter the UI shows is a SIGNAL — one truth, projected to the composer chips, the
             // status bar and the panels alike (greenhouse decisions/0191, Rod). The live feed and the
             // turn update these; every place that reads them updates at once.

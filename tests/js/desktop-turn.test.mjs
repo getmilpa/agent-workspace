@@ -596,3 +596,74 @@ test('F8c · an ANSWERED bubble with the same id does not swallow a new request'
 
   assert.equal(chat.children.filter((m) => m.classList.contains('msg--grant')).length, 2, 'la segunda petición se pinta');
 });
+
+// ── the model chip (greenhouse decisions/0281) ──────────────────────────────────────────────────────
+test('the model chip asks the provider ON OPEN, never on render, and once per page', async () => {
+  const { p, composer } = composerPage();
+  const calls = stubFetch(p, [response(200, { ok: true, reached: true, models: ['qwen3.8-27b', 'llama3.2'] })]);
+
+  assert.equal(calls.length, 0, 'painting the bar asked nobody — the probe costs 5.0 s against a dead endpoint');
+
+  await composer.toggleModelMenu({ stopPropagation() {} });
+
+  assert.equal(calls.length, 1);
+  assert.equal(calls[0].url, '/agent/model?ask=1');
+  assert.equal(composer.modelMenuOpen, true);
+  const items = p.document.getElementById('milpa-model-menu').children.map((b) => b.getAttribute('data-model'));
+  assert.deepEqual(items, ['qwen3.8-27b', 'llama3.2']);
+
+  // Closed and reopened: the memo means a person browsing the menu is not re-probing the provider.
+  await composer.toggleModelMenu({ stopPropagation() {} });
+  await composer.toggleModelMenu({ stopPropagation() {} });
+  assert.equal(calls.length, 1);
+});
+
+test('an endpoint that does not answer leaves the menu saying so, with no options', async () => {
+  const { p, composer } = composerPage();
+  stubFetch(p, [response(200, { ok: true, reached: false, models: [] })]);
+
+  await composer.toggleModelMenu({ stopPropagation() {} });
+
+  assert.equal(composer.modelNotice, 'the endpoint did not answer');
+  assert.equal(p.document.getElementById('milpa-model-menu').children.length, 1, 'only the notice line');
+});
+
+test('picking a model is a governed write through the guard, optimistic and rolled back on a refusal', async () => {
+  const { p, composer, told } = composerPage();
+  p.signal('agent.model', 'llama3.2');
+  p.signal('agent.model.label', 'llama3.2');
+  const calls = stubFetch(p, [response(428, { confirm_token: 't-3' }), response(200, { ok: true })]);
+
+  await composer.pickModel('qwen3.8-27b');
+
+  assert.equal(calls[0].url, '/config/set');
+  assert.deepEqual(JSON.parse(calls[0].init.body), { key: 'agent.model', value: 'qwen3.8-27b' });
+  assert.equal(calls[1].init.headers['Confirm-Token'], 't-3', 'the 428 two-step, from the guard');
+  assert.equal(p.signal('agent.model'), 'qwen3.8-27b');
+  assert.equal(p.signal('agent.model.label'), 'qwen3.8-27b');
+  assert.match(told.join(' '), /switched to qwen3\.8-27b/);
+});
+
+test('a refused switch puts the chip back — a chip over a server that says otherwise is the UI lying', async () => {
+  const { p, composer } = composerPage();
+  p.signal('agent.model', 'llama3.2');
+  p.signal('agent.model.label', 'llama3.2');
+  stubFetch(p, [response(403, {})]);
+
+  await composer.pickModel('qwen3.8-27b');
+
+  assert.equal(p.signal('agent.model'), 'llama3.2', 'rolled back');
+  assert.equal(p.signal('agent.model.label'), 'llama3.2');
+});
+
+test('a click in the menu is delegated — dynamic items carry a name, not an x-data', async () => {
+  const { p, composer } = composerPage();
+  stubFetch(p, [response(200, { ok: true, reached: true, models: ['qwen3.8-27b'] }), response(200, { ok: true })]);
+  await composer.toggleModelMenu({ stopPropagation() {} });
+  const option = p.document.getElementById('milpa-model-menu').children[0];
+
+  await composer.modelMenuClick({ target: option });
+  await settle();
+
+  assert.equal(p.signal('agent.model'), 'qwen3.8-27b');
+});

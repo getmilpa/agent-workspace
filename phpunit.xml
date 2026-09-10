@@ -1,8 +1,14 @@
 <?xml version="1.0" encoding="UTF-8"?>
+<!-- 🚨 `failOnWarning` IS ON BECAUSE A PHP WARNING IS A DEFECT IN THE OUTPUT, NOT A NOTE.
+     `@click.stop="modelMenuClick($event)"` inside a heredoc made PHP interpolate `$event` as ITS
+     variable, print an empty string, and ship the browser a handler with no event — the delegated
+     lookup would have failed silently. The suite said «OK, but there were issues» and CI exited 0.
+     Same shape as the enrol button that never worked (greenhouse decisions/0261, decisions/0281). -->
 <phpunit xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:noNamespaceSchemaLocation="vendor/phpunit/phpunit/phpunit.xsd"
          bootstrap="vendor/autoload.php"
          colors="true"
+         failOnWarning="true"
          cacheDirectory=".phpunit.cache">
     <testsuites>
         <testsuite name="desktop-app">

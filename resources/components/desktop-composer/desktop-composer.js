@@ -67,6 +67,9 @@
     return {
       /** Whether the mode menu is open — local state, bound by the menu's `:hidden`. */
       menuOpen: false,
+      modelMenuOpen: false,
+      modelNotice: '',
+      modelsLoaded: false,
 
       init: function () {
         var self = this;
@@ -81,7 +84,7 @@
         // Click-away is ONE signal (greenhouse decisions/0211): the guard owns the document listener and
         // this bar consumes it, instead of hanging a second one for the menu.
         var d = desk();
-        if (d && typeof d.onDismiss === 'function') { d.onDismiss(function () { self.menuOpen = false; }); }
+        if (d && typeof d.onDismiss === 'function') { d.onDismiss(function () { self.menuOpen = false; self.modelMenuOpen = false; }); }
         this.refresh();
         if (live.desktop) { live.desktop.composer = self.api(); }
       },
@@ -227,6 +230,104 @@
       pick: function (key) {
         this.menuOpen = false;
         this.applyMode(key);
+      },
+
+      /**
+       * THE MODEL CHIP'S MENU — and it asks the provider ON OPEN, never on render.
+       *
+       * 🚨 THE TIMING IS THE DESIGN, MEASURED. Against a dead endpoint (TEST-NET 192.0.2.1) the probe
+       * costs 5.0 s and `ask=false` costs 0.06 s. This chip is on every page of the workspace, so a
+       * version that filled its list while painting would put five seconds on every load of a house
+       * whose provider is down — the exact cost greenhouse decisions/0266 took out of five surfaces,
+       * put back one layer down (greenhouse decisions/0281).
+       *
+       * What the chip PAINTS is the declared name, which is a config read: no network, always known.
+       *
+       * Asked ONCE per page: `modelsLoaded` is the memo. A person reopening the menu is not asking the
+       * provider again, and someone who changed the endpoint reloads — the field that changes it lives
+       * on another screen.
+       */
+      toggleModelMenu: function (event) {
+        if (event && typeof event.stopPropagation === 'function') { event.stopPropagation(); }
+        this.modelMenuOpen = !this.modelMenuOpen;
+        if (!this.modelMenuOpen || this.modelsLoaded) { return null; }
+        var d = desk();
+        if (!d) { return Promise.reject(new Error('desktop-guard not loaded')); }
+        var self = this;
+        this.modelNotice = d.tr('composer.model.asking');
+
+        return d.models().then(function (report) {
+          var models = (report && report.models) || [];
+          self.modelsLoaded = true;
+          if (!report || report.reached !== true) { self.modelNotice = d.tr('composer.model.unreachable'); return; }
+          if (models.length === 0) { self.modelNotice = d.tr('composer.model.none'); return; }
+          self.modelNotice = '';
+          self.fillModels(models);
+        }).catch(function () { self.modelNotice = d.tr('composer.model.unreachable'); });
+      },
+
+      /**
+       * Put one button per model in the menu, and mark the one in effect.
+       *
+       * 🚨 BUILT AS DOM WITH A DELEGATED CLICK, NOT AS `x-data` PER ITEM. Alpine double-initialises a
+       * dynamic `x-data`, which is why this package's dynamic surfaces are CSS-and-delegation
+       * throughout (greenhouse decisions/0191). The container carries the handler; the buttons carry
+       * only their name.
+       */
+      fillModels: function (models) {
+        var menu = document.getElementById('milpa-model-menu');
+        if (!menu) { return; }
+        var current = String(signal('agent.model') || '');
+        menu.innerHTML = '';
+        for (var i = 0; i < models.length; i += 1) {
+          var option = document.createElement('button');
+          option.type = 'button';
+          option.setAttribute('role', 'menuitem');
+          option.setAttribute('data-model', models[i]);
+          option.className = 'milpa-mode-opt mui-btn mui-btn--ghost mui-btn--sm mui-btn--full';
+          if (models[i] === current) { option.setAttribute('aria-current', 'true'); }
+          option.textContent = models[i];
+          menu.appendChild(option);
+        }
+      },
+
+      /** A click anywhere in the model menu: the delegated half of {@see fillModels}. */
+      modelMenuClick: function (event) {
+        var target = event && event.target && typeof event.target.closest === 'function'
+          ? event.target.closest('[data-model]')
+          : null;
+        if (!target) { return null; }
+
+        return this.pickModel(String(target.getAttribute('data-model') || ''));
+      },
+
+      /**
+       * SWITCH THE MODEL — a governed write, optimistic, rolled back on a refusal.
+       *
+       * The same discipline and the same reason as {@see applyMode}: the chip answers the click at once,
+       * and a door that REFUSES puts the label back, because a chip reading one model over a server that
+       * still says another is the UI lying about what the app talks to.
+       *
+       * The write is the GUARD's `config.set` — one implementation, shared with the Settings screen,
+       * because two copies of the confirm gate's two-step is how one of them forgets to carry the token
+       * back (greenhouse decisions/0281).
+       */
+      pickModel: function (name) {
+        if (name === '') { return null; }
+        var d = desk();
+        if (!d) { return Promise.reject(new Error('desktop-guard not loaded')); }
+        this.modelMenuOpen = false;
+        var was = { name: signal('agent.model'), label: signal('agent.model.label') };
+        signal('agent.model', name);
+        signal('agent.model.label', name);
+
+        return d.config.set('agent.model', name).then(function () {
+          d.notice('system', d.tr('composer.model.switched', name));
+        }).catch(function (err) {
+          signal('agent.model', was.name);
+          signal('agent.model.label', was.label);
+          d.failed(err, d.tr('composer.model.refused', (err && err.status) || 0));
+        });
       },
 
       /**

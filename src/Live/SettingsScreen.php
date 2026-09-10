@@ -189,6 +189,7 @@ final class SettingsScreen
             . '<div class="mui-card__header"><h2 class="mui-card__title">' . $this->t('settings.model.title') . '</h2></div>'
             . '<div class="mui-card__body mui-stack">'
             . (SettingsControls::offered('set-end') ? $this->endpointField($endpoint) : '')
+            . (SettingsControls::offered('set-model') ? $this->modelField() : '')
             . (SettingsControls::offered('set-key') ? $this->keyField() : '')
             . '</div></div>';
     }
@@ -225,6 +226,38 @@ final class SettingsScreen
             . '<span class="mui-field__hint">' . $this->t('settings.model.endpoint_hint') . '</span>'
             . '<button type="button" class="mui-btn mui-btn--sm milpa-settings__key-save" data-declare-endpoint'
             . ' @click="declareEndpoint()">' . $this->t('settings.model.endpoint.save') . '</button>'
+            . '</div>';
+    }
+
+    /**
+     * WHICH MODEL, out of what the provider actually serves — and the list is NOT fetched on render.
+     *
+     * 🚨 THE TIMING IS THE DESIGN, and it is measured. Against a dead endpoint (TEST-NET 192.0.2.1)
+     * `agent:model` costs 5.0 s and `agent:model --ask=false` costs 0.06 s. So this field paints from
+     * what was DECLARED — a config read, no egress — and the provider is asked only when a person
+     * presses «Find models». A screen that populated the list while rendering would reintroduce, at
+     * the operation, the exact five seconds that greenhouse decisions/0266 took out of five surfaces.
+     *
+     * (The flag works and the default is to probe: `ask` defaults true, which is the declared
+     * contract. It is the CALLER's job to pass `ask=false` when it is only painting.)
+     *
+     * The select carries the declared model even when the provider was never asked, because «what this
+     * app declared» is knowable without a network and is the answer a person came for.
+     */
+    private function modelField(): string
+    {
+        $declared = $this->data?->model()['model'] ?? null;
+        $declared = \is_string($declared) ? $declared : '';
+        $option = $declared === ''
+            ? '<option value="">' . $this->t('settings.model.model.none') . '</option>'
+            : '<option value="' . htmlspecialchars($declared, ENT_QUOTES) . '" selected="selected">' . htmlspecialchars($declared, ENT_QUOTES) . '</option>';
+
+        return '<div class="mui-field milpa-settings__model" data-model-state="' . ($declared === '' ? 'absent' : 'declared') . '">'
+            . '<label class="mui-field__label" for="set-model">' . $this->t('settings.model.model') . '</label>'
+            . '<span class="mui-select-wrap"><select id="set-model" class="mui-select" @change="declareModel()">' . $option . '</select></span>'
+            . '<span class="mui-field__hint">' . $this->t('settings.model.model_hint') . '</span>'
+            . '<button type="button" class="mui-btn mui-btn--sm milpa-settings__key-save" data-find-models'
+            . ' @click="findModels()">' . $this->t('settings.model.model.find') . '</button>'
             . '</div>';
     }
 

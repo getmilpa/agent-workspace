@@ -50,6 +50,17 @@ export const SIGNALS = {
  * `tr('…')` key the shipped modules use is missing from it.
  */
 export const CATALOG = {
+  'composer.model.asking': 'asking the endpoint…',
+  'composer.model.unreachable': 'the endpoint did not answer',
+  'composer.model.none': 'the endpoint served no model',
+  'composer.model.switched': 'model switched to %s',
+  'composer.model.refused': 'the model was not switched: %s',
+  'command.goal.unchanged': 'goal unchanged: %s',
+  'command.mode.set.auto': 'mode %s — applies from the next turn (a signature or third-party egress still asks)',
+  'settings.model.model.saved': 'Model saved',
+  'settings.model.model.refused': 'The model was not saved: %s',
+  'settings.model.model.unreachable': 'The endpoint did not answer',
+  'settings.model.model.found': '%s model(s) served',
   // 🚨 THE SECOND DIRECTION OF THE DRIFT, closed by `ClientCopyTest::testEveryKeyAModuleAsksForIsInThe
   // HarnessCopyToo`. Everything below is a key a shipped module ASKS FOR by name and this copy did not
   // carry — so a node test asserting its message was comparing against the raw key, silently. Fourteen

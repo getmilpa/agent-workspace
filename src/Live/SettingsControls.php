@@ -60,6 +60,11 @@ final class SettingsControls
         // Where the agent talks. `AgentEndpoint::baseUrl()` is what every turn resolves, so this is the
         // one address that matters and the only one the screen shows.
         'set-end' => 'config:agent.baseUrl',
+        // WHICH model, out of what the provider actually serves. The list is fetched from
+        // `agent:model` ON DEMAND and never on render: measured against a dead endpoint, the probe
+        // costs 5.0 s and `ask=false` costs 0.06 s, so a surface that painted a model list would pay
+        // five seconds per page load exactly like the surfaces of greenhouse decisions/0266 did.
+        'set-model' => 'config:agent.model',
         // The provider credential — never in the settings blob, which a real app COMMITS.
         'set-key' => 'op:provider:declare',
         // The default autonomy the composer's chip, the topbar and the seeded signals all read.
