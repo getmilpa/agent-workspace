@@ -18,3 +18,39 @@
    the state of an empty tab. Measured in the browser: parent `362.656px 362.672px 362.672px`, the
    empty state 363px wide at x=288 (greenhouse decisions/0287). */
 .panel-grid > .mui-empty { grid-column: 1 / -1; }
+
+/* THE CONTEXT ITSELF — what the model receives, four cards then any plugin panels.
+   The tab used to be nothing but the plugin region, so an app with no contributing plugin opened
+   «Context» and read a note about `addPanel()` (greenhouse decisions/0288). */
+.ctx { display: flex; flex-direction: column; gap: var(--space-6); }
+.ctx-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr)); gap: var(--space-4); }
+.ctx-card .mui-card__body { display: flex; flex-direction: column; gap: var(--space-1); }
+.ctx-heading {
+  margin: 0; font-family: var(--font-heading); font-size: var(--text-sm);
+  font-weight: var(--weight-medium); color: var(--text-muted);
+  text-transform: uppercase; letter-spacing: .06em;
+}
+.ctx-mono { font-family: var(--font-mono, ui-monospace, monospace); word-break: break-all; }
+
+/* The meter is a bar, not a number repeated: the fill IS the percentage the meta states. */
+.ctx-meter {
+  height: .375rem; border-radius: 999px; overflow: hidden;
+  background: var(--surface-sunken, rgba(255,255,255,.08));
+  margin: var(--space-1) 0;
+}
+.ctx-meter__fill { display: block; height: 100%; background: var(--accent); border-radius: inherit; }
+
+/* Label / value rows, aligned on one axis so the numbers can be compared down the column. */
+.ctx-pairs {
+  display: grid; grid-template-columns: 1fr auto;
+  gap: var(--space-1) var(--space-3); margin: var(--space-1) 0 0;
+}
+.ctx-pairs dt { color: var(--text-muted); font-size: var(--text-sm); }
+.ctx-pairs dd {
+  margin: 0; text-align: right; font-size: var(--text-sm);
+  font-variant-numeric: tabular-nums;
+}
+
+/* The cards size to their content: a grid row stretches every item to the tallest, and with four
+   cards of very different length that left the short ones as tall boxes of empty ground. */
+.ctx-grid { align-items: start; }

@@ -48,19 +48,23 @@ final class ContextTest extends TestCase
         self::assertStringContainsString('no title panel', $html);
     }
 
-    public function testNoPanelsShowsTheEmptyStateStillAsAComponent(): void
+    /**
+     * WITHOUT DATA THERE IS NOTHING TO SAY, and it says nothing — no note, no placeholder.
+     *
+     * This tab used to render ONLY what plugins contributed, so an app with no contributing plugin
+     * opened «Context» and read «No plugin has contributed a panel yet» — an answer about the
+     * extension mechanism to somebody asking what the agent can see. Rod's words: «ahí deberían
+     * aparecer los datos del contexto». The developer note is gone; the data took its place
+     * (greenhouse decisions/0288).
+     */
+    public function testWithoutDataItStillMountsAndSaysNothingItCannotKnow(): void
     {
         $html = (new Context('secret'))->render([]);
 
-        self::assertStringContainsString('data-milpa-component="desktop-context"', $html);
-        self::assertStringContainsString('No panels yet', $html);
-
-        // THE STRUCTURE, not just the copy. `.mui-empty` is a flex COLUMN, so the empty state has to be
-        // a container with block children — as a <p> with an inline <code> it printed the sentence, the
-        // chip and a lone «.» on three lines, which is what Rod caught (greenhouse decisions/0287).
-        self::assertStringContainsString('<div class="mui-empty">', $html, 'the container carries the class');
-        self::assertStringContainsString('class="mui-empty__desc"', $html, 'and the copy rides in the part that has the muted colour and the 40ch measure');
-        self::assertStringNotContainsString('<p class="mui-empty"', $html, 'never the container class on a paragraph');
+        self::assertStringContainsString('data-milpa-component="desktop-context"', $html, 'it is still a component');
+        self::assertStringNotContainsString('addPanel', $html, 'the extension mechanism is not an answer to «what is my context»');
+        self::assertStringNotContainsString('mui-empty', $html, 'and a tab with real content does not need an empty state for the region that has none');
+        self::assertStringNotContainsString('ctx-grid', $html, 'with no data, no card: zeros stated as measurements would be worse than silence');
     }
 
     public function testItEmitsRenderEventsSoPluginsCanExtendIt(): void

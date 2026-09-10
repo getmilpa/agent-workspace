@@ -175,7 +175,12 @@ final class Surfaces
     /** The Context tab surface (greenhouse decisions/0189) — plugins contribute panels through the composition (addPanel). */
     private function contextOf(): Context
     {
-        return $this->context ?? new Context('desktop-context-fallback', $this->events);
+        // IT GETS THE DATA, like every sibling here. `WorkBoard` and `Activity` were built with
+        // `$this->data` from the start and `Context` was not, so the tab NAMED Context was the one
+        // surface in this region with nothing to read — it rendered only what plugins contributed, and
+        // an app with no contributing plugin opened it and read a note about `addPanel()`
+        // (greenhouse decisions/0288).
+        return $this->context ?? new Context('desktop-context-fallback', $this->events, $this->data, $this->catalogue);
     }
 
     /** The consent gate surface (greenhouse decisions/0189) — its visibility is the `desktop.gate.open` signal. */
