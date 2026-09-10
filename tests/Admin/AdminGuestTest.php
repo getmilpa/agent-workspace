@@ -222,7 +222,7 @@ final class AdminGuestTest extends TestCase
 
     public function testTheDeclaredLocaleNamesTheSectionInSpanish(): void
     {
-        [, $kernel] = self::boot([AdminPlugin::class, AgentWorkspacePlugin::class], ['desktop' => ['locale' => 'es'], 'admin' => ['locale' => 'es']]);
+        [, $kernel] = self::boot([AdminPlugin::class, AgentWorkspacePlugin::class], ['workspace' => ['locale' => 'es'], 'admin' => ['locale' => 'es']]);
 
         $index = (string) self::dispatch($kernel, '/milpa/admin')->getBody();
         self::assertStringContainsString('<span class="mui-sidebar__item-label">Agente</span>', $index);
@@ -259,7 +259,7 @@ final class AdminGuestTest extends TestCase
         if (!class_exists(DesktopSettings::PASSKEY_GATE)) {
             require __DIR__ . '/../Fixtures/app-runtime-passkey-gate.php';
         }
-        [, $kernel] = self::boot([AdminPlugin::class, AgentWorkspacePlugin::class], ['desktop' => ['middleware' => [DesktopSettings::PASSKEY_GATE]]]);
+        [, $kernel] = self::boot([AdminPlugin::class, AgentWorkspacePlugin::class], ['workspace' => ['middleware' => [DesktopSettings::PASSKEY_GATE]]]);
 
         $section = self::dispatch($kernel, '/milpa/admin/s/agent');
         self::assertSame(200, $section->getStatusCode());
@@ -284,7 +284,7 @@ final class AdminGuestTest extends TestCase
         self::assertStringContainsString('href="/webauthn/signin?next=%2Fmilpa%2Fadmin%2Fs%2Fagent%3Flang%3Des">Sign in</a>', $spanish);
 
         // The admin mounted elsewhere: the way back follows its mount point, read from the context's route.
-        [, $panel] = self::boot([AdminPlugin::class, AgentWorkspacePlugin::class], ['desktop' => ['middleware' => [DesktopSettings::PASSKEY_GATE]], 'admin' => ['route' => '/panel']]);
+        [, $panel] = self::boot([AdminPlugin::class, AgentWorkspacePlugin::class], ['workspace' => ['middleware' => [DesktopSettings::PASSKEY_GATE]], 'admin' => ['route' => '/panel']]);
         self::assertStringContainsString('href="/webauthn/signin?next=%2Fpanel%2Fs%2Fagent">', (string) self::dispatch($panel, '/panel/s/agent')->getBody());
     }
 
@@ -302,7 +302,7 @@ final class AdminGuestTest extends TestCase
         $container->registerService(PasskeyGateStub::class, new PasskeyGateStub());
         [, $kernel] = self::boot(
             [AdminPlugin::class, AgentWorkspacePlugin::class],
-            ['admin' => ['middleware' => [PasskeyGateStub::class]], 'desktop' => ['middleware' => [DesktopSettings::PASSKEY_GATE]]],
+            ['admin' => ['middleware' => [PasskeyGateStub::class]], 'workspace' => ['middleware' => [DesktopSettings::PASSKEY_GATE]]],
             $container,
         );
 
@@ -391,7 +391,7 @@ final class AdminGuestTest extends TestCase
         $container->registerService(PasskeyGateStub::class, new PasskeyGateStub());
         [, $kernel] = self::boot(
             [AdminPlugin::class, AgentWorkspacePlugin::class],
-            ['admin' => ['middleware' => [PasskeyGateStub::class]], 'desktop' => ['middleware' => [DesktopSettings::PASSKEY_GATE]]],
+            ['admin' => ['middleware' => [PasskeyGateStub::class]], 'workspace' => ['middleware' => [DesktopSettings::PASSKEY_GATE]]],
             $container,
         );
 
@@ -424,7 +424,7 @@ final class AdminGuestTest extends TestCase
         self::assertSame(['tab' => 'work'], $seen->meta['query'] ?? null, 'the request\'s query');
         self::assertSame('en', $seen->locale, 'the region\'s ONE catalog, not the request\'s');
         self::assertStringStartsWith('agent-desktop-work-board', $seen->componentId, 'its own id inside the region, minted from the region\'s own root');
-        self::assertSame('/desktop/live', $seen->route, 'the Desktop\'s wire, not the panel\'s URL');
+        self::assertSame('/workspace/live', $seen->route, 'the Desktop\'s wire, not the panel\'s URL');
     }
 
     /** The region's root is what the admin mounts, and its contract is the one the section named. */

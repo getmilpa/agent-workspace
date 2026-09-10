@@ -14,13 +14,14 @@ declare(strict_types=1);
 
 namespace Milpa\AgentWorkspace\Live;
 
+use Milpa\AgentWorkspace\Config\WorkspaceKeys;
 use Milpa\Mercure\MercureService;
 use Milpa\Runtime\Config;
 
 /**
  * The Mercure hub wiring an app opts into (greenhouse decisions/0188, 0475).
  *
- * Present only when the app configured `desktop.mercure.*`: the internal hub URL the app publishes to, the
+ * Present only when the app configured `workspace.mercure.*`: the internal hub URL the app publishes to, the
  * public URL the browser subscribes to, the publisher/subscriber HMAC keys, and the topic shell changes ride
  * on. It builds the graduated {@see MercureService} (evidence/0474) and mints the subscriber JWT the shell's
  * client presents to the hub. Absent, the app runs on the shared-log feed alone (0473) — the hub is opt-in.
@@ -36,19 +37,19 @@ final class MercureConfig
     ) {
     }
 
-    /** Read `desktop.mercure.*` from config; null unless the hub URL and both keys are all present. */
+    /** Read `workspace.mercure.*` from config; null unless the hub URL and both keys are all present. */
     public static function fromConfig(Config $config): ?self
     {
-        $hubUrl = $config->get('desktop.mercure.hub_url');
-        $publisherKey = $config->get('desktop.mercure.publisher_key');
-        $subscriberKey = $config->get('desktop.mercure.subscriber_key');
+        $hubUrl = WorkspaceKeys::read($config, 'mercure.hub_url');
+        $publisherKey = WorkspaceKeys::read($config, 'mercure.publisher_key');
+        $subscriberKey = WorkspaceKeys::read($config, 'mercure.subscriber_key');
 
         if (!is_string($hubUrl) || $hubUrl === '' || !is_string($publisherKey) || $publisherKey === '' || !is_string($subscriberKey) || $subscriberKey === '') {
             return null;
         }
 
-        $publicUrl = $config->get('desktop.mercure.public_url');
-        $topic = $config->get('desktop.mercure.topic');
+        $publicUrl = WorkspaceKeys::read($config, 'mercure.public_url');
+        $topic = WorkspaceKeys::read($config, 'mercure.topic');
 
         return new self(
             $hubUrl,

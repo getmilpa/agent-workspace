@@ -55,7 +55,7 @@ final class MutationControllerTest extends TestCase
 
     public function testPostSettingsPersistsThem(): void
     {
-        $request = (new ServerRequest('POST', '/desktop/settings'))
+        $request = (new ServerRequest('POST', '/workspace/settings'))
             ->withBody(\Nyholm\Psr7\Stream::create(json_encode(['endpoint' => 'http://x/v1'], JSON_THROW_ON_ERROR)));
 
         $res = $this->controller()->saveSettings($request);
@@ -67,7 +67,7 @@ final class MutationControllerTest extends TestCase
 
     public function testPostSessionsCreatesOneAndReturnsItsId(): void
     {
-        $request = (new ServerRequest('POST', '/desktop/sessions'))
+        $request = (new ServerRequest('POST', '/workspace/sessions'))
             ->withBody(\Nyholm\Psr7\Stream::create(json_encode(['goal' => 'Do the thing'], JSON_THROW_ON_ERROR)));
 
         $res = $this->controller()->createSession($request);
@@ -84,7 +84,7 @@ final class MutationControllerTest extends TestCase
         mkdir($this->dir . '/sessions');
         file_put_contents($this->dir . '/sessions/s1.json', json_encode(['work' => [['title' => 'a', 'status' => 'pending']]], JSON_THROW_ON_ERROR));
 
-        $request = (new ServerRequest('POST', '/desktop/work'))
+        $request = (new ServerRequest('POST', '/workspace/work'))
             ->withBody(\Nyholm\Psr7\Stream::create(json_encode(['session' => 's1', 'index' => 0, 'status' => 'done'], JSON_THROW_ON_ERROR)));
 
         $res = $this->controller()->moveWork($request);
@@ -96,7 +96,7 @@ final class MutationControllerTest extends TestCase
 
     public function testPostWorkWithAnUnknownSessionReportsNotOk(): void
     {
-        $request = (new ServerRequest('POST', '/desktop/work'))
+        $request = (new ServerRequest('POST', '/workspace/work'))
             ->withBody(\Nyholm\Psr7\Stream::create(json_encode(['session' => 'nope', 'index' => 0, 'status' => 'done'], JSON_THROW_ON_ERROR)));
 
         self::assertStringContainsString('"ok":false', (string) $this->controller()->moveWork($request)->getBody());
@@ -104,7 +104,7 @@ final class MutationControllerTest extends TestCase
 
     public function testAMalformedBodyIsToleratedAsEmpty(): void
     {
-        $request = (new ServerRequest('POST', '/desktop/settings'))
+        $request = (new ServerRequest('POST', '/workspace/settings'))
             ->withBody(\Nyholm\Psr7\Stream::create('not json'));
 
         $res = $this->controller()->saveSettings($request);

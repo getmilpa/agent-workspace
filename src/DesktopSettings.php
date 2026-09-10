@@ -14,6 +14,7 @@ declare(strict_types=1);
 
 namespace Milpa\AgentWorkspace;
 
+use Milpa\AgentWorkspace\Config\WorkspaceKeys;
 use Milpa\AgentWorkspace\Http\LoopbackOnlyMiddleware;
 use Milpa\AgentWorkspace\I18n\Catalog;
 use Milpa\Runtime\Config;
@@ -23,7 +24,7 @@ use Psr\Http\Server\MiddlewareInterface;
  * What the app declared about its Desktop's door, read once from the `desktop` key of its config bag —
  * and, per key, whether it declared it, the Desktop is running on a default, or the Desktop refused it.
  *
- * The Desktop sits behind the same door as the admin (greenhouse decisions/0209): `desktop.middleware`
+ * The Desktop sits behind the same door as the admin (greenhouse decisions/0209): `workspace.middleware`
  * is the list of PSR-15 middleware every shell route carries — the assets excepted — and its default
  * answers only to loopback. The gate is the one knob the Desktop judges instead of copying. The rule,
  * copied from milpa/admin's `AdminSettings`: **only a literally empty list `[]` opens the Desktop**.
@@ -67,7 +68,7 @@ final readonly class DesktopSettings
 
     /**
      * @param string                $locale     the language of the Desktop's own copy — one the {@see Catalog} carries
-     * @param array<mixed>          $middleware what the app DECLARED under `desktop.middleware` when it declared an array: every entry as written, non-strings included, keys included when it was a map; `[]` when it declared no array at all — {@see self::malformed()} tells that apart from an empty list. See {@see self::effectiveMiddleware()} for what the routes get
+     * @param array<mixed>          $middleware what the app DECLARED under `workspace.middleware` when it declared an array: every entry as written, non-strings included, keys included when it was a map; `[]` when it declared no array at all — {@see self::malformed()} tells that apart from an empty list. See {@see self::effectiveMiddleware()} for what the routes get
      * @param array<string, string> $sources    per key, `config` when the app declared the value the Desktop is using; anything else, or a key left out, is `default`
      * @param bool                  $declared   whether the `desktop` key exists in the app's config at all
      * @param array<string, string> $rejected   per key, what the app declared and the Desktop refused, described (the value for a string, the type otherwise) — a key listed here is `rejected` whatever `$sources` says
@@ -106,7 +107,7 @@ final readonly class DesktopSettings
      */
     public static function fromConfig(?Config $config): self
     {
-        $raw = $config?->get('desktop');
+        $raw = WorkspaceKeys::read($config);
         $declared = \is_array($raw);
         $desktop = $declared ? $raw : [];
 
@@ -184,7 +185,7 @@ final readonly class DesktopSettings
     }
 
     /**
-     * True when `desktop.middleware` was declared as something other than a list: a string, a bool, an
+     * True when `workspace.middleware` was declared as something other than a list: a string, a bool, an
      * int, an associative map. The declaration cannot be read entry by entry, so it is refused whole.
      */
     public function malformed(): bool

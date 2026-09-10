@@ -17,7 +17,7 @@ namespace Milpa\AgentWorkspace\I18n;
 /**
  * The Desktop's human-facing copy, by key, in English (default) and Spanish.
  *
- * The shell asks for a key and the catalog answers in the declared locale (`desktop.locale`), falling
+ * The shell asks for a key and the catalog answers in the declared locale (`workspace.locale`), falling
  * back to English, and to the key itself when nobody wrote it. The keys the door added (greenhouse
  * decisions/0209) — the topbar chips, the gate's refusal, the guard's notices — live here; the shell's
  * older copy migrates key by key as it is touched. The same shape as milpa/admin's catalog, kept apart
@@ -37,7 +37,7 @@ final class Catalog
             'gate.kind.open' => 'open',
             'gate.kind.fallback' => 'fallback',
             'gate.loopback.title' => 'Loopback only',
-            'gate.loopback' => 'Milpa Desktop answers only to loopback by default. Declare desktop.middleware in config/app.php to put it behind your own gate.',
+            'gate.loopback' => 'This workspace answers only to loopback by default. Declare workspace.middleware in config/app.php to put it behind your own gate.',
             'topbar.signed_in' => 'signed in as %s',
             'settings.saved' => 'Saved',
             'settings.save_failed' => 'Not saved (HTTP %s)',
@@ -297,7 +297,7 @@ final class Catalog
             'gate.kind.open' => 'abierta',
             'gate.kind.fallback' => 'respaldo',
             'gate.loopback.title' => 'Sólo loopback',
-            'gate.loopback' => 'Milpa Desktop sólo responde a loopback por default. Declara desktop.middleware en config/app.php para ponerlo detrás de tu propia puerta.',
+            'gate.loopback' => 'Este workspace sólo responde a loopback por default. Declara workspace.middleware en config/app.php para ponerlo detrás de tu propia puerta.',
             'topbar.signed_in' => 'sesión iniciada como %s',
             'settings.saved' => 'Guardado',
             'settings.save_failed' => 'No se guardó (HTTP %s)',

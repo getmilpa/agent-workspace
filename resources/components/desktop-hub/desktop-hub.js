@@ -31,7 +31,7 @@
   /** Where the server tells the page which hub to open, if any. */
   var HUB_TAG = 'milpa-desktop-hub';
   /** Where a surface that could not write the payload asks for it (greenhouse decisions/0253). */
-  var ASK = '/desktop/hub';
+  var ASK = '/workspace/hub';
   /** Where the server sealed WHICH SESSION this surface inhabits (greenhouse decisions/0256). */
   var TICKET_TAG = 'milpa-desktop-ticket';
 

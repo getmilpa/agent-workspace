@@ -50,7 +50,7 @@ final class LoopbackOnlyMiddlewareTest extends TestCase
             $body = (string) $response->getBody();
             self::assertStringContainsString('<!doctype html>', $body);
             self::assertStringContainsString('Loopback only', $body);
-            self::assertStringContainsString('desktop.middleware', $body, 'the page names the key to declare');
+            self::assertStringContainsString('workspace.middleware', $body, 'the refusal names the key to declare');
         }
     }
 
@@ -61,7 +61,7 @@ final class LoopbackOnlyMiddlewareTest extends TestCase
             self::request('203.0.113.9'),
             self::request('203.0.113.9')->withHeader('Accept', 'application/json'),
             self::request('203.0.113.9')->withHeader('Accept', '*/*'),
-            (new ServerRequest('POST', '/desktop/settings', ['Accept' => 'text/html'], null, '1.1', ['REMOTE_ADDR' => '203.0.113.9'])),
+            (new ServerRequest('POST', '/workspace/settings', ['Accept' => 'text/html'], null, '1.1', ['REMOTE_ADDR' => '203.0.113.9'])),
         ];
         foreach ($cases as $request) {
             $response = (new LoopbackOnlyMiddleware())->process($request, self::handler());

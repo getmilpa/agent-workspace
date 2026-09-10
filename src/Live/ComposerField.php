@@ -47,7 +47,7 @@ final class ComposerField
      * Los nombró el censo de piezas sin cablear en el mismo commit del retiro, y por eso se van con él
      * y no un mes después (greenhouse decisions/0213, decisions/0283).
      */
-    public const string ROUTE = '/desktop/live';
+    public const string ROUTE = '/workspace/live';
     public const string COMPONENT = 'textarea';
     public const string COMPONENT_ID = 'composer-message';
     public const string STATUS_COMPONENT = 'input';

@@ -50,7 +50,7 @@ final class MercureServiceDeclarationTest extends TestCase
     public function testThePublicUrlPortWinsOverTheHubUrlPort(): void
     {
         $service = MercureServiceDeclaration::fromConfig(new Config([
-            'desktop' => ['mercure' => [
+            'workspace' => ['mercure' => [
                 'hub_url' => 'http://127.0.0.1:3010/.well-known/mercure',
                 'public_url' => 'http://localhost:3020/.well-known/mercure',
             ]],
@@ -65,7 +65,7 @@ final class MercureServiceDeclarationTest extends TestCase
     public function testTheHubUrlPortIsUsedWhenThePublicUrlIsAbsent(): void
     {
         $service = MercureServiceDeclaration::fromConfig(new Config([
-            'desktop' => ['mercure' => ['hub_url' => 'http://127.0.0.1:3010/.well-known/mercure']],
+            'workspace' => ['mercure' => ['hub_url' => 'http://127.0.0.1:3010/.well-known/mercure']],
         ]));
 
         self::assertSame(3010, $service->ports[0]->host, 'no public_url: the browser reaches the hub the app publishes to');
@@ -76,7 +76,7 @@ final class MercureServiceDeclarationTest extends TestCase
     public function testAnInNetworkPublicUrlFallsThroughToALoopbackHubUrl(): void
     {
         $service = MercureServiceDeclaration::fromConfig(new Config([
-            'desktop' => ['mercure' => [
+            'workspace' => ['mercure' => [
                 'hub_url' => 'http://127.0.0.1:3010/.well-known/mercure',
                 'public_url' => 'https://hub.example.test/.well-known/mercure',
             ]],
@@ -89,7 +89,7 @@ final class MercureServiceDeclarationTest extends TestCase
     public function testEverySpellingOfLoopbackYieldsItsPort(string $url, int $expectedPort): void
     {
         $service = MercureServiceDeclaration::fromConfig(new Config([
-            'desktop' => ['mercure' => ['public_url' => $url]],
+            'workspace' => ['mercure' => ['public_url' => $url]],
         ]));
 
         self::assertSame($expectedPort, $service->ports[0]->host, $url);
@@ -109,7 +109,7 @@ final class MercureServiceDeclarationTest extends TestCase
     public function testAUrlThatNamesNoHostPortKeepsTheDefault(mixed $hubUrl, mixed $publicUrl): void
     {
         $service = MercureServiceDeclaration::fromConfig(new Config([
-            'desktop' => ['mercure' => array_filter(
+            'workspace' => ['mercure' => array_filter(
                 ['hub_url' => $hubUrl, 'public_url' => $publicUrl],
                 static fn (mixed $value): bool => $value !== null,
             )],
@@ -137,7 +137,7 @@ final class MercureServiceDeclarationTest extends TestCase
     public function testTheKeysAreSecretConfigReferencesNeverInlined(): void
     {
         $env = self::envByName(MercureServiceDeclaration::fromConfig(new Config([
-            'desktop' => ['mercure' => [
+            'workspace' => ['mercure' => [
                 'hub_url' => 'http://127.0.0.1:3000/.well-known/mercure',
                 'publisher_key' => 'the-publisher-key',
                 'subscriber_key' => 'the-subscriber-key',
@@ -151,12 +151,12 @@ final class MercureServiceDeclarationTest extends TestCase
 
         $publisher = $env['MERCURE_PUBLISHER_JWT_KEY'];
         self::assertTrue($publisher->secret);
-        self::assertSame('desktop.mercure.publisher_key', $publisher->configKey);
+        self::assertSame('workspace.mercure.publisher_key', $publisher->configKey);
         self::assertNull($publisher->value, 'a secret is never inlined, even when config holds it');
 
         $subscriber = $env['MERCURE_SUBSCRIBER_JWT_KEY'];
         self::assertTrue($subscriber->secret);
-        self::assertSame('desktop.mercure.subscriber_key', $subscriber->configKey);
+        self::assertSame('workspace.mercure.subscriber_key', $subscriber->configKey);
         self::assertNull($subscriber->value, 'a secret is never inlined, even when config holds it');
 
         foreach ($env as $variable) {
@@ -189,7 +189,7 @@ final class MercureServiceDeclarationTest extends TestCase
     public function testTheCorsOriginsComeFromConfigVerbatimWhenDeclared(): void
     {
         $directives = self::envByName(MercureServiceDeclaration::fromConfig(new Config([
-            'desktop' => ['mercure' => ['cors_origin' => 'https://desktop.example https://desktop.example:8443']],
+            'workspace' => ['mercure' => ['cors_origin' => 'https://desktop.example https://desktop.example:8443']],
         ])))['MERCURE_EXTRA_DIRECTIVES'];
 
         self::assertSame("cors_origins https://desktop.example https://desktop.example:8443\nanonymous", $directives->value);

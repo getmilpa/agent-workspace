@@ -128,7 +128,7 @@ test('dropping a card on another column MOVES it and persists its new status', a
   assert.equal(board.done.classList.contains('work-col--over'), false);
   assert.equal(board.card.classList.contains('work-card--carried'), false);
   assert.equal(calls.length, 1);
-  assert.equal(calls[0].url, '/desktop/work');
+  assert.equal(calls[0].url, '/workspace/work');
   assert.deepEqual(JSON.parse(calls[0].init.body), { session: 's-42', index: 0, status: 'done' });
 });
 
