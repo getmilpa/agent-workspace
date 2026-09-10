@@ -141,7 +141,7 @@ final class DeclaredViewsTest extends TestCase
             self::assertInstanceOf(DeclaresClientAssets::class, $renderer, $name . ' declares its client assets');
             self::assertEquals(DesktopAssets::of($name), $renderer->clientAssets(), $name . ' declares exactly its own files');
         }
-        self::assertSame(26, $painted, 'every shell surface is a declared view');
+        self::assertSame(27, $painted, 'every shell surface is a declared view');
     }
 
     public function testThePageEmitsOneRuntimeThroughLiveBootInTheDocumentedOrder(): void

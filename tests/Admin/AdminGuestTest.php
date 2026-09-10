@@ -443,11 +443,17 @@ final class AdminGuestTest extends TestCase
         $catalogue = SectionCatalogue::discover($kernel->plugins());
 
         self::assertSame(
-            ['agent-settings', 'agent-skills', 'agent-capabilities', 'agent-preview'],
+            ['agent-settings', 'agent-skills', 'agent-subagents', 'agent-preview'],
             array_map(static fn (object $s): string => $s->id, $catalogue->children('agent')),
             'the order the Desktop\'s own sidebar lists them in',
         );
-        self::assertNotContains('agent-sessions', array_map(static fn (object $s): string => $s->id, $catalogue->sections()), 'the conversation IS the Agent section, not a child of itself');
+        $ids = array_map(static fn (object $s): string => $s->id, $catalogue->sections());
+        self::assertNotContains('agent-sessions', $ids, 'the conversation IS the Agent section, not a child of itself');
+        // 🚨 AND NO CAPABILITIES SECTION, which is a duplicate removed rather than an omission: the
+        // panel's own Plugins section already carries the capability catalogue and can enable from it.
+        // Two doors to one fact is the defect this arc is about, and this one was caught by looking at
+        // the painted panel, not by a test (greenhouse decisions/0268).
+        self::assertNotContains('agent-capabilities', $ids, 'the panel\'s Plugins section already is this door');
 
         // Out of the main navigation, behind the gear — and each one still its own page.
         $index = (string) self::dispatch($kernel, '/milpa/admin')->getBody();
@@ -470,7 +476,7 @@ final class AdminGuestTest extends TestCase
 
         self::assertSame('Settings', $titles['agent-settings'] ?? null);
         self::assertSame('Skills', $titles['agent-skills'] ?? null);
-        self::assertSame('Capabilities', $titles['agent-capabilities'] ?? null);
+        self::assertSame('Subagents', $titles['agent-subagents'] ?? null);
         self::assertSame('Preview', $titles['agent-preview'] ?? null);
     }
 

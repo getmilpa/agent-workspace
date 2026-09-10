@@ -86,16 +86,15 @@ final class SkillsScreen
     {
         /** @var list<array{name: string, description: string, model_invocable: bool, user_invocable: bool}> $skills */
         $skills = \is_array($props['skills'] ?? null) ? $props['skills'] : [];
-        /** @var list<array{name: string, produces: string, deny: list<string>, skills: list<string>}> $roles */
-        $roles = \is_array($props['roles'] ?? null) ? $props['roles'] : [];
-
+        // THE ROLES MOVED TO THEIR OWN SCREEN. This screen named two subjects under one title: what
+        // the agent CARRIES and WHO ELSE it can hand work to (greenhouse decisions/0268). The prop and
+        // the count stay in the contract — they are still true of the app, and a consumer reading the
+        // state should not have to notice a split — but the list is painted by
+        // {@see SubagentsScreen} now.
         return '<div class="view milpa-skills" data-view="skills"'
             . ' data-milpa-component="desktop-skills" data-milpa-component-id="' . self::COMPONENT_ID . '"' . ScreenVisibility::attr($props) . '>'
             . '<p class="milpa-skills__intro">' . $this->tr('skills.intro') . '</p>'
             . '<div id="milpa-skills">' . (new SkillsView())->html($skills) . '</div>'
-            . '<p class="milpa-skills__head">' . $this->tr('skills.roles') . '</p>'
-            . '<p class="milpa-skills__intro">' . $this->tr('skills.roles_intro') . '</p>'
-            . '<div id="milpa-roles">' . (new RolesView())->html($roles) . '</div>'
             . '</div>';
     }
 

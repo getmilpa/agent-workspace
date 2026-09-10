@@ -56,6 +56,7 @@ final class Sidebar
         ['key' => 'decisions', 'title' => 'nav.decisions', 'icon' => '◈'],
         ['key' => 'capabilities', 'title' => 'nav.capabilities', 'icon' => '▩'],
         ['key' => 'skills', 'title' => 'nav.skills', 'icon' => '✦'],
+        ['key' => 'subagents', 'title' => 'nav.subagents', 'icon' => '◉'],
         ['key' => 'preview', 'title' => 'nav.preview', 'icon' => '◱'],
         ['key' => 'settings', 'title' => 'nav.settings', 'icon' => '⚙'],
     ];

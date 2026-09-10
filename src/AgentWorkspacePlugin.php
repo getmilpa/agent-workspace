@@ -122,6 +122,7 @@ final class AgentWorkspacePlugin implements PluginInterface, RouteProviderInterf
         Live\SettingsScreenComponent::class,
         Live\SidebarComponent::class,
         Live\SkillsScreenComponent::class,
+        Live\SubagentsScreenComponent::class,
         Live\StatusBarComponent::class,
         Live\SystemNoticeComponent::class,
         Live\TabsComponent::class,
@@ -160,15 +161,21 @@ final class AgentWorkspacePlugin implements PluginInterface, RouteProviderInterf
      * inbox whose whole value is being seen without navigating; it stays a region of the conversation
      * rather than a screen somebody has to remember to open.
      *
-     * The rest are the ones the gear was asked for: settings, skills, the capabilities a person
-     * installs from, and the preview (greenhouse decisions/0268).
+     * `capabilities` is NOT here either, and that is a duplicate removed rather than an omission: the
+     * panel's own Plugins section already carries the capability catalogue AND can enable from it —
+     * its docblock says so in as many words, «this section showed the capability catalogue and could
+     * not enable anything». Two doors to one fact is the exact defect this arc is about, and it was
+     * caught by Rod looking at the painted panel, not by a test.
+     *
+     * The rest are the ones the gear was asked for: settings, skills, the specialist agents, and the
+     * preview (greenhouse decisions/0268).
      *
      * @var array<string, class-string<\Milpa\Live\Contracts\Component\ComponentDefinitionInterface>>
      */
     private const SCREEN_SECTIONS = [
         'settings' => Live\SettingsScreenComponent::class,
         'skills' => Live\SkillsScreenComponent::class,
-        'capabilities' => Live\CapabilitiesScreenComponent::class,
+        'subagents' => Live\SubagentsScreenComponent::class,
         'preview' => Live\ScreenPreviewComponent::class,
     ];
 

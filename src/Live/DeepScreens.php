@@ -76,6 +76,10 @@ final class DeepScreens
             static fn (array $props): string => (new SkillsScreen($live->codec(), $data, $events, $catalog))->render($hidden),
         );
         $live->declare(
+            new SubagentsScreenComponent(),
+            static fn (array $props): string => (new SubagentsScreen($live->codec(), $data, $events, $catalog))->render($hidden),
+        );
+        $live->declare(
             new ScreenPreviewComponent(),
             static fn (array $props): string => (new ScreenPreview($live->codec(), $data, $events, $catalog))->render($hidden),
         );
