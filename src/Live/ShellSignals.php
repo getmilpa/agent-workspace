@@ -57,6 +57,20 @@ final class ShellSignals
         $running = \in_array($state, ['working', 'thinking', 'running', 'busy'], true);
 
         return [
+            // 🚨 THE WHOLE CATALOG, AS ONE SIGNAL — because a screen SECTION never got it any other way.
+            //
+            // The client's copy used to arrive in a `<script id="milpa-desktop-i18n">` that only the
+            // `/desktop` page and the panel's Agent REGION emitted. Measured on the rendered panel: the
+            // screen sections carried none of it, so every `tr()` on Settings, Preview and Capabilities
+            // rendered its KEY — twelve calls between them, including the «Saved» badge that has shipped
+            // that way since the sections did (greenhouse decisions/0268, measured in decisions/0276).
+            //
+            // It is a signal because the host ALREADY seeds signals for every section, once per page,
+            // from what the guest declared — measured before this was written. So this converges on a
+            // mechanism that works instead of adding a third one, and the old script tag goes away: one
+            // source for the client's words, seeded the same way by both doors (greenhouse
+            // decisions/0277).
+            'desktop.i18n' => $catalog->all(),
             // The mode is a signal PAIR (greenhouse decisions/0202): the VALUE every turn sends to the
             // agent (ask | acknowledge | auto) and its label for the chip. Seeded from the SAVED setting
             // on every load — the server's copy is the one truth; nothing about the mode is remembered

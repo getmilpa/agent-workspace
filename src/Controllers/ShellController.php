@@ -212,15 +212,6 @@ final class ShellController
         return $this->catalog ?? ($this->settings ?? new DesktopSettings())->catalog();
     }
 
-    /**
-     * The catalog's messages as JSON for the client script (`#milpa-desktop-i18n`), so the guard's notices and
-     * the settings badge say the same words the server does. HEX-escaped: no `<` survives, so no message can
-     * close the script element.
-     */
-    private function i18nJson(): string
-    {
-        return (string) json_encode($this->catalog()->all(), \JSON_HEX_TAG | \JSON_HEX_AMP | \JSON_HEX_APOS | \JSON_HEX_QUOT | \JSON_UNESCAPED_SLASHES | \JSON_UNESCAPED_UNICODE);
-    }
 
     /**
      * The doors the client guard needs to know about (`#milpa-desktop-guard`), as JSON DATA.
@@ -399,12 +390,12 @@ final class ShellController
             [
                 '<!--CONTEXT-->', '<!--CAPABILITIES-->', '<!--SKILLS-->', '<!--SCREENS-->', '<!--DECISIONS-->', '<!--SETTINGS-->',
                 '<!--SIDEBAR-->', '<!--STATUSBAR-->', '<!--WORK-->', '<!--ACTIVITY-->', '<!--COMPOSER-->', '<!--AUTH-->', '<!--TOPBAR-->', '<!--TABS-->', '<!--GATE-->', '<!--CONVERSATION-->', '<!--THINKING-->', '<!--AGENTMSG-->', '<!--USERMSG-->', '<!--TOOLMSG-->', '<!--TASKMSG-->', '<!--SYSMSG-->', '<!--RESULTMSG-->', '<!--GRANTMSG-->', '<!--COMPACTEDMSG-->', '<!--LIVERUNTIME-->', '<!--AGENTSID-->', '<!--HUB-->', '<!--COMMANDS-->',
-                '<!--I18N-->', '<!--GUARD-->', '<!--EMBED-->', '<!--SESSIONSTRIP-->',
+                '<!--GUARD-->', '<!--EMBED-->', '<!--SESSIONSTRIP-->',
             ],
             [
                 $context, $capabilities, $skills, $screens, $decisions, $settings,
                 $sidebar, $statusbar, $work, $activity, $composer, $auth, $topbar, $tabs, $gate, $conversation, $thinking, $agentMessage, $userMessage, $toolMessage, $taskMessage, $systemMessage, $resultMessage, $grantMessage, $compactedMessage, $this->liveRuntime($boot, $assets), $this->sessionJson($agentSid), $this->hubJson($agentSid), $this->commandsJson(),
-                $this->i18nJson(), $this->guardJson(), $embed ? ' data-embed="1"' : '', $sessionStrip,
+                $this->guardJson(), $embed ? ' data-embed="1"' : '', $sessionStrip,
             ],
             $this->template(),
         );
@@ -781,7 +772,6 @@ final class ShellController
 <!-- The composer's commands (greenhouse decisions/0202): the house's own plus every user-invocable skill. -->
 <script id="milpa-commands" type="application/json"><!--COMMANDS--></script>
 <!-- The Desktop's copy in the declared locale (greenhouse decisions/0209): what every module says. -->
-<script id="milpa-desktop-i18n" type="application/json"><!--I18N--></script>
 <!-- The doors the client guard needs: the app's sign-in path, for a 401 whose body names none. -->
 <script id="milpa-desktop-guard" type="application/json"><!--GUARD--></script>
 <!-- The agent session this Desktop drives (greenhouse decisions/0190): the turn's module reads it. -->

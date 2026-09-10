@@ -359,7 +359,9 @@ final class AgentViewRenderer implements ComponentRendererInterface, DeclaresCli
         $gate = self::meta($state, 'gate', DesktopSettings::GATE_LOOPBACK);
 
         return '<script id="milpa-commands" type="application/json">' . CommandListView::json($this->data?->commands() ?? DesktopData::houseCommands()) . '</script>'
-            . '<script id="milpa-desktop-i18n" type="application/json">' . $json($catalog->all()) . '</script>'
+            // The client's copy is not emitted here any more: it rides in the signals every host seeds
+            // once per page, which is the only way a screen SECTION ever gets it (greenhouse
+            // decisions/0277).
             . '<script id="milpa-desktop-guard" type="application/json">' . $json(['signin' => $gate === DesktopSettings::GATE_PASSKEY ? self::meta($state, 'signin', AgentViewComponent::DEFAULT_SIGNIN) : '']) . '</script>'
             . '<script id="milpa-desktop-session" type="application/json">' . $json(['agent' => self::agentSession($state)]) . '</script>'
             // THE HOUSE'S DECISION, SEALED (greenhouse decisions/0256). This region cannot set a cookie, so

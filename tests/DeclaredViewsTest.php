@@ -230,7 +230,7 @@ final class DeclaredViewsTest extends TestCase
             // The page's own data tags, read by the modules and executed by nobody (greenhouse
             // decisions/0211, phase C): the command list, the copy, the door the guard falls back to, the
             // agent session the turn carries, and the hub the transport opens.
-            foreach (['milpa-commands', 'milpa-desktop-i18n', 'milpa-desktop-guard', 'milpa-desktop-session', 'milpa-desktop-hub', 'milpa-desktop-transcript'] as $id) {
+            foreach (['milpa-commands', 'milpa-live-signals', 'milpa-desktop-guard', 'milpa-desktop-session', 'milpa-desktop-hub', 'milpa-desktop-transcript'] as $id) {
                 self::assertSame(1, substr_count($page, '<script id="' . $id . '" type="application/json">'), $id);
             }
         }
@@ -377,7 +377,10 @@ final class DeclaredViewsTest extends TestCase
             self::assertSame([], $executable, 'the page executes no script of its own');
             // And the data it does carry is exactly the five tags the modules read, plus one signed
             // envelope per painted surface and the three seeds the local runtime reads with the boot.
-            self::assertSame(10, $json, 'three runtime seeds, the boot, and the six data tags — the transcript joined them (greenhouse evidence/0561)');
+            // ONE FEWER: the catalog had a data tag of its own and now rides in the signals seed, which
+            // is the only way a screen SECTION ever gets it (greenhouse decisions/0277). A count that
+            // goes DOWN because a mechanism was removed is the shape worth having.
+            self::assertSame(9, $json, 'three runtime seeds, the boot, and the five data tags left after the catalog joined the signals');
             self::assertGreaterThanOrEqual(20, $envelopes, 'one signed envelope per painted surface');
         }
 

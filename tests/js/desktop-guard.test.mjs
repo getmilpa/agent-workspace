@@ -34,9 +34,12 @@ function page({ catalog = CATALOG, withRuntime = true, withGuard = true } = {}) 
   const listeners = {};
   const warnings = [];
   const assigned = [];
+  // The catalog rides in the signals seed, under `desktop.i18n` — one source, seeded the way both
+  // hosts seed it (greenhouse decisions/0277).
   const elements = {
-    'milpa-desktop-i18n': { textContent: JSON.stringify(catalog) },
-    'milpa-live-signals': { textContent: '{"ui.dismiss":0,"desktop.notice":null}' },
+    'milpa-live-signals': {
+      textContent: JSON.stringify({ 'desktop.i18n': catalog, 'ui.dismiss': 0, 'desktop.notice': null }),
+    },
   };
   const sandbox = {
     console: { warn: (m) => warnings.push(m), log() {}, error() {} },

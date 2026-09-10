@@ -194,7 +194,7 @@ final class ShellControllerTest extends TestCase
         self::assertStringContainsString('mui-empty', $body);
         // A settled (non-running) session shows no interrupted-run notice (greenhouse decisions/0196).
         // The MARKUP is the honest check now: the notice's sentence is a catalog key, and the whole catalog
-        // travels in `#milpa-desktop-i18n`, so its words are in every page whether or not it is shown.
+        // travels in the `desktop.i18n` signal, so its words are in every page whether or not it is shown.
         self::assertStringNotContainsString('<div class="milpa-interrupted"', $body);
     }
 
@@ -723,7 +723,7 @@ final class ShellControllerTest extends TestCase
         $body = (string) $controller->shell(new ServerRequest('GET', '/desktop?session=' . $sid))->getBody();
 
         // The header and the sidebar name THIS session.
-        // (The catalog travels whole in `#milpa-desktop-i18n`, so «No session open» is on EVERY page as copy — the
+        // (The catalog travels whole in the `desktop.i18n` signal, so «No session open» is on EVERY page as copy — the
         // claim is about the topbar's goal span, not about the body.)
         self::assertStringContainsString('<span class="milpa-topbar__goal">run the rollout sequence</span>', $body);
         self::assertStringContainsString('session ' . $sid, $body);
@@ -1159,15 +1159,27 @@ final class ShellControllerTest extends TestCase
         $en = (string) $this->controller()->shell(new ServerRequest('GET', '/desktop'))->getBody();
         self::assertStringContainsString('id="milpa-settings-saved"', $en);
         self::assertStringContainsString('>Saved</span>', $en);
-        preg_match('#<script id="milpa-desktop-i18n" type="application/json">(.*?)</script>#s', $en, $m);
+        // 🚨 THE CATALOG RIDES IN THE SIGNALS NOW, under `desktop.i18n`. It used to have a script tag of
+        // its own that only the page and the panel's Agent region emitted — so a screen SECTION got no
+        // client copy at all and every `tr()` there rendered its key (greenhouse decisions/0277).
+        preg_match('#<script id="milpa-live-signals" type="application/json">(.*?)</script>#s', $en, $m);
         self::assertNotEmpty($m, 'the catalog rides the page');
-        self::assertStringNotContainsString('<', $m[1], 'no message can close the script element');
-        $i18n = json_decode($m[1], true);
+        // 🚨 THE INVARIANT IS `</`, NOT `<`. The old tag encoded with `JSON_HEX_TAG`, so no bracket
+        // survived at all and asserting «no <» was really asserting the encoding. The seed both hosts
+        // write escapes `</` instead — the ONLY sequence that can close a script element — and a lone
+        // bracket is harmless: `command.goal.none` legitimately reads «/goal <text> sets one», which is
+        // what caught this (greenhouse decisions/0277).
+        self::assertStringNotContainsString('</', $m[1], 'no message can close the script element');
+        $seeded = json_decode($m[1], true);
+        self::assertIsArray($seeded);
+        // The catalog is ONE signal among the rest, which is what lets a screen section have it at all.
+        $i18n = $seeded['desktop.i18n'] ?? null;
+        self::assertIsArray($i18n, 'the catalog rides as the `desktop.i18n` signal');
         self::assertSame('Saved', $i18n['settings.saved']);
         self::assertSame('Not allowed here (%s)', $i18n['guard.forbidden.reason']);
         // The guard module reads the JSON by id when it EXECUTES (LiveBoot emits it deferred, so the whole
         // document is parsed by then) — the ordering that matters is that the catalog is in the document.
-        self::assertStringContainsString("document.getElementById('milpa-desktop-i18n')", (string) file_get_contents(\dirname(__DIR__) . '/resources/components/desktop-guard/desktop-guard.js'));
+        self::assertStringContainsString("all['desktop.i18n']", (string) file_get_contents(\dirname(__DIR__) . '/resources/components/desktop-guard/desktop-guard.js'), 'the guard reads the one source');
 
         // Spanish declared: the same page, the same keys, the other words.
         $es = new ShellController(new EventDispatcher(new NullLogger()), settings: new DesktopSettings(locale: 'es'));

@@ -43,8 +43,20 @@
   // The Desktop's copy, in the declared locale (greenhouse decisions/0209): the server hands it over as
   // JSON (#milpa-desktop-i18n) so the client says the same words. A key nobody wrote answers as itself.
   var I18N = (function () {
-    var el = document.getElementById('milpa-desktop-i18n');
-    try { var v = el ? JSON.parse(el.textContent || '{}') : {}; return (v && typeof v === 'object') ? v : {}; } catch (e) { return {}; }
+    // 🚨 FROM THE SIGNALS, which every host seeds once per page — and that is the whole fix. This used
+    // to read a `<script id="milpa-desktop-i18n">` that the `/desktop` page and the panel's Agent
+    // region emitted and the panel's screen SECTIONS did not, so `tr()` on Settings, Preview and
+    // Capabilities answered with its KEY (greenhouse decisions/0276, converged in decisions/0277).
+    //
+    // Read once, at load, deliberately: the catalog is the locale the page was SERVED in and does not
+    // change under a running page. A key nobody wrote still answers as itself.
+    var seeded = document.getElementById('milpa-live-signals');
+    try {
+      var all = seeded ? JSON.parse(seeded.textContent || '{}') : {};
+      var v = (all && typeof all === 'object') ? all['desktop.i18n'] : null;
+
+      return (v && typeof v === 'object') ? v : {};
+    } catch (e) { return {}; }
   })();
 
   // One `%s` per argument, in order: the copy the conversation and the commands say carries two and three
