@@ -121,7 +121,7 @@ final class EmbedModeTest extends TestCase
         return array_values(array_unique([...self::idsLookedUpIn($module), ...$m[1]]));
     }
 
-    public function testTheSessionStripIsRenderedOnlyInEmbedModeAndWiredToTheSameHandlers(): void
+    public function testTheSessionStripIsRenderedOnlyInEmbedModeAndOwnsItsOwnControls(): void
     {
         $plain = (string) $this->shell()->shell(new ServerRequest('GET', '/desktop'))->getBody();
         $embed = (string) $this->shell()->shell((new ServerRequest('GET', '/desktop'))->withQueryParams(['embed' => '1']))->getBody();
@@ -137,17 +137,25 @@ final class EmbedModeTest extends TestCase
         self::assertStringContainsString('No session open', $embed);
         // Above the conversation: the strip precedes the tablist inside the session view.
         self::assertLessThan(strpos($embed, 'data-milpa-component="desktop-tabs"'), strpos($embed, 'id="milpa-session-strip"'));
-        // The SAME handler as the sidebar's button — and since the declared views (greenhouse
-        // decisions/0211, B8) that handler is the SIDEBAR MODULE's, which wires both controls: the strip
-        // carries no copy of the ceremony, it calls the one implementation.
+        // 🚨 THE STRIP OWNS THE CONTROLS IT PRINTS, and this assertion is the reverse of what it was.
+        //
+        // It used to assert the opposite and be green: that the SIDEBAR's module wired the strip's
+        // button and picker, «one implementation, called by both surfaces». That is sound reasoning
+        // about duplication and wrong about ownership, and it cost a dead button — in the admin panel,
+        // which paints the strip and has its own navigation, the sidebar's module never loads, so the
+        // strip's controls fired NOTHING. Measured by clicking it: no request at all
+        // (greenhouse decisions/0273).
+        $strip = (string) file_get_contents(\dirname(__DIR__) . '/resources/components/desktop-session-strip/desktop-session-strip.js');
+        self::assertStringContainsString("document.querySelectorAll('[data-new-session]')", $strip, 'the strip binds its own button');
+        self::assertStringContainsString("document.getElementById('milpa-embed-session')", $strip, 'and its own picker');
+        self::assertStringContainsString("fetch('/desktop/sessions'", $strip, 'and asks the ROUTE, not another surface');
+        self::assertStringContainsString('<script src="/desktop/assets/c/desktop-session-strip.js" defer></script>', $embed);
+
+        // AND THE SIDEBAR NO LONGER REACHES ACROSS FOR THEM — the control for the whole change.
         $sidebar = (string) file_get_contents(\dirname(__DIR__) . '/resources/components/desktop-sidebar/desktop-sidebar.js');
-        self::assertStringContainsString("var pickers = document.querySelectorAll('[data-new-session]');", $sidebar);
-        self::assertStringContainsString('pickers[i].addEventListener(\'click\', newSession);', $sidebar);
-        self::assertStringContainsString("location.assign('?session=' + encodeURIComponent(pick.value) + '&embed=1')", $sidebar);
-        self::assertSame(1, substr_count($sidebar, 'function newSession()'), 'one implementation, called by both surfaces');
-        self::assertStringContainsString('@click="newSession()"', $embed, 'the sidebar button asks the same verb');
-        self::assertStringNotContainsString('openNewSession', $embed, 'the page hangs no listener of its own any more');
-        self::assertStringContainsString('<script src="/desktop/assets/c/desktop-sidebar.js" defer></script>', $embed);
+        self::assertStringNotContainsString("document.querySelectorAll('[data-new-session]')", $sidebar);
+        self::assertStringNotContainsString("getElementById('milpa-embed-session')", $sidebar);
+        self::assertStringNotContainsString("&embed=1'", $sidebar, 'and it no longer hardcodes a mode that was retired');
         // The guard's next carries the path AND the query, so a sign-in round trip lands back in embed mode.
         // Since the guard became its own runtime module (greenhouse decisions/0211) that line lives in the
         // module, not in the page — and the page loads it.
