@@ -76,6 +76,7 @@ final class ClientCopyTest extends TestCase
         'agent.answered' => 'a bus fact type (a decision taken anywhere closes the request on every surface)',
         'agent.parked' => 'a bus fact type (the turn stopped to ask; the thread renders the request)',
         'session.compacted' => 'a bus fact type (milpa/agent declares it; the thread draws its boundary)',
+        'session.create_failed' => 'a bus fact type (the strip emits it when the session route refuses; a surface that shows it must translate its own copy)',
         'session.state' => 'a bus fact type',
         'system.notice' => 'a bus fact type',
         'task.added' => 'a bus fact type',

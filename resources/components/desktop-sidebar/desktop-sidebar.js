@@ -19,10 +19,11 @@
  *     transport's `decision.parked` fact itself (greenhouse decisions/0211, D4) instead of anything
  *     reaching in from outside to write its number. The inbox screen consumes the same fact for its card.
  *
- * Two controls the sidebar reaches for live OUTSIDE its root and are wired here because they drive it:
- * the window chrome's session search (`#milpa-search`), and — in embed mode, where the sidebar is folded
- * — the session strip's picker (`#milpa-embed-session`) and its «New session» button
- * (`[data-new-session]`), which is why both surfaces call this module rather than each carrying a copy.
+ * One control the sidebar reaches for live OUTSIDE its root and is wired here because it drives it: the
+ * window chrome's session search (`#milpa-search`), which filters this sidebar's own list.
+ *
+ * 🚨 IT USED TO WIRE THE SESSION STRIP'S CONTROLS TOO, and that cost a dead button. See the note where
+ * that block was (greenhouse decisions/0273).
  */
 (function () {
   'use strict';
@@ -148,16 +149,13 @@
   var search = document.getElementById('milpa-search');
   if (search) { search.addEventListener('input', function () { filterSessions(search.value); }); }
 
-  // Embed mode (greenhouse decisions/0210): the strip's controls are the folded sidebar's reach — the
-  // SAME handlers, wired here, so neither surface carries a second copy of them.
-  var pickers = document.querySelectorAll('[data-new-session]');
-  for (var i = 0; i < pickers.length; i++) { pickers[i].addEventListener('click', newSession); }
-  var pick = document.getElementById('milpa-embed-session');
-  if (pick) {
-    pick.addEventListener('change', function () {
-      if (pick.value !== '') { location.assign('?session=' + encodeURIComponent(pick.value) + '&embed=1'); }
-    });
-  }
+  // 🚨 THE STRIP'S CONTROLS ARE NOT WIRED HERE ANY MORE, and the removed code is worth naming: this
+  // module used to bind `[data-new-session]` and `#milpa-embed-session`, which the SESSION STRIP prints.
+  // The reasoning was «neither surface carries a second copy», which is sound about duplication and
+  // wrong about ownership — and it cost a dead button: in the admin panel, which paints the strip and
+  // has its own navigation, this module never loads, so the strip's controls fired nothing at all.
+  // They live in `desktop-session-strip.js` now, with the surface that prints them
+  // (greenhouse decisions/0273).
 
   // A question parked while the page is open ticks the badge without a reload. Subscribed at LOAD: the
   // stream is opened on `DOMContentLoaded`, after every deferred module has run (greenhouse decisions/0211).

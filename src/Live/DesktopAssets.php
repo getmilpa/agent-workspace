@@ -97,7 +97,7 @@ final class DesktopAssets
         'desktop-activity' => ['css', 'js'],
         'desktop-settings' => ['css', 'js'],
         'desktop-auth' => ['css', 'js'],
-        'desktop-session-strip' => ['css'],
+        'desktop-session-strip' => ['css', 'js'],
         'desktop-composer' => ['css', 'js'],
         'desktop-context' => ['css'],
         'desktop-work-board' => ['css', 'js'],

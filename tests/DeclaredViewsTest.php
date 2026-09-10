@@ -176,10 +176,17 @@ final class DeclaredViewsTest extends TestCase
 
     public function testTheShellHandWritesNoRuntimeScriptTag(): void
     {
-        foreach ([$this->page(), $this->page(embed: true)] as $page) {
+        foreach ([false, true] as $embed) {
+            $page = $this->page(embed: $embed);
             preg_match_all('/<script[^>]*\bsrc="([^"]+)"[^>]*>/', $page, $m);
             // Every external script is one LiveBoot emitted: the three runtime files and the declared
             // modules, in declaration order — nothing the shell hand-wrote, and no URL twice.
+            //
+            // The session strip is painted ONLY in embed mode, so ONLY there does its module appear —
+            // assets are collected from the surfaces a page actually rendered, which is the contract
+            // working. It owns the controls it prints, which the sidebar's module used to reach across
+            // for (greenhouse decisions/0273).
+            $strip = $embed ? ['/desktop/assets/c/desktop-session-strip.js'] : [];
             self::assertSame(
                 [
                     '/desktop/assets/milpa-live.js',
@@ -191,6 +198,7 @@ final class DeclaredViewsTest extends TestCase
                     '/desktop/assets/c/desktop-commands.js',
                     '/desktop/assets/c/desktop-sidebar.js',
                     '/desktop/assets/c/desktop-topbar.js',
+                    ...$strip,
                     '/desktop/assets/c/desktop-tabs.js',
                     '/desktop/assets/c/desktop-conversation.js',
                     '/desktop/assets/c/desktop-gate.js',
