@@ -3,6 +3,13 @@
 All notable changes to milpa/desktop-app are documented here. This project adheres to
 [Semantic Versioning](https://semver.org/) and [Keep a Changelog](https://keepachangelog.com/).
 
+## [0.73.3](https://github.com/getmilpa/agent-workspace/compare/v0.73.2...v0.73.3) (2026-09-10)
+
+
+### Bug Fixes
+
+* an empty state is a container, not a paragraph ([#74](https://github.com/getmilpa/agent-workspace/issues/74)) ([853460e](https://github.com/getmilpa/agent-workspace/commit/853460ee0172f88b19434a518002b4c3c017e242))
+
 ## [0.73.2](https://github.com/getmilpa/agent-workspace/compare/v0.73.1...v0.73.2) (2026-09-10)
 
 
