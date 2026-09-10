@@ -3,6 +3,14 @@
 All notable changes to milpa/desktop-app are documented here. This project adheres to
 [Semantic Versioning](https://semver.org/) and [Keep a Changelog](https://keepachangelog.com/).
 
+## [0.69.1](https://github.com/getmilpa/agent-workspace/compare/v0.69.0...v0.69.1) (2026-09-10)
+
+
+### Bug Fixes
+
+* **live:** the session strip owns the controls it prints, so «New session» works ([#51](https://github.com/getmilpa/agent-workspace/issues/51)) ([bb18b49](https://github.com/getmilpa/agent-workspace/commit/bb18b49ab89caed80c036fad3058ef12d65f804e))
+* **tests:** the client suite holds the new doctrine, and three harness gaps hid the browser ([#53](https://github.com/getmilpa/agent-workspace/issues/53)) ([88fe960](https://github.com/getmilpa/agent-workspace/commit/88fe9604b8a2def408b47b036bf330c4bfe70792))
+
 ## [0.69.0](https://github.com/getmilpa/agent-workspace/compare/v0.68.0...v0.69.0) (2026-09-10)
 
 
