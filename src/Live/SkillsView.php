@@ -30,8 +30,8 @@ final class SkillsView
     public function html(array $skills): string
     {
         if ($skills === []) {
-            return '<p class="mui-empty" style="color:var(--text-muted)">'
-                . 'No skills yet. A skill is a <code>skills/&lt;name&gt;/SKILL.md</code> the agent (or you) can reach for — it guides judgment, it is not a tool that runs.</p>';
+            return '<div class="mui-empty"><p class="mui-empty__title">No skills yet</p>'
+                . '<p class="mui-empty__desc">A skill is a <code>skills/&lt;name&gt;/SKILL.md</code> the agent (or you) can reach for — it guides judgment, it is not a tool that runs.</p></div>';
         }
 
         $cards = '';

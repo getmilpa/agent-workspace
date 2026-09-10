@@ -99,8 +99,14 @@ final class Context
             );
         }
         if ($body === '') {
-            $body = '<p class="mui-empty">No plugin has contributed a panel yet. A plugin adds one with '
-                . '<code>ShellComposition::addPanel()</code>.</p>';
+            // AN EMPTY STATE IS A CONTAINER, NOT A PARAGRAPH. `.mui-empty` is `display:flex;
+            // flex-direction:column`, so every inline child of it becomes its OWN LINE — Rod caught the
+            // Context tab printing a sentence, a code chip and a lone «.» on three lines. The parts the
+            // primitive ships (`__title`, `__desc`) are the blocks it expects, and `__desc` already
+            // carries the muted color and the 40ch measure that six sites were patching by hand
+            // (greenhouse decisions/0287).
+            $body = '<div class="mui-empty"><p class="mui-empty__title">No panels yet</p>'
+                . '<p class="mui-empty__desc">A plugin contributes one with <code>ShellComposition::addPanel()</code>.</p></div>';
         }
 
         return '<div class="panel-grid" ' . $wrap . '>' . $body . '</div>';

@@ -53,7 +53,14 @@ final class ContextTest extends TestCase
         $html = (new Context('secret'))->render([]);
 
         self::assertStringContainsString('data-milpa-component="desktop-context"', $html);
-        self::assertStringContainsString('No plugin has contributed a panel yet', $html);
+        self::assertStringContainsString('No panels yet', $html);
+
+        // THE STRUCTURE, not just the copy. `.mui-empty` is a flex COLUMN, so the empty state has to be
+        // a container with block children — as a <p> with an inline <code> it printed the sentence, the
+        // chip and a lone «.» on three lines, which is what Rod caught (greenhouse decisions/0287).
+        self::assertStringContainsString('<div class="mui-empty">', $html, 'the container carries the class');
+        self::assertStringContainsString('class="mui-empty__desc"', $html, 'and the copy rides in the part that has the muted colour and the 40ch measure');
+        self::assertStringNotContainsString('<p class="mui-empty"', $html, 'never the container class on a paragraph');
     }
 
     public function testItEmitsRenderEventsSoPluginsCanExtendIt(): void

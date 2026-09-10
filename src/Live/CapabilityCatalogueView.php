@@ -43,7 +43,7 @@ final class CapabilityCatalogueView
     private function installedCards(array $installed): string
     {
         if ($installed === []) {
-            return '<p class="mui-empty" style="color:var(--text-muted)">Only the catalogue — nothing installed reports here.</p>';
+            return '<div class="mui-empty"><p class="mui-empty__desc">Only the catalogue — nothing installed reports here.</p></div>';
         }
 
         $cards = '';
@@ -64,7 +64,7 @@ final class CapabilityCatalogueView
     private function availableCards(array $available): string
     {
         if ($available === []) {
-            return '<p class="mui-empty" style="color:var(--text-muted)">Everything available is installed.</p>';
+            return '<div class="mui-empty"><p class="mui-empty__desc">Everything available is installed.</p></div>';
         }
 
         $cards = '';
