@@ -3,6 +3,13 @@
 All notable changes to milpa/desktop-app are documented here. This project adheres to
 [Semantic Versioning](https://semver.org/) and [Keep a Changelog](https://keepachangelog.com/).
 
+## [0.73.2](https://github.com/getmilpa/agent-workspace/compare/v0.73.1...v0.73.2) (2026-09-10)
+
+
+### Bug Fixes
+
+* the model chip says what the provider answered, and the composer loses a button with no verb ([#72](https://github.com/getmilpa/agent-workspace/issues/72)) ([0c559ab](https://github.com/getmilpa/agent-workspace/commit/0c559abb891175cb9ecedd7bea53946e5f0ab8dc))
+
 ## [0.73.1](https://github.com/getmilpa/agent-workspace/compare/v0.73.0...v0.73.1) (2026-09-10)
 
 
