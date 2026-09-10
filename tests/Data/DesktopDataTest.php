@@ -178,27 +178,25 @@ final class DesktopDataTest extends TestCase
 
         self::assertNull($model['endpoint'], 'snake_case declares nothing');
         self::assertSame('none', $model['endpoint_from']);
-        // Whether anything answers is a SEPARATE question, because asking costs a round trip a
-        // paint must not pay (greenhouse decisions/0266). With no endpoint it is «never asked».
-        $reach = (new DesktopData($kernel->container()))->modelReach();
-        self::assertNull($reach['reached'], 'no endpoint, no question');
-        self::assertSame([], $reach['models']);
+        // Whether anything answers is `agent:model`'s question, not this package's — one governed
+        // way to ask, not a second reader beside it (greenhouse decisions/0266).
+        self::assertArrayNotHasKey('reached', $model, 'painting does not ask');
     }
 
     /**
      * 🚨 PAINTING MAKES NO REQUEST, and this counts them.
      *
-     * The first version of this asked the provider inside `model()`, so rendering the composer paid
-     * for a round trip: 102 ms with the provider up and **5 002 ms with it down**, measured on a
-     * published build. Trading «a wrong value instantly» for «the right value after five seconds» is
-     * a worse deal than the lie it replaced — a surface nobody can look at has not stopped lying, it
-     * has stopped answering (greenhouse decisions/0266).
+     * `model()` asked the provider for a few hours, so rendering paid for a round trip: 102 ms with
+     * the provider up and 5 002 ms with it down, measured on a published build. Trading «a wrong
+     * value instantly» for «the right value after five seconds» is a worse deal than the lie it
+     * replaced — a surface nobody can look at has not stopped lying, it has stopped answering.
+     *
+     * Whether the provider answers is `agent:model`'s question now, not this package's: an operation
+     * that goes through the gate, declares its `externality: third_party` and leaves a trace. A
+     * second reader here would skip all three (greenhouse decisions/0266).
      */
-    public function testPaintingTheModelMakesNoRequestAndAskingMakesExactlyOne(): void
+    public function testPaintingTheModelMakesNoRequest(): void
     {
-        if (!class_exists(\Milpa\AiGateway\ProviderReach::class)) {
-            self::markTestSkipped('no reader, no question');
-        }
         $calls = 0;
         AgentEndpoint::useProviderFetcher(static function () use (&$calls): ?string {
             ++$calls;
@@ -216,10 +214,9 @@ final class DesktopDataTest extends TestCase
 
         $data->model();
         $data->model();
-        self::assertSame(0, $calls, 'a paint never goes out on the wire');
 
-        self::assertTrue($data->modelReach()['reached']);
-        self::assertSame(1, $calls, 'and asking asks once');
+        self::assertSame(0, $calls, 'a paint never goes out on the wire');
+        self::assertSame('m', $data->model()['model'], 'and it still answers what was declared');
 
         AgentEndpoint::useProviderFetcher(null);
     }
@@ -232,10 +229,7 @@ final class DesktopDataTest extends TestCase
         self::assertNull($model['model']);
         self::assertNull($model['endpoint']);
         self::assertArrayNotHasKey('reached', $model, 'painting does not ask');
-
-        $reach = (new DesktopData(new DIContainer()))->modelReach();
-        self::assertNull($reach['reached']);
-        self::assertNull($reach['serves_declared']);
+        self::assertArrayNotHasKey('serves_declared', $model);
     }
 
     public function testToArrayCarriesEveryDataSource(): void
