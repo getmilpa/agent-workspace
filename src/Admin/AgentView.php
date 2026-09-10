@@ -83,7 +83,7 @@ final class AgentView
         $definitions = [AgentViewComponent::NAME => new AgentViewComponent()];
         $renderers = [AgentViewComponent::NAME => new AgentViewRenderer($live, $data, $catalog, $signingSecret)];
 
-        foreach (self::surfaces($live) as $name => [$definition, $renderer]) {
+        foreach (self::surfacesOf($live) as $name => [$definition, $renderer]) {
             $definitions[$name] = $definition;
             $renderers[$name] = $renderer;
         }
@@ -109,7 +109,7 @@ final class AgentView
      *
      * @return array<string, array{0: ComponentDefinitionInterface, 1: ComponentRendererInterface}>
      */
-    private static function surfaces(DesktopComponents $live): array
+    public static function surfacesOf(DesktopComponents $live): array
     {
         $surfaces = [];
         foreach ($live->names() as $name) {

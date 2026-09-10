@@ -66,10 +66,11 @@ final class CapabilitiesScreen
     }
 
     /** The screen, with its signed envelope, after the render events a plugin may extend it through. */
-    public function render(): string
+    public function render(bool $hidden = true): string
     {
         $catalogue = $this->data?->capabilityCatalogue() ?? ['installed' => [], 'available' => []];
-        $subject = new ComposerRender(['installed' => $catalogue['installed'], 'available' => $catalogue['available']]);
+        // `hidden` is the host's call, not this screen's — see ScreenVisibility.
+        $subject = new ComposerRender(['installed' => $catalogue['installed'], 'available' => $catalogue['available'], 'hidden' => $hidden]);
         $this->events?->dispatch(self::BEFORE_RENDER, [self::SUBJECT_KEY => $subject]);
 
         $state = (new CapabilitiesScreenComponent())->mount($subject->props, new ComponentContext(componentId: self::COMPONENT_ID));
@@ -90,7 +91,8 @@ final class CapabilitiesScreen
 
         return '<div class="view milpa-capabilities" data-view="capabilities" data-milpa-runtime="alpine"'
             . ' data-milpa-component="desktop-capabilities" data-milpa-component-id="' . self::COMPONENT_ID . '"'
-            . ' x-data="desktopCapabilities()" @click="onClick($event)" hidden>'
+            . ' x-data="desktopCapabilities()" @click="onClick($event)"'
+            . ScreenVisibility::attr($props) . '>'
             . '<p class="milpa-capabilities__intro">' . $this->tr('cap.intro') . '</p>'
             . '<div id="milpa-capabilities">' . (new CapabilityCatalogueView())->html($installed, $available) . '</div>'
             . $this->confirmPrototype()

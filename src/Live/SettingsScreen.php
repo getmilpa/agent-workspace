@@ -73,10 +73,13 @@ final class SettingsScreen
     }
 
     /** The screen's server-rendered HTML — a component with its signed envelope and a signal-bound badge. */
-    public function render(): string
+    public function render(bool $hidden = true): string
     {
         $component = new SettingsScreenComponent();
         $subject = new ComposerRender([
+            // The host's call, not this screen's — see ScreenVisibility. Hidden by default, so the
+            // shell's stacked views paint exactly as they did.
+            'hidden' => $hidden,
             'endpoint' => $this->endpoint(),
             'sessionsPath' => '.milpa/sessions/',
             'savedLabel' => $this->catalog->tr('settings.saved'),
@@ -123,7 +126,7 @@ final class SettingsScreen
         // answered, Discard reloads the persisted values, and the theme buttons set the SHARED `ui.theme`
         // signal the topbar's module owns, so there is one theme, not two.
         return '<div class="view milpa-settings" data-view="settings" data-milpa-runtime="alpine"'
-            . ' data-milpa-component="desktop-settings" data-milpa-component-id="' . self::COMPONENT_ID . '" x-data="desktopSettings()" hidden>'
+            . ' data-milpa-component="desktop-settings" data-milpa-component-id="' . self::COMPONENT_ID . '" x-data="desktopSettings()"' . ScreenVisibility::attr($props) . '>'
             . '<div class="milpa-settings__grid">'
             . $this->modelCard($e((string) ($props['endpoint'] ?? '')))
             . $this->autonomyCard()

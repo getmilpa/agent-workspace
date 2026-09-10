@@ -429,6 +429,57 @@ final class AdminGuestTest extends TestCase
         return [$container, $kernel];
     }
 
+    /**
+     * 🚨 THE DEEP SCREENS REACH THE PANEL, behind Agent's gear and out of the main navigation.
+     *
+     * Settings, skills, capabilities and the preview were reachable through exactly one door: the
+     * `/desktop` page, whose own sidebar switched between them. So the panel showed the conversation
+     * and nothing else about the agent, and the page could not be retired without orphaning every
+     * screen behind it (greenhouse decisions/0268).
+     */
+    public function testTheDeepScreensAreSectionsUnderAgentAndReachableOnTheirOwnUrl(): void
+    {
+        [, $kernel] = self::boot([AdminPlugin::class, AgentWorkspacePlugin::class]);
+        $catalogue = SectionCatalogue::discover($kernel->plugins());
+
+        self::assertSame(
+            ['agent-settings', 'agent-skills', 'agent-subagents', 'agent-preview'],
+            array_map(static fn (object $s): string => $s->id, $catalogue->children('agent')),
+            'the order the Desktop\'s own sidebar lists them in',
+        );
+        $ids = array_map(static fn (object $s): string => $s->id, $catalogue->sections());
+        self::assertNotContains('agent-sessions', $ids, 'the conversation IS the Agent section, not a child of itself');
+        // 🚨 AND NO CAPABILITIES SECTION, which is a duplicate removed rather than an omission: the
+        // panel's own Plugins section already carries the capability catalogue and can enable from it.
+        // Two doors to one fact is the defect this arc is about, and this one was caught by looking at
+        // the painted panel, not by a test (greenhouse decisions/0268).
+        self::assertNotContains('agent-capabilities', $ids, 'the panel\'s Plugins section already is this door');
+
+        // Out of the main navigation, behind the gear — and each one still its own page.
+        $index = (string) self::dispatch($kernel, '/milpa/admin')->getBody();
+        self::assertStringNotContainsString('class="mui-sidebar__item" href="/milpa/admin/s/agent-settings"', $index, 'not a menu entry');
+        self::assertStringContainsString('class="mui-sidebar__subitem" href="/milpa/admin/s/agent-settings"', $index, 'behind Agent\'s gear');
+        self::assertStringContainsString('aria-label="Settings for this section"', $index, 'and the gear is named by the host\'s catalog');
+
+        $settings = self::dispatch($kernel, '/milpa/admin/s/agent-settings');
+        self::assertSame(200, $settings->getStatusCode(), 'the same URL shape as any section, and the same door');
+    }
+
+    /** The section titles are the SAME catalog keys the Desktop's own sidebar names those screens with. */
+    public function testTheScreenSectionsAreNamedByTheDesktopsOwnCatalog(): void
+    {
+        [, $kernel] = self::boot([AdminPlugin::class, AgentWorkspacePlugin::class]);
+        $titles = [];
+        foreach (SectionCatalogue::discover($kernel->plugins())->children('agent') as $child) {
+            $titles[$child->id] = $child->title;
+        }
+
+        self::assertSame('Settings', $titles['agent-settings'] ?? null);
+        self::assertSame('Skills', $titles['agent-skills'] ?? null);
+        self::assertSame('Subagents', $titles['agent-subagents'] ?? null);
+        self::assertSame('Preview', $titles['agent-preview'] ?? null);
+    }
+
     private static function dispatch(Kernel $kernel, string $path, string $address = '127.0.0.1'): ResponseInterface
     {
         $request = new ServerRequest('GET', $path, ['Accept' => 'text/html'], null, '1.1', ['REMOTE_ADDR' => $address]);

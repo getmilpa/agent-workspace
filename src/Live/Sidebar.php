@@ -15,6 +15,7 @@ declare(strict_types=1);
 namespace Milpa\AgentWorkspace\Live;
 
 use Milpa\AgentWorkspace\Data\DesktopData;
+use Milpa\AgentWorkspace\I18n\Catalog;
 use Milpa\AgentWorkspace\Event\RenderEvents;
 use Milpa\Interfaces\Event\MilpaEventDispatcherInterface;
 use Milpa\Live\Security\HmacStateSigner;
@@ -37,26 +38,46 @@ final class Sidebar
     /** The payload key both render events carry their mutable {@see ComposerRender} under. */
     public const string SUBJECT_KEY = 'sidebar';
 
-    /** @var list<array{key: string, label: string, icon: string}> */
-    private const NAV = [
-        ['key' => 'sessions', 'label' => 'Sessions', 'icon' => '▤'],
-        ['key' => 'decisions', 'label' => 'Decisions', 'icon' => '◈'],
-        ['key' => 'capabilities', 'label' => 'Capabilities', 'icon' => '▩'],
-        ['key' => 'skills', 'label' => 'Skills', 'icon' => '✦'],
-        ['key' => 'preview', 'label' => 'Preview', 'icon' => '◱'],
-        ['key' => 'settings', 'label' => 'Settings', 'icon' => '⚙'],
+    /**
+     * The screens, their glyphs, and THE CATALOG KEY EACH IS NAMED BY.
+     *
+     * 🚨 The labels used to be English literals here, which is the one thing the house's language rule
+     * forbids outright: every human-facing string is a catalog key with an English default, so a person
+     * who chose Spanish got a Spanish panel with an English navigation (greenhouse decisions/0139,
+     * caught while measuring decisions/0268).
+     *
+     * These keys are also what the panel titles the same screens with, now that each is a section of
+     * its own — one source for what a screen is CALLED, so the two doors can never disagree about it.
+     *
+     * @var list<array{key: string, title: string, icon: string}>
+     */
+    public const NAV = [
+        ['key' => 'sessions', 'title' => 'nav.sessions', 'icon' => '▤'],
+        ['key' => 'decisions', 'title' => 'nav.decisions', 'icon' => '◈'],
+        ['key' => 'capabilities', 'title' => 'nav.capabilities', 'icon' => '▩'],
+        ['key' => 'skills', 'title' => 'nav.skills', 'icon' => '✦'],
+        ['key' => 'subagents', 'title' => 'nav.subagents', 'icon' => '◉'],
+        ['key' => 'preview', 'title' => 'nav.preview', 'icon' => '◱'],
+        ['key' => 'settings', 'title' => 'nav.settings', 'icon' => '⚙'],
     ];
 
     private const GRAIN = [[0, 0], [0, 12.5], [0, 25], [0, 37.5], [0, 50], [50, 0], [50, 12.5], [50, 25], [50, 37.5], [50, 50], [12.5, 12.5], [37.5, 12.5], [25, 25]];
 
     private readonly SignedXhtmlStateTransferCodec $codec;
 
+    private readonly Catalog $catalog;
+
     public function __construct(
         string $signingSecret,
         private readonly ?DesktopData $data = null,
         private readonly ?MilpaEventDispatcherInterface $events = null,
+        ?Catalog $catalog = null,
     ) {
         $this->codec = new SignedXhtmlStateTransferCodec(new XhtmlStateTransferCodec(), new HmacStateSigner($signingSecret), null);
+        // Optional and defaulted, like every other surface here: a host that has not chosen a locale
+        // gets the English default rather than a fatal, and the callers that already build a Catalog
+        // pass theirs.
+        $this->catalog = $catalog ?? new Catalog();
     }
 
     /**
@@ -147,7 +168,7 @@ final class Sidebar
                 $key,
                 $key,
                 $item['icon'],
-                htmlspecialchars($item['label'], ENT_QUOTES),
+                htmlspecialchars($this->catalog->tr($item['title']), ENT_QUOTES),
                 $badge,
             );
         }

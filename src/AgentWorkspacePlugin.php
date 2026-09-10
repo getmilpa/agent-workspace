@@ -122,6 +122,7 @@ final class AgentWorkspacePlugin implements PluginInterface, RouteProviderInterf
         Live\SettingsScreenComponent::class,
         Live\SidebarComponent::class,
         Live\SkillsScreenComponent::class,
+        Live\SubagentsScreenComponent::class,
         Live\StatusBarComponent::class,
         Live\SystemNoticeComponent::class,
         Live\TabsComponent::class,
@@ -152,6 +153,32 @@ final class AgentWorkspacePlugin implements PluginInterface, RouteProviderInterf
     public const CHANGED_EVENT = 'desktop.shell.changed';
 
     /** Where the shell is mounted — not configurable: every route below hangs from it, and the admin section points at it. */
+    /**
+     * WHICH DEEP SCREENS BECOME SECTIONS OF THEIR OWN, keyed by the sidebar key that names them.
+     *
+     * Not every screen belongs here. `sessions` is the conversation itself, which IS the Agent
+     * section — a child pointing back at its parent would be the same room twice. `decisions` is an
+     * inbox whose whole value is being seen without navigating; it stays a region of the conversation
+     * rather than a screen somebody has to remember to open.
+     *
+     * `capabilities` is NOT here either, and that is a duplicate removed rather than an omission: the
+     * panel's own Plugins section already carries the capability catalogue AND can enable from it —
+     * its docblock says so in as many words, «this section showed the capability catalogue and could
+     * not enable anything». Two doors to one fact is the exact defect this arc is about, and it was
+     * caught by Rod looking at the painted panel, not by a test.
+     *
+     * The rest are the ones the gear was asked for: settings, skills, the specialist agents, and the
+     * preview (greenhouse decisions/0268).
+     *
+     * @var array<string, class-string<\Milpa\Live\Contracts\Component\ComponentDefinitionInterface>>
+     */
+    private const SCREEN_SECTIONS = [
+        'settings' => Live\SettingsScreenComponent::class,
+        'skills' => Live\SkillsScreenComponent::class,
+        'subagents' => Live\SubagentsScreenComponent::class,
+        'preview' => Live\ScreenPreviewComponent::class,
+    ];
+
     public const SHELL_PATH = '/desktop';
 
     /** The sign-in door the admin section offers a signed-out human — app-runtime's default, the one the shell's guard reads from the 401 too. */
@@ -471,6 +498,29 @@ final class AgentWorkspacePlugin implements PluginInterface, RouteProviderInterf
         $live = $registered->has(DesktopComponents::class) ? $this->container->get(DesktopComponents::class) : null;
         $data = $registered->has(DesktopData::class) ? $this->container->get(DesktopData::class) : null;
 
+        // 🚨 DECLARED BEFORE ANY VIEW IS BUILT, and the panel's own guard is why.
+        //
+        // `declare()` creates a fresh renderer per call, and a view CAPTURES the instances the registry
+        // holds at the moment it is built. Declaring after the Agent section meant Agent carried the old
+        // instance and every child carried the new one, and the panel refused the whole page: «component
+        // «desktop-capabilities» is painted by different renderers in section «agent-settings» and
+        // section «agent»» — one renderer per name, and never one shadowing another
+        // (greenhouse decisions/0211, caught building decisions/0268).
+        //
+        // Here, once, so every section that follows captures the same instances. The shell controller
+        // declares the same list for its own page, on a request where this never runs.
+        if ($live instanceof DesktopComponents) {
+            $screen = $registered->has(Live\SettingsScreen::class) ? $this->container->get(Live\SettingsScreen::class) : null;
+            Live\DeepScreens::declareOn(
+                $live,
+                $data instanceof DesktopData ? $data : null,
+                null,
+                $catalog,
+                hidden: false,
+                settings: $screen instanceof Live\SettingsScreen ? $screen : null,
+            );
+        }
+
         return [
             \Milpa\Admin\Section\AdminSection::ofView(
                 id: AgentViewComponent::SECTION,
@@ -488,7 +538,64 @@ final class AgentWorkspacePlugin implements PluginInterface, RouteProviderInterf
                 group: 'agent',
                 icon: '◈',
             ),
+            ...self::screenSections($live instanceof DesktopComponents ? $live : null, $data, $catalog),
         ];
+    }
+
+    /**
+     * THE DEEP SCREENS, AS SECTIONS UNDER AGENT — behind its gear, out of the main navigation.
+     *
+     * They were reachable through exactly one door: the `/desktop` page, whose own sidebar switched
+     * between them. So the panel could show the conversation and nothing else about the agent, and the
+     * page could not be retired without orphaning every screen behind it (greenhouse decisions/0268).
+     *
+     * 🚨 THE CHEAP ANSWER WOULD HAVE BEEN A `settings` SLOT ON THE ADMIN'S CONTRACT. The true one is
+     * that these screens ARE sections and only needed a way to say whose they are — `{route}/s/{id}`
+     * already routes any declared id and one middleware stack already covers every panel route. What
+     * was missing was one optional field.
+     *
+     * Their titles are the SAME catalog keys the Desktop's own sidebar names them with, so the two
+     * doors can never disagree about what a screen is called. Their order is the order that sidebar
+     * lists them in, for the same reason.
+     *
+     * Empty when the registry is absent: a section whose components nothing can resolve is a menu
+     * entry that 500s, and this plugin already answers that way for its own region.
+     *
+     * @return list<\Milpa\Admin\Section\AdminSection>
+     */
+    private static function screenSections(?DesktopComponents $live, ?DesktopData $data, I18n\Catalog $catalog): array
+    {
+        if ($live === null) {
+            return [];
+        }
+        $sections = [];
+        $order = 10;
+        foreach (self::SCREEN_SECTIONS as $key => $component) {
+            $sections[] = \Milpa\Admin\Section\AdminSection::ofView(
+                id: AgentViewComponent::SECTION . '-' . $key,
+                title: $catalog->tr('nav.' . $key),
+                view: Admin\ScreenView::of($live, $component::contract()->name, AgentViewComponent::SECTION . '-' . $key . '-region', $catalog),
+                order: $order,
+                group: 'agent',
+                icon: self::screenIcon($key),
+                parent: AgentViewComponent::SECTION,
+            );
+            $order += 10;
+        }
+
+        return $sections;
+    }
+
+    /** The glyph the Desktop's own sidebar gives a screen — read from its list, never a second copy. */
+    private static function screenIcon(string $key): string
+    {
+        foreach (Live\Sidebar::NAV as $item) {
+            if ($item['key'] === $key) {
+                return $item['icon'];
+            }
+        }
+
+        return '';
     }
 
     /** The runtime's config bag, or null when this plugin booted without a kernel (as in unit tests). */

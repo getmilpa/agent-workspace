@@ -66,9 +66,12 @@ final class DecisionsInbox
     }
 
     /** The screen, with its signed envelope, after the render events a plugin may extend it through. */
-    public function render(): string
+    public function render(bool $hidden = true): string
     {
         $subject = new ComposerRender([
+            // The host's call, not this screen's — see ScreenVisibility. Hidden by default, so the
+            // shell's stacked views paint exactly as they did.
+            'hidden' => $hidden,
             'pending' => $this->data?->pendingDecisions() ?? [],
             'graphs' => $this->data?->pendingGraphDecisions() ?? [],
             'sequences' => $this->data?->declaredSequences() ?? [],
@@ -102,7 +105,7 @@ final class DecisionsInbox
         $view = new DecisionsInboxView();
 
         return '<div class="view milpa-decisions" data-view="decisions"'
-            . ' data-milpa-component="desktop-decisions" data-milpa-component-id="' . self::COMPONENT_ID . '" hidden>'
+            . ' data-milpa-component="desktop-decisions" data-milpa-component-id="' . self::COMPONENT_ID . '"' . ScreenVisibility::attr($props) . '>'
             . '<p class="milpa-decisions__intro">' . $this->tr('decisions.intro') . '</p>'
             . $view->html($pending, $this->plain('decisions.empty'), $graphs, (string) ($props['principal'] ?? ''), $copy)
             // THE SEQUENCES THIS APP DECLARED, to run from here (greenhouse decisions/0223, F4): a deployment

@@ -17,6 +17,10 @@ namespace Milpa\AgentWorkspace\Tests\Live;
 use Milpa\AgentWorkspace\Admin\AgentViewComponent;
 use Milpa\AgentWorkspace\AgentWorkspacePlugin;
 use Milpa\AgentWorkspace\Live\ComposerMessageComponent;
+use Milpa\AgentWorkspace\I18n\Catalog;
+use Milpa\AgentWorkspace\Live\DeepScreens;
+use Milpa\AgentWorkspace\Live\DesktopComponents;
+use Milpa\AgentWorkspace\Live\SettingsScreen;
 use Milpa\Live\Contracts\Component\ComponentDefinitionInterface;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
@@ -77,15 +81,31 @@ final class DeclarationMatchesTheShellTest extends TestCase
     }
 
     /**
-     * The component names `ShellController::declareSurfaces()` registers, read from the source.
+     * Every component name the page's two declaration sites register.
      *
-     * Reading the source rather than booting the shell is deliberate: booting it needs a request,
-     * a container and a session, and what this test asks about is the LIST, not the paint.
+     * 🚨 THE DEEP SCREENS ARE ASKED BY EXECUTION, not by reading a file. {@see DeepScreens::declareOn()}
+     * takes a registry and needs no request, so this half runs it against a real
+     * {@see DesktopComponents} and reads back what it actually declared — the house's own rule, and the
+     * form of it that has paid most: if you are about to classify something by reading it, run it
+     * instead (greenhouse decisions/0268).
+     *
+     * The shell's own half is still read from the source, and that stays deliberate: booting the
+     * controller needs a request, a container and a session, and what this test asks about is the LIST,
+     * not the paint.
      *
      * @return list<string>
      */
     private function componentsTheShellDeclares(): array
     {
+        $live = new DesktopComponents('test-signing-secret-0123456789', 'test-csrf-secret-0123456789');
+        $before = $live->names();
+        // With the Settings instance a real host hands it: that screen is declared BY INSTANCE, because
+        // it needs a signing secret and both doors already have one built. Calling without it would
+        // leave this half of the gate blind to the screen that most needed it.
+        DeepScreens::declareOn($live, null, null, new Catalog(), settings: new SettingsScreen('test-settings-secret-0123456789'));
+        $executed = array_values(array_diff($live->names(), $before));
+        self::assertNotSame([], $executed, 'the extracted list declares nothing — this half would prove nothing');
+
         $source = file_get_contents(\dirname(__DIR__, 2) . '/src/Controllers/ShellController.php');
         self::assertIsString($source);
 
@@ -99,6 +119,6 @@ final class DeclarationMatchesTheShellTest extends TestCase
             }
         }
 
-        return array_values(array_unique($names));
+        return array_values(array_unique([...$executed, ...$names]));
     }
 }

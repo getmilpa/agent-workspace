@@ -47,6 +47,19 @@ final class Catalog
             'guard.unreachable' => 'The app could not be reached',
             'enroll.none' => 'No passkey door in this app',
             'agent.title' => 'Agent',
+            // ── THE SCREENS, NAMED ONCE ──────────────────────────────────────────────────────
+            // Both doors read these: the Desktop's own sidebar and the panel, which titles the same
+            // screens as sections of its own. One source for what a screen is CALLED, so the two can
+            // never disagree — and they used to be English literals in `Sidebar::NAV`, which gave a
+            // person who chose Spanish a Spanish panel with an English navigation
+            // (greenhouse decisions/0139, caught measuring decisions/0268).
+            'nav.sessions' => 'Sessions',
+            'nav.decisions' => 'Decisions',
+            'nav.capabilities' => 'Capabilities',
+            'nav.skills' => 'Skills',
+            'nav.subagents' => 'Subagents',
+            'nav.preview' => 'Preview',
+            'nav.settings' => 'Settings',
             'agent.open' => 'Open the Desktop',
             'agent.signin' => 'Sign in to open the Agent',
             'agent.signin.action' => 'Sign in',
@@ -243,6 +256,7 @@ final class Catalog
             'skills.intro' => 'The skills the agent carries — each guides judgment, it is not a tool that runs. The same list the agent reaches for.',
             'skills.roles' => 'Specialist roles',
             'skills.roles_intro' => 'Specialist agents this app declares — each a named authority with the skills it preloads and the tools it is denied.',
+            'subagents.intro' => 'The specialist agents this app declares — each a named authority with the skills it preloads and the tools it is denied. The agent hands work to them; you compose them.',
             'screens.intro' => 'See what the agent is building — a screen it declared, rendered live and hosted here. "How does it look?", answered.',
             'screens.name' => 'screen name',
             'screens.preview' => 'Preview',
@@ -267,6 +281,13 @@ final class Catalog
             'guard.unreachable' => 'No se pudo alcanzar la app',
             'enroll.none' => 'Esta app no tiene puerta de passkey',
             'agent.title' => 'Agente',
+            'nav.sessions' => 'Sesiones',
+            'nav.decisions' => 'Decisiones',
+            'nav.capabilities' => 'Capacidades',
+            'nav.skills' => 'Skills',
+            'nav.subagents' => 'Subagentes',
+            'nav.preview' => 'Vista previa',
+            'nav.settings' => 'Ajustes',
             'agent.open' => 'Abrir el Desktop',
             'agent.signin' => 'Inicia sesión para abrir el Agente',
             'agent.signin.action' => 'Iniciar sesión',
@@ -433,6 +454,7 @@ final class Catalog
             'skills.intro' => 'Las skills que carga el agente — cada una guía el criterio, no es una herramienta que corre. La misma lista a la que echa mano el agente.',
             'skills.roles' => 'Roles especialistas',
             'skills.roles_intro' => 'Agentes especialistas que esta app declara — cada uno una autoridad con nombre, con las skills que precarga y las herramientas que tiene negadas.',
+            'subagents.intro' => 'Los agentes especialistas que esta app declara — cada uno una autoridad con nombre, con las skills que precarga y las herramientas que tiene negadas. El agente les pasa trabajo; tú los compones.',
             'screens.intro' => 'Mira lo que el agente está construyendo — una pantalla que declaró, renderizada en vivo y hospedada aquí. «¿Cómo se ve?», contestado.',
             'screens.name' => 'nombre de pantalla',
             'screens.preview' => 'Previsualizar',

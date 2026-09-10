@@ -55,6 +55,10 @@ final class CatalogTest extends TestCase
         $sameInBoth = [
             'gate.kind.loopback', 'gate.kind.passkey', 'settings.model.endpoint',
             'composer.tokens', 'op.failed', 'op.detail',
+            // «Skills» is the word this house uses in Spanish too — the same reason «endpoint» is
+            // here. Translating it to «habilidades» would name a thing nobody in the project calls
+            // that, and the screen it titles is the same screen in both languages.
+            'nav.skills',
         ];
         foreach (array_keys($en->all()) as $key) {
             if (!\in_array($key, $sameInBoth, true)) {
