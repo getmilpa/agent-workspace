@@ -56,6 +56,10 @@ final class DesktopComponentRenderer implements ComponentRendererInterface, Decl
         ?ClientAssets $assets = null,
     ) {
         $this->paint = $paint instanceof \Closure ? $paint : \Closure::fromCallable($paint);
+        // EXACTLY THIS COMPONENT'S FILES, and the invariant is deliberate: a test holds it, because a
+        // renderer that declared its neighbours' files would leave nobody able to say which surface
+        // owns which. The shared RUNTIME is declared by the VIEW instead — it has no surface, so no
+        // component owns it (greenhouse decisions/0272).
         $this->assets = $assets ?? DesktopAssets::of($component);
     }
 

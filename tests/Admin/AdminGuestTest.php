@@ -488,6 +488,41 @@ final class AdminGuestTest extends TestCase
         self::assertSame('Preview', $titles['agent-preview'] ?? null);
     }
 
+    /**
+     * 🚨 THE DESKTOP RUNTIME REACHES THE PANEL, and a shipped screen is why this exists.
+     *
+     * The Settings section rendered perfectly in the panel and its Save button fired NO request at
+     * all: the console said `desktop-guard not loaded`. The guard is one of the Desktop's shared
+     * runtime modules, which have no surface to be painted, so the declared-view contract — which
+     * collects a view's assets by walking the components it RENDERS — never emitted them. The
+     * standalone page emitted them by hand in its own template, which is exactly why the same screen
+     * worked there and shipped dead here (greenhouse decisions/0272).
+     *
+     * 🚨 AND EVERY CONSOLE CHECK OF THAT PAGE WAS CLEAN, because nothing had called `save()` yet. A
+     * console read without interaction proves the page loaded, never that it is wired.
+     */
+    public function testEverySectionCarriesTheDesktopRuntimeItsSurfacesHangOff(): void
+    {
+        [, $kernel] = self::boot([AdminPlugin::class, AgentWorkspacePlugin::class]);
+
+        foreach (['/milpa/admin/s/agent', '/milpa/admin/s/agent-settings', '/milpa/admin/s/agent-skills'] as $path) {
+            $html = (string) self::dispatch($kernel, $path)->getBody();
+            foreach (DesktopAssets::runtimeModules() as $module) {
+                self::assertStringContainsString(
+                    DesktopAssets::url($module, 'js'),
+                    $html,
+                    $path . ' does not emit ' . $module . ' — a surface that hangs off it cannot behave',
+                );
+            }
+            // Once, not once per surface: a double <script> is a double execution.
+            self::assertSame(
+                1,
+                substr_count($html, DesktopAssets::url(DesktopAssets::GUARD, 'js')),
+                $path . ' emits the guard more than once',
+            );
+        }
+    }
+
     private static function dispatch(Kernel $kernel, string $path, string $address = '127.0.0.1'): ResponseInterface
     {
         $request = new ServerRequest('GET', $path, ['Accept' => 'text/html'], null, '1.1', ['REMOTE_ADDR' => $address]);
