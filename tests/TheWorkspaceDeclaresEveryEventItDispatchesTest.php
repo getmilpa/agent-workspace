@@ -75,7 +75,6 @@ final class TheWorkspaceDeclaresEveryEventItDispatchesTest extends TestCase
         'desktop.ask_grant.before_render', 'desktop.ask_grant.after_render',
         'desktop.compacted.before_render', 'desktop.compacted.after_render',
         'desktop.settings.before_render', 'desktop.settings.after_render',
-        'desktop.capabilities.before_render', 'desktop.capabilities.after_render',
         // 🚨 LOS DOS DEL SUBAGENTS: `declarations()` no los esparcía, así que este censo esperaba 47
         // donde el paquete declara 49 — y la lista esperada estaba corta por exactamente esos dos, que
         // es la forma en que un censo que no se mide contra el código se queda atrás
@@ -369,7 +368,6 @@ final class TheWorkspaceDeclaresEveryEventItDispatchesTest extends TestCase
         );
         (new \Milpa\AgentWorkspace\Live\SettingsScreen($secret, null, $events, $catalog))->render();
         (new \Milpa\AgentWorkspace\Live\SkillsScreen($codec, null, $events, $catalog))->render();
-        (new \Milpa\AgentWorkspace\Live\CapabilitiesScreen($codec, null, $events, $catalog))->render();
         (new \Milpa\AgentWorkspace\Live\DecisionsInbox($codec, null, $events, $catalog))->render();
         (new \Milpa\AgentWorkspace\Live\SubagentsScreen($codec, null, $events, $catalog))->render();
         (new \Milpa\AgentWorkspace\Live\ScreenPreview($codec, null, $events, $catalog))->render();

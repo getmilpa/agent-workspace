@@ -59,7 +59,7 @@ final class DeclaredViewsTest extends TestCase
         'desktop-tabs', 'desktop-conversation', 'desktop-gate',
         'desktop-work-board', 'desktop-activity', 'desktop-context', 'desktop-composer', 'desktop-thinking',
         'desktop-agent-message', 'desktop-user-message', 'desktop-tool-call', 'desktop-task',
-        'desktop-system-notice', 'desktop-result-claim', 'desktop-settings', 'desktop-capabilities',
+        'desktop-system-notice', 'desktop-result-claim', 'desktop-settings',
         'desktop-skills', 'desktop-screens', 'desktop-decisions',
     ];
 
@@ -114,7 +114,7 @@ final class DeclaredViewsTest extends TestCase
             self::assertInstanceOf(DeclaresClientAssets::class, $renderer, $name . ' declares its client assets');
             self::assertEquals(DesktopAssets::of($name), $renderer->clientAssets(), $name . ' declares exactly its own files');
         }
-        self::assertSame(22, $painted, 'every workspace surface is a declared view — four fewer since the page took its chrome with it (greenhouse decisions/0283)');
+        self::assertSame(21, $painted, 'every workspace surface is a declared view — four fewer since the page took its chrome with it (greenhouse decisions/0283), and one fewer since the Capabilities screen was retired as a duplicate of the panel\'s own Plugins section (greenhouse decisions/0290)');
     }
 
     /**
@@ -147,7 +147,6 @@ final class DeclaredViewsTest extends TestCase
         // Phase D: the bus, the transport, and the four screens whose behaviour the page still carried.
         yield 'the shell bus' => ['desktop-shell-bus', ['window.MilpaShell = { on: on', 'function status(state)'], ['window.MilpaShell = (function ()', 'statusHandlers.forEach']];
         yield 'the hub connector' => ['desktop-hub', ['function translate(env)', 'new EventSource(url'], ['new EventSource(', "window.MilpaShell.status('offline')", 'MilpaShell.session(env)']];
-        yield 'the capabilities two-step' => ['desktop-capabilities', ['function enable(pkg)', "'Confirm-Token': answer.confirm_token"], ['function capEnable(', 'box.innerHTML', "capHost.addEventListener('click'"]];
         yield "the work board's drag" => ['desktop-work-board', ['onDragStart: function (event)', 'onDrop: function (event)'], ["querySelector('.work-board')", "fetch('/workspace/work'", 'col.style.background']];
         yield 'the screen preview' => ['desktop-screens', ['function preview()', 'function chip(button)'], ["getElementById('milpa-preview-frame')", "getElementById('milpa-preview-name')", 'frame.src = src']];
         yield 'the live inbox' => ['desktop-decisions', ['function parked(question)', "bus.on('decision.parked'"], ['addDecision: function (question)', "getElementById('milpa-decisions-list')", "createElement('ol')"]];

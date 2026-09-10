@@ -9,100 +9,21 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { El, page, response, settle, stubFetch } from './support/page.mjs';
-import { capabilitiesScreen, decisionsNav, decisionsScreen, screensScreen, workBoard } from './support/shell.mjs';
+import { decisionsNav, decisionsScreen, screensScreen, workBoard } from './support/shell.mjs';
 
 // ── the capabilities two-step (D2) ─────────────────────────────────────────────────────────────────
 
-/** A page carrying the Capabilities screen, its confirm prototype and the module that drives them. */
-function capabilities() {
-  const screen = capabilitiesScreen();
-  const html = new El('html');
-  html.appendChild(screen.root);
-  const p = page({ tree: html, elements: { 'milpa-cap-confirm-proto': screen.proto }, modules: ['desktop-capabilities'] });
-  // The reload after a successful install is scheduled, not immediate; run the timer at once so the test
-  // asserts what the module DID rather than waiting a second for it.
-  p.sandbox.setTimeout = (fn) => fn();
+/*
+ * NO HAY PRUEBAS DE LA PANTALLA DE CAPACIDADES AQUÍ, Y NO SE PERDIÓ COBERTURA: la pantalla se
+ * RETIRÓ. Era un duplicado de la sección Plugins del panel, que es nativa de `milpa/admin`, pinta
+ * el mismo catálogo y corre el mismo `capabilities:enable` — y su botón ahora sí tiene juez
+ * (greenhouse decisions/0289, 0290).
+ *
+ * 🚨 Este archivo cubre TRES módulos, no uno. Al retirar la pantalla borré el archivo completo y lo
+ * restauré al mirarlo: se llevaba en silencio las pruebas del work board y del preview, que no
+ * tienen nada que ver. Borrar en bloque destripa en silencio (greenhouse decisions/0283).
+ */
 
-  return { p, screen, instance: p.mount('desktopCapabilities', undefined, screen.root) };
-}
-
-test('Enable clones the SERVER-rendered confirm box and shows the exact command', () => {
-  const { screen, instance } = capabilities();
-
-  instance.onClick({ target: screen.enable });
-
-  const box = screen.card.querySelector('.cap-confirm');
-  assert.ok(box, 'the box came from the prototype, not from a string in the module');
-  assert.equal(box.querySelector('[data-cap-cmd-text]').textContent, 'composer require milpa/data');
-  assert.equal(screen.enable.disabled, true, 'the card cannot be armed twice');
-
-  instance.onClick({ target: screen.enable });
-  assert.equal(screen.card.querySelectorAll('.cap-confirm').length, 1, 'one box per card');
-});
-
-test('Cancel takes the box down and gives the card its Enable back', () => {
-  const { screen, instance } = capabilities();
-  instance.onClick({ target: screen.enable });
-  const cancel = screen.card.querySelector('[data-cap-cancel]');
-
-  instance.onClick({ target: cancel });
-
-  assert.equal(screen.card.querySelector('.cap-confirm'), null);
-  assert.equal(screen.enable.disabled, false);
-});
-
-test('Confirm runs the two-step: the 428 carries the token, and the second call sends it back', async () => {
-  const { p, screen, instance } = capabilities();
-  const calls = stubFetch(p, [response(428, { confirm_token: 'tok-1' }), response(200, { ok: true })]);
-
-  instance.onClick({ target: screen.enable });
-  instance.onClick({ target: screen.card.querySelector('[data-cap-go]') });
-  await settle();
-
-  assert.equal(calls.length, 2, 'the house asked to confirm, and it was confirmed');
-  assert.equal(calls[0].url, '/capabilities/enable');
-  assert.equal(calls[0].init.headers['Confirm-Token'], undefined, 'the first step carries no token to carry');
-  assert.equal(calls[1].init.headers['Confirm-Token'], 'tok-1');
-  assert.equal(JSON.parse(calls[1].init.body).capability, 'milpa/data');
-
-  const box = screen.card.querySelector('.cap-confirm');
-  assert.equal(box.querySelector('[data-cap-cmd-text]').textContent, 'Installed milpa/data — reloading…');
-  assert.equal(box.querySelector('[data-cap-actions]'), null, 'the buttons are gone once it is decided');
-  assert.equal(p.reloads(), 1, 'the page reloads with the new capability installed');
-});
-
-test('a refusal is REPORTED in the box, and nothing reloads', async () => {
-  const { p, screen, instance } = capabilities();
-  stubFetch(p, [response(200, { ok: false, error: 'not on the marketplace' })]);
-
-  instance.onClick({ target: screen.enable });
-  instance.onClick({ target: screen.card.querySelector('[data-cap-go]') });
-  await settle();
-
-  assert.equal(
-    screen.card.querySelector('[data-cap-cmd-text]').textContent,
-    'Could not install milpa/data — not on the marketplace',
-  );
-  assert.equal(p.reloads(), 0, 'nothing succeeded, so nothing is reloaded');
-});
-
-test("a door's 403 on the first step is the guard's business, not the screen's", async () => {
-  const { p, screen, instance } = capabilities();
-  stubFetch(p, [response(403, { error: 'installing is not yours' })]);
-
-  instance.onClick({ target: screen.enable });
-  instance.onClick({ target: screen.card.querySelector('[data-cap-go]') });
-  await settle();
-
-  assert.equal(p.signal('desktop.notice').text, 'Not allowed here (installing is not yours)', 'the guard told it');
-  assert.equal(
-    screen.card.querySelector('[data-cap-cmd-text]').textContent,
-    'Could not install milpa/data — installing is not yours',
-  );
-  assert.equal(p.reloads(), 0);
-});
-
-// ── the work board's drag (D3) ─────────────────────────────────────────────────────────────────────
 
 test('dropping a card on another column MOVES it and persists its new status', async () => {
   const board = workBoard('s-42');

@@ -191,38 +191,13 @@ final class DesktopData
         return $out;
     }
 
-    /**
-     * The capability catalogue the runtime reports: what is installed, and what is available to install.
-     *
-     * Read server-side from the same {@see \Milpa\AppRuntime\Support\Capabilities} answer the `capabilities`
-     * operation returns — so the human sees EXACTLY what the agent sees, and installing one (through the
-     * gated `capabilities:enable` over HTTP, greenhouse decisions/0193) is instantly available to both.
-     *
-     * @return array{installed: list<array<string, mixed>>, available: list<array<string, mixed>>, source: string}
-     *
-     * @codeCoverageIgnore reads through to the app-runtime Capabilities registry; exercised by integration
-     *                     on a booted app (greenhouse evidence/0507), not by the standalone unit suite
+    /*
+     * NO HAY `capabilityCatalogue()`. Su ÚNICO llamador era la pantalla de capacidades de este paquete,
+     * que se retiró por duplicada: la sección Plugins del panel es nativa de `milpa/admin`, pinta el
+     * mismo catálogo y corre el mismo `capabilities:enable` — y lee el catálogo por su cuenta, desde
+     * `Milpa\AppRuntime\Support\Capabilities::answer()`, que es la autoridad que este método envolvía
+     * (greenhouse decisions/0290).
      */
-    public function capabilityCatalogue(): array
-    {
-        if (!class_exists(\Milpa\AppRuntime\Support\Capabilities::class)) {
-            return ['installed' => [], 'available' => [], 'source' => ''];
-        }
-
-        $answer = \Milpa\AppRuntime\Support\Capabilities::answer();
-
-        // NO DEFENSIVE CHECKS HERE ANY MORE. They were re-asserting a shape the authority's own
-        // return type already guarantees — invisible while `milpa/app-runtime` was not installed for
-        // analysis, so phpstan saw `mixed` and the guards looked prudent. With the authority in
-        // require-dev it says they can never fail, which means they were never reading anything: a
-        // guard that cannot fire is a claim that the caller does not trust a contract it depends on
-        // (greenhouse decisions/0266).
-        return [
-            'installed' => $answer['installed'],
-            'available' => $answer['available'],
-            'source' => $answer['source'],
-        ];
-    }
 
     /**
      * The decisions DECLARED GRAPHS are waiting on — the other half of the same inbox.

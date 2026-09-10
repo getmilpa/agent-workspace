@@ -89,7 +89,7 @@ final class NoButtonWithoutAVerbTest extends TestCase
         )->output;
 
         $screens = '';
-        foreach (['desktop-settings', 'desktop-skills', 'desktop-subagents', 'desktop-screens', 'desktop-capabilities'] as $screen) {
+        foreach (['desktop-settings', 'desktop-skills', 'desktop-subagents', 'desktop-screens'] as $screen) {
             $screens .= $live->has($screen) ? $live->compiler()->compileFragment('<milpa-' . $screen . '/>', new ComponentContext('s-' . $screen))->output : '';
         }
 

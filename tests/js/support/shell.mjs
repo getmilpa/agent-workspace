@@ -156,30 +156,6 @@ export function commandPopup(commands) {
   return popup;
 }
 
-/**
- * The Capabilities screen as `Live\CapabilitiesScreen` prints it, with ONE available capability.
- *
- * The confirm box is NOT built here: it is the server-rendered `<template>` the module clones, which is
- * the whole point of phase D2 — a box that used to exist only inside a JavaScript string.
- */
-export function capabilitiesScreen(pkg = 'milpa/data') {
-  const root = new El('div', { class: 'view milpa-capabilities', 'data-view': 'capabilities' });
-  const grid = root.appendChild(new El('div', { class: 'cap-grid' }));
-  const card = grid.appendChild(new El('div', { class: 'cap-card', 'data-cap-row': pkg }));
-  const head = card.appendChild(new El('div', { class: 'cap-card__head' }));
-  head.appendChild(new El('span', { class: 'cap-card__name', text: pkg }));
-  const enable = head.appendChild(new El('button', {
-    class: 'mui-btn', 'data-cap-enable': pkg, 'data-cap-cmd': 'composer require ' + pkg, text: 'Enable',
-  }));
-
-  const box = new El('div', { class: 'cap-confirm' });
-  box.appendChild(new El('p', { class: 'cap-confirm__cmd', 'data-cap-cmd-text': '' }));
-  const row = box.appendChild(new El('div', { class: 'cap-confirm__row', 'data-cap-actions': '' }));
-  row.appendChild(new El('button', { 'data-cap-go': '', text: 'Confirm' }));
-  row.appendChild(new El('button', { 'data-cap-cancel': '', text: 'Cancel' }));
-
-  return { root, card, enable, proto: template('milpa-cap-confirm-proto', box) };
-}
 
 /** The Work board as `Live\WorkBoard` prints it: two columns, one draggable card in the first. */
 export function workBoard(session = 's1') {

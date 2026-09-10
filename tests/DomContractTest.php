@@ -18,7 +18,6 @@ use Milpa\Container\DIContainer;
 use Milpa\AgentWorkspace\Data\DesktopData;
 use Milpa\AgentWorkspace\Admin\AgentViewComponent;
 use Milpa\AgentWorkspace\Admin\AgentViewRenderer;
-use Milpa\AgentWorkspace\Live\CapabilitiesScreen;
 use Milpa\AgentWorkspace\Live\ComposerRender;
 use Milpa\AgentWorkspace\Live\DecisionsInbox;
 use Milpa\AgentWorkspace\Live\ScreenPreview;
@@ -68,7 +67,6 @@ final class DomContractTest extends TestCase
      * @var array<string, string> hook => which module writes it, and onto what
      */
     private const array WRITTEN_BY_A_MODULE = [
-        'data-cap-package' => 'desktop-capabilities.js stamps the package onto the confirm box it clones',
         'data-answered' => 'desktop-decisions.js stamps it on a graph card once its decision came back accepted',
     ];
 
@@ -133,12 +131,6 @@ final class DomContractTest extends TestCase
                 $composition->addPanel('probe', 'Probe', '<p>a plugin\'s panel</p>');
             }
         });
-        $events->subscribe(CapabilitiesScreen::BEFORE_RENDER, static function (string $name, array $payload): void {
-            $subject = $payload['capabilities'] ?? null;
-            if ($subject instanceof ComposerRender) {
-                $subject->props['available'] = [['package' => 'milpa/devtools', 'command' => 'composer require milpa/devtools', 'title' => 'Dev tools']];
-            }
-        });
         $events->subscribe(ScreenPreview::BEFORE_RENDER, static function (string $name, array $payload): void {
             $subject = $payload['screens'] ?? null;
             if ($subject instanceof ComposerRender) {
@@ -199,8 +191,7 @@ final class DomContractTest extends TestCase
             new \Milpa\Live\Security\HmacStateSigner('dom-contract-secret-0123456789'),
             null,
         );
-        $pages .= (new CapabilitiesScreen($codec, $data, $events))->render(false)
-            . (new \Milpa\AgentWorkspace\Live\SkillsScreen($codec, $data, $events))->render(false)
+        $pages .= (new \Milpa\AgentWorkspace\Live\SkillsScreen($codec, $data, $events))->render(false)
             . (new \Milpa\AgentWorkspace\Live\SubagentsScreen($codec, $data, $events))->render(false)
             . (new \Milpa\AgentWorkspace\Live\ScreenPreview($codec, $data, $events))->render(false);
 
@@ -244,7 +235,11 @@ final class DomContractTest extends TestCase
 
         // The positive control for the PARSER: it must see the hooks read through a `[data-…]` selector
         // AND the ones read through `getAttribute('data-…')`, which are two different forms.
-        foreach (['data-thinking-body', 'data-cap-enable', 'data-command', 'data-status'] as $known) {
+        // `data-cap-enable` used to stand for the `getAttribute` form here and went with the retired
+        // Capabilities screen. `data-grant-state` replaces it rather than the list simply shrinking: the
+        // control exists to prove the parser sees BOTH forms, so it needs a live example of each, and a
+        // control that quietly loses one of its two cases still passes (greenhouse decisions/0290).
+        foreach (['data-thinking-body', 'data-grant-state', 'data-command', 'data-status'] as $known) {
             self::assertArrayHasKey($known, $attributes, 'the parser reads the data hooks the modules use');
         }
         self::assertGreaterThanOrEqual(40, \count($attributes));
