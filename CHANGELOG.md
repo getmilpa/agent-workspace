@@ -3,6 +3,13 @@
 All notable changes to milpa/desktop-app are documented here. This project adheres to
 [Semantic Versioning](https://semver.org/) and [Keep a Changelog](https://keepachangelog.com/).
 
+## [0.70.2](https://github.com/getmilpa/agent-workspace/compare/v0.70.1...v0.70.2) (2026-09-10)
+
+
+### Bug Fixes
+
+* **settings:** every control writes where its value is read, or is not offered ([#59](https://github.com/getmilpa/agent-workspace/issues/59)) ([d43614a](https://github.com/getmilpa/agent-workspace/commit/d43614a137a508115e47ed7508bc54afa781cfa9))
+
 ## [0.70.1](https://github.com/getmilpa/agent-workspace/compare/v0.70.0...v0.70.1) (2026-09-10)
 
 
