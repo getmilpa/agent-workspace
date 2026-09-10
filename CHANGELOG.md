@@ -3,6 +3,13 @@
 All notable changes to milpa/desktop-app are documented here. This project adheres to
 [Semantic Versioning](https://semver.org/) and [Keep a Changelog](https://keepachangelog.com/).
 
+## [0.71.0](https://github.com/getmilpa/agent-workspace/compare/v0.70.2...v0.71.0) (2026-09-10)
+
+
+### Features
+
+* **model:** the model list comes from the endpoint, and the composer has a chip that switches it ([#61](https://github.com/getmilpa/agent-workspace/issues/61)) ([efa80e4](https://github.com/getmilpa/agent-workspace/commit/efa80e4dc14ef7da4471cdb75a7b6f1f968c61a1))
+
 ## [0.70.2](https://github.com/getmilpa/agent-workspace/compare/v0.70.1...v0.70.2) (2026-09-10)
 
 
