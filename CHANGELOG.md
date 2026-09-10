@@ -3,6 +3,13 @@
 All notable changes to milpa/desktop-app are documented here. This project adheres to
 [Semantic Versioning](https://semver.org/) and [Keep a Changelog](https://keepachangelog.com/).
 
+## [0.70.0](https://github.com/getmilpa/agent-workspace/compare/v0.69.1...v0.70.0) (2026-09-10)
+
+
+### Features
+
+* **settings:** the screen accepts a provider key, in the shape Rod chose ([#55](https://github.com/getmilpa/agent-workspace/issues/55)) ([7aaa3ba](https://github.com/getmilpa/agent-workspace/commit/7aaa3ba120790854a1002ff89ddcca82dfbf2f20))
+
 ## [0.69.1](https://github.com/getmilpa/agent-workspace/compare/v0.69.0...v0.69.1) (2026-09-10)
 
 
