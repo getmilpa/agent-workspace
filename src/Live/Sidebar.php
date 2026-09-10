@@ -46,20 +46,28 @@ final class Sidebar
      * who chose Spanish got a Spanish panel with an English navigation (greenhouse decisions/0139,
      * caught while measuring decisions/0268).
      *
-     * These keys are also what the panel titles the same screens with, now that each is a section of
-     * its own — one source for what a screen is CALLED, so the two doors can never disagree about it.
+     * 🚨 THE IDENTITY IS NOT HERE ANY MORE, and that matters more than it looks. This constant used to
+     * carry the keys AND the glyphs, and the plugin read the glyphs out of it to draw the panel's
+     * sections — so a surface the panel REPLACED became a thing the panel could not boot without. An
+     * adversarial mapping of the `/desktop` retirement found it and said the map has to move first
+     * (greenhouse decisions/0272, moved in decisions/0273).
      *
-     * @var list<array{key: string, title: string, icon: string}>
+     * What is left here is this sidebar's OWN decision: WHICH screens it lists and in WHAT ORDER.
+     * {@see Screens} says what each one is called and drawn with, and the panel asks the same class.
+     *
+     * @var list<string>
      */
-    public const NAV = [
-        ['key' => 'sessions', 'title' => 'nav.sessions', 'icon' => '▤'],
-        ['key' => 'decisions', 'title' => 'nav.decisions', 'icon' => '◈'],
-        ['key' => 'capabilities', 'title' => 'nav.capabilities', 'icon' => '▩'],
-        ['key' => 'skills', 'title' => 'nav.skills', 'icon' => '✦'],
-        ['key' => 'subagents', 'title' => 'nav.subagents', 'icon' => '◉'],
-        ['key' => 'preview', 'title' => 'nav.preview', 'icon' => '◱'],
-        ['key' => 'settings', 'title' => 'nav.settings', 'icon' => '⚙'],
-    ];
+    private const ORDER = ['sessions', 'decisions', 'capabilities', 'skills', 'subagents', 'preview', 'settings'];
+
+    /**
+     * This sidebar's items — its own order, the screens' own identity.
+     *
+     * @return list<array{key: string, title: string, icon: string}>
+     */
+    public static function nav(): array
+    {
+        return Screens::inOrder(self::ORDER);
+    }
 
     private const GRAIN = [[0, 0], [0, 12.5], [0, 25], [0, 37.5], [0, 50], [50, 0], [50, 12.5], [50, 25], [50, 37.5], [50, 50], [12.5, 12.5], [37.5, 12.5], [25, 25]];
 
@@ -148,7 +156,7 @@ final class Sidebar
     private function navItems(string $active, int $decisions = 0, bool $chrome = true): string
     {
         $out = '';
-        foreach (self::NAV as $item) {
+        foreach (self::nav() as $item) {
             $key = $item['key'];
             if (!$chrome && $key !== 'sessions') {
                 continue;

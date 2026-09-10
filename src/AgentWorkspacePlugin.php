@@ -524,7 +524,7 @@ final class AgentWorkspacePlugin implements PluginInterface, RouteProviderInterf
         return [
             \Milpa\Admin\Section\AdminSection::ofView(
                 id: AgentViewComponent::SECTION,
-                title: $catalog->tr('agent.title'),
+                title: $catalog->tr(Live\Screens::title(AgentViewComponent::SECTION)),
                 view: AgentView::of(
                     $live instanceof DesktopComponents ? $live : new DesktopComponents($this->liveSecret('signing'), $this->liveSecret('csrf')),
                     $settings,
@@ -536,7 +536,7 @@ final class AgentWorkspacePlugin implements PluginInterface, RouteProviderInterf
                 ),
                 order: 60,
                 group: 'agent',
-                icon: '◈',
+                icon: Live\Screens::icon(AgentViewComponent::SECTION),
             ),
             ...self::screenSections($live instanceof DesktopComponents ? $live : null, $data, $catalog),
         ];
@@ -573,11 +573,11 @@ final class AgentWorkspacePlugin implements PluginInterface, RouteProviderInterf
         foreach (self::SCREEN_SECTIONS as $key => $component) {
             $sections[] = \Milpa\Admin\Section\AdminSection::ofView(
                 id: AgentViewComponent::SECTION . '-' . $key,
-                title: $catalog->tr('nav.' . $key),
+                title: $catalog->tr(Live\Screens::title($key)),
                 view: Admin\ScreenView::of($live, $component::contract()->name, AgentViewComponent::SECTION . '-' . $key . '-region', $catalog),
                 order: $order,
                 group: 'agent',
-                icon: self::screenIcon($key),
+                icon: Live\Screens::icon($key),
                 parent: AgentViewComponent::SECTION,
             );
             $order += 10;
@@ -586,17 +586,7 @@ final class AgentWorkspacePlugin implements PluginInterface, RouteProviderInterf
         return $sections;
     }
 
-    /** The glyph the Desktop's own sidebar gives a screen — read from its list, never a second copy. */
-    private static function screenIcon(string $key): string
-    {
-        foreach (Live\Sidebar::NAV as $item) {
-            if ($item['key'] === $key) {
-                return $item['icon'];
-            }
-        }
 
-        return '';
-    }
 
     /** The runtime's config bag, or null when this plugin booted without a kernel (as in unit tests). */
     private function configBag(): ?Config
