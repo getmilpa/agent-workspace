@@ -3,6 +3,13 @@
 All notable changes to milpa/desktop-app are documented here. This project adheres to
 [Semantic Versioning](https://semver.org/) and [Keep a Changelog](https://keepachangelog.com/).
 
+## [0.74.1](https://github.com/getmilpa/agent-workspace/compare/v0.74.0...v0.74.1) (2026-09-11)
+
+
+### Bug Fixes
+
+* **workspace:** the commands it prints can be typed, and three tests that could not tell ([#79](https://github.com/getmilpa/agent-workspace/issues/79)) ([8b895c7](https://github.com/getmilpa/agent-workspace/commit/8b895c7ca2ee3b615e44289bfca3c4d7b8af6711))
+
 ## [0.74.0](https://github.com/getmilpa/agent-workspace/compare/v0.73.3...v0.74.0) (2026-09-10)
 
 
