@@ -108,7 +108,7 @@ final class TheRoomSaysWhenItIsDegradedTest extends TestCase
         $html = $this->markup('');
 
         self::assertStringContainsString('updates arrive on a poll', $html, 'the state is still said');
-        self::assertStringContainsString('coa stack', $html, 'the way out every app has');
+        self::assertStringContainsString('php bin/coa stack', $html, 'the way out every app has');
         self::assertStringContainsString('See what this app declared with', $html);
         self::assertStringNotContainsString('composer-degraded__link', $html);
         self::assertStringNotContainsString('<a', substr($html, (int) strpos($html, 'composer-degraded')), 'no anchor after the notice');
@@ -120,7 +120,7 @@ final class TheRoomSaysWhenItIsDegradedTest extends TestCase
         $html = $this->markup('/milpa/admin/s/stack');
 
         self::assertStringContainsString('composer-degraded__link', $html);
-        self::assertStringNotContainsString('coa stack', $html, 'two ways out is a choice a person did not ask for');
+        self::assertStringNotContainsString('php bin/coa stack', $html, 'two ways out is a choice a person did not ask for');
     }
 
     /** And the link honours the route the app DECLARED, never a copied default. */
