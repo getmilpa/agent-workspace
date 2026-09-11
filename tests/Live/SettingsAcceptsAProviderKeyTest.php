@@ -59,7 +59,7 @@ final class SettingsAcceptsAProviderKeyTest extends TestCase
         self::assertStringContainsString('data-key-state="unjudgeable"', $html);
         self::assertStringNotContainsString('id="set-key"', $html, 'a control that cannot work is not offered');
         self::assertStringContainsString('nothing here can say who may reconfigure the agent', $html);
-        self::assertStringContainsString('coa capabilities:enable milpa/auth --sign', $html, 'and the way out is a command, not advice');
+        self::assertStringContainsString('php bin/coa capabilities:enable milpa/auth --sign', $html, 'and the way out is a command, not advice');
     }
 
     /**
