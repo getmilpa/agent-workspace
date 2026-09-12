@@ -70,6 +70,7 @@ final class ScreenPreview
             'hidden' => $hidden,
             'route' => $this->data?->liveRoute() ?? '/live',
             'screens' => $this->data?->declaredScreens() ?? [],
+            'reviewRoute' => $this->data?->screenReviewRoute(),
         ]);
         $this->events?->dispatch(self::BEFORE_RENDER, [self::SUBJECT_KEY => $subject]);
 
@@ -93,6 +94,7 @@ final class ScreenPreview
             . ' x-data="desktopScreens()" @click="onClick($event)" @keydown="onKey($event)"'
             . ScreenVisibility::attr($props) . '>'
             . '<p class="milpa-screens__intro">' . $this->tr('screens.intro') . '</p>'
+            . (\is_string($props['reviewRoute'] ?? null) ? '<p><button type="button" class="mui-btn mui-btn--primary" data-screen-name="" data-screen-src="' . htmlspecialchars($props['reviewRoute'], ENT_QUOTES) . '">' . $this->tr('screens.drafts') . '</button></p>' : '')
             . '<div class="mui-cluster mui-cluster--sm milpa-screens__bar">'
             . '<input class="mui-input mui-input--sm milpa-screens__name" id="milpa-preview-name" placeholder="' . $this->tr('screens.name') . '">'
             . '<button type="button" class="mui-btn mui-btn--primary mui-btn--sm" id="milpa-preview-go" data-live-route="' . $route . '">' . $this->tr('screens.preview') . '</button>'
