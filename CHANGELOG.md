@@ -3,6 +3,14 @@
 All notable changes to milpa/desktop-app are documented here. This project adheres to
 [Semantic Versioning](https://semver.org/) and [Keep a Changelog](https://keepachangelog.com/).
 
+## [0.75.0](https://github.com/getmilpa/agent-workspace/compare/v0.74.1...v0.75.0) (2026-09-12)
+
+
+### Features
+
+* **preview:** open host screen draft review from the panel ([f4e9749](https://github.com/getmilpa/agent-workspace/commit/f4e97490618380e39fbbf876b7ca80ee0d7c1ba7))
+* **preview:** open host screen draft review from the panel ([8465542](https://github.com/getmilpa/agent-workspace/commit/84655423abd516d9d1ba0f3edcb637a313fc486f))
+
 ## [0.74.1](https://github.com/getmilpa/agent-workspace/compare/v0.74.0...v0.74.1) (2026-09-11)
 
 
