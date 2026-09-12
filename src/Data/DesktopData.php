@@ -541,6 +541,12 @@ final class DesktopData
         return $out;
     }
 
+    /** A booted draft service owns review; older hosts keep their active-screen preview. */
+    public function screenReviewRoute(): ?string
+    {
+        return $this->container->has('Milpa\\AppRuntime\\Web\\ScreenDrafts') ? $this->liveRoute() . '/review' : null;
+    }
+
     /** The route the live wire is mounted on (config `live.route`, default `/live`) — the Preview iframe's base. */
     public function liveRoute(): string
     {

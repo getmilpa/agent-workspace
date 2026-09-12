@@ -763,3 +763,10 @@ Apache-2.0 · © Rodrigo Vicente - TeamX Agency
 ---
 
 Milpa is designed, built, and maintained by **[Rodrigo Vicente - TeamX Agency](https://teamx.agency/?utm_source=github&utm_medium=readme&utm_campaign=milpa&utm_content=desktop-app)**.
+
+When the host boots app-runtime's screen draft service (0.157+), Preview offers
+**Review screen drafts**. It opens the host's review page in the existing frame,
+where scoped reviewers compare immutable proposals, try isolated test data,
+activate an exact revision, or restore its baseline. Older hosts keep their
+existing active-screen preview. The workspace grants no new permissions and
+implements no second promotion service. See Greenhouse decision 0329.

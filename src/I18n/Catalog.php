@@ -280,6 +280,7 @@ final class Catalog
             'screens.intro' => 'See what the agent is building — a screen it declared, rendered live and hosted here. "How does it look?", answered.',
             'screens.name' => 'screen name',
             'screens.preview' => 'Preview',
+            'screens.drafts' => 'Review screen drafts',
             'screens.frame' => 'Live screen preview',
             'statusbar.model' => '%s · local model',
             // THE CONTEXT TAB — what the model actually receives on the next turn (greenhouse decisions/0288).
@@ -514,6 +515,7 @@ final class Catalog
             'screens.intro' => 'Mira lo que el agente está construyendo — una pantalla que declaró, renderizada en vivo y hospedada aquí. «¿Cómo se ve?», contestado.',
             'screens.name' => 'nombre de pantalla',
             'screens.preview' => 'Previsualizar',
+            'screens.drafts' => 'Revisar borradores de pantalla',
             'screens.frame' => 'Vista previa de la pantalla en vivo',
             'statusbar.model' => '%s · modelo local',
             // LA PESTAÑA CONTEXT — lo que el modelo recibe de verdad en el próximo turno (decisions/0288).
