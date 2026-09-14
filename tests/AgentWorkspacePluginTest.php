@@ -65,9 +65,11 @@ final class AgentWorkspacePluginTest extends TestCase
             self::assertInstanceOf(Route::class, $route);
             self::assertNotNull($route->handler);
         }
+        // The order IS the shape: the four routes behind the door first, declared as one group, then the
+        // one public route — the component assets (greenhouse decisions/0388).
         $paths = array_map(static fn (Route $r): string => $r->path, $routes);
         self::assertSame(
-            ['/workspace/hub', '/workspace/assets/c/{file}', '/workspace/settings', '/workspace/sessions', '/workspace/work'],
+            ['/workspace/hub', '/workspace/settings', '/workspace/sessions', '/workspace/work', '/workspace/assets/c/{file}'],
             $paths,
         );
     }

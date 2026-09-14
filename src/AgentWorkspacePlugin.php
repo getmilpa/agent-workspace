@@ -14,75 +14,103 @@ declare(strict_types=1);
 
 namespace Milpa\AgentWorkspace;
 
+use Milpa\AgentWorkspace\Admin\{
+    AdminGuest,
+    AgentView,
+    AgentViewComponent,
+    ScreenView,
+};
 use Milpa\AgentWorkspace\Config\WorkspaceKeys;
+use Milpa\AgentWorkspace\Controllers\{
+    AssetsController,
+    HubController,
+    MutationController,
+};
+use Milpa\AgentWorkspace\Data\{
+    DesktopData,
+    DesktopStore,
+};
 use Milpa\AgentWorkspace\Event\AgentWorkspaceEvents;
-use Milpa\Attributes\PluginMetadata;
-use Milpa\AgentWorkspace\Admin\AdminGuest;
-use Milpa\AgentWorkspace\Admin\AgentView;
-use Milpa\AgentWorkspace\Admin\AgentViewComponent;
-use Milpa\AgentWorkspace\Controllers\AssetsController;
-use Milpa\AgentWorkspace\Controllers\HubController;
-use Milpa\AgentWorkspace\Controllers\MutationController;
-use Milpa\AgentWorkspace\Live\ComposerField;
-use Milpa\AgentWorkspace\Data\DesktopData;
-use Milpa\Interfaces\Event\DeclaredEvents;
-use Milpa\Live\Contracts\Component\DeclaresComponents;
-use Milpa\AgentWorkspace\Data\DesktopStore;
 use Milpa\AgentWorkspace\Http\LoopbackOnlyMiddleware;
-use Milpa\AgentWorkspace\Live\DesktopAssets;
-use Milpa\AgentWorkspace\Live\DesktopComponents;
-use Milpa\AgentWorkspace\Live\MercureConfig;
-use Milpa\AgentWorkspace\Live\MercurePublisher;
-use Milpa\AgentWorkspace\Live\MercureServiceDeclaration;
-use Milpa\AgentWorkspace\Live\ShellChangeRecorder;
-use Milpa\AgentWorkspace\Live\ShellEvent;
-use Milpa\AgentWorkspace\Live\ShellEventLog;
-use Milpa\Http\HttpMethod;
-use Milpa\Http\Routing\HandlerReference;
+use Milpa\AgentWorkspace\I18n\Catalog;
+use Milpa\AgentWorkspace\Live\{
+    Activity,
+    AgentMessage,
+    ComposerBar,
+    ComposerField,
+    ComposerMessageComponent,
+    Context,
+    Conversation,
+    DeepScreens,
+    DesktopAssets,
+    DesktopComponents,
+    Gate,
+    MercureConfig,
+    MercurePublisher,
+    MercureServiceDeclaration,
+    MessagePrototypes,
+    PanelLink,
+    ScreenPreviewComponent,
+    Screens,
+    SessionStrip,
+    SettingsScreen,
+    SettingsScreenComponent,
+    ShellChangeRecorder,
+    ShellEvent,
+    ShellEventLog,
+    SkillsScreenComponent,
+    SubagentsScreenComponent,
+    Surfaces,
+    Tabs,
+    Thinking,
+    WorkBoard,
+};
+use Milpa\Admin\Section\AdminSection;
+use Milpa\AppRuntime\Config\SecretOverlay;
+use Milpa\Attributes\PluginMetadata;
+use Milpa\Auth\Contracts\AuthContextFactory;
+use Milpa\Command\OperationHttpPolicy;
 use Milpa\Http\Routing\Route;
 use Milpa\Interfaces\Di\DIContainerInterface;
-use Milpa\Interfaces\Event\MilpaEventDispatcherInterface;
+use Milpa\Interfaces\Event\{
+    DeclaredEvents,
+    MilpaEventDispatcherInterface,
+};
 use Milpa\Interfaces\Plugin\PluginInterface;
-use Milpa\Runtime\Config;
-use Milpa\Runtime\Kernel;
+use Milpa\Live\Contracts\Component\{
+    ComponentDefinitionInterface,
+    DeclaresComponents,
+};
+use Milpa\Mercure\MercureService;
+use Milpa\Plugin\Contracts\AppRoot;
+use Milpa\Runtime\{
+    Config,
+    Kernel,
+};
 use Milpa\Runtime\Http\RouteProviderInterface;
-use Milpa\Runtime\Stack\ServiceDeclaration;
-use Milpa\Runtime\Stack\StackProviderInterface;
+use Milpa\Runtime\Stack\{
+    ServiceDeclaration,
+    StackProviderInterface,
+};
 use Milpa\Runtime\Support\RootResolver;
 
 /**
- * The «Desktop App» plugin: a Milpa app SERVES ITS OWN SHELL over HTTP (greenhouse decisions/0188).
+ * The agent's workspace: a Milpa app SERVES ITS OWN SHELL over HTTP, at a real origin, and gains desktop
+ * hands by installing this plugin (greenhouse decisions/0188).
  *
- * The Milpa Desktop is not an Electron app that DRIVES a separate Milpa; it is a Milpa that GAINS
- * desktop hands by installing this plugin. The backend lives in the SAME app. Installing the plugin
- * mounts a shell route; an Electron (or plain browser) host then loads that URL at a REAL origin
- * (`http://localhost:<port>/desktop`) instead of a `file://` renderer — and that single move
- * dissolves the constraint that blocked the passkey ceremony: WebAuthn refuses `file://` and an IP
- * is not a valid relying-party id, but the served shell shares its origin with the app's own
- * `/webauthn/*` doors, its live components and its consent gates. One channel, one origin.
+ * What it declares to the host, and under which contract:
+ * - its routes ({@see RouteProviderInterface}), every one behind the door the app declared under
+ *   `workspace.middleware` — loopback-only by default, `[]` open on purpose (decisions/0209);
+ * - the Mercure hub it needs, as data ({@see StackProviderInterface}, decisions/0201);
+ * - its components, read from the sites that declare them ({@see DeclaresComponents}, decisions/0214, 0388);
+ * - one section of the admin panel and the deep screens under it, as the admin's GUEST
+ *   ({@see AdminGuest}: the contract is honored when the admin is there, and a house without it boots
+ *   untouched — decisions/0210, 0211, 0268).
  *
- * The first slice serves the shell and proves the seam; the reactive event bus (websockets /
- * milpa/mercure), the UI events other plugins hook, and the migration of the full renderer are the
- * arc named in 0188. Installing this plugin IS the activation — there is no config to fail closed on;
- * a Milpa without it simply has no desktop shell, which is the honest default.
- *
- * It is also the first real declarant of the runtime's stack contract (greenhouse decisions/0201): it
- * DECLARES the Mercure hub it needs — as data, through {@see StackProviderInterface} — so whoever operates
- * the host can list it, probe it and project a compose fragment without this plugin knowing who asks.
- *
- * The Desktop stands behind the same door as the admin (greenhouse decisions/0209): every shell route carries
- * the middleware the app declared under `workspace.middleware` — judged by {@see DesktopSettings}, loopback-only
- * by default, `[]` open on purpose, anything misdeclared falling to loopback-only — except the assets, which
- * stay public package files: a JSON 401 to a `<link>` or `<script>` would break the page silently.
- *
- * And it is the admin's GUEST (greenhouse decisions/0210): when milpa/admin is installed, the panel finds this
- * plugin among the booted ones — by `instanceof` its `AdminSectionProvider`, which {@see AdminGuest} carries
- * only when the admin is there, so a house without the admin boots untouched — and lists ONE section, «Agent»:
- * the workspace as one region inside the admin's main, behind
- * the same door. The Desktop names no dependency on the admin; it honors the admin's contract when asked.
+ * Installing the plugin IS the activation: a Milpa without it simply has no workspace.
  */
 #[PluginMetadata(
-    version: '0.1.0',
+    version: '0.75.0', // x-release-please-version
     author: 'Rodrigo Vicente - TeamX Agency',
     site: 'https://teamx.agency',
     name: 'AgentWorkspace',
@@ -90,89 +118,27 @@ use Milpa\Runtime\Support\RootResolver;
 )]
 final class AgentWorkspacePlugin implements PluginInterface, RouteProviderInterface, StackProviderInterface, AdminGuest, DeclaresComponents
 {
-    /**
-     * The components this plugin brings, so `components:catalogue` can name them and say they are
-     * ours (greenhouse decisions/0214).
-     *
-     * It is a SECOND list beside the shell's `declare()` calls, and a second list is a lie waiting
-     * to happen — so `DeclarationMatchesTheShellTest` asserts the two agree. Folding the shell's
-     * calls into a loop is not possible here: each carries its own paint callable, which is what
-     * makes a surface a surface.
-     */
-    public const array COMPONENTS = [
-        Live\ActivityComponent::class,
-        Live\AgentMessageComponent::class,
-        Live\ComposerBarComponent::class,
-        Live\ComposerMessageComponent::class,
-        Live\ContextComponent::class,
-        Live\AskGrantComponent::class,
-        Live\CompactedComponent::class,
-        Live\ConversationComponent::class,
-        Live\DecisionsInboxComponent::class,
-        Live\GateComponent::class,
-        Live\ResultClaimComponent::class,
-        Live\ScreenPreviewComponent::class,
-        Live\SessionStripComponent::class,
-        Live\SettingsScreenComponent::class,
-        Live\SkillsScreenComponent::class,
-        Live\SubagentsScreenComponent::class,
-        Live\SystemNoticeComponent::class,
-        Live\TabsComponent::class,
-        Live\TaskComponent::class,
-        Live\ThinkingComponent::class,
-        Live\ToolCallComponent::class,
-        Live\UserMessageComponent::class,
-        Live\WorkBoardComponent::class,
-        AgentViewComponent::class,
-    ];
-
-    /**
-     * The component definitions this plugin declares.
-     *
-     * {@see AgentViewComponent} is listed explicitly because it never enters the shell's registry —
-     * it is built inside `AgentView::of()` for the admin's guest section — and a component nobody
-     * can discover is a capability nobody can use.
-     *
-     * @return list<class-string<\Milpa\Live\Contracts\Component\ComponentDefinitionInterface>>
-     */
-    public function declaredComponents(): array
-    {
-        return self::COMPONENTS;
-    }
-
     /** A plugin dispatches this (with a {@see ShellEvent} in `payload['shellEvent']`) to push a live update. */
     public const CHANGED_EVENT = 'desktop.shell.changed';
 
-    /** Where the shell is mounted — not configurable: every route below hangs from it, and the admin section points at it. */
-    /**
-     * WHICH DEEP SCREENS BECOME SECTIONS OF THEIR OWN, keyed by the sidebar key that names them.
-     *
-     * Not every screen belongs here. `sessions` is the conversation itself, which IS the Agent
-     * section — a child pointing back at its parent would be the same room twice. `decisions` is an
-     * inbox whose whole value is being seen without navigating; it stays a region of the conversation
-     * rather than a screen somebody has to remember to open.
-     *
-     * `capabilities` is NOT here either, and that is a duplicate removed rather than an omission: the
-     * panel's own Plugins section already carries the capability catalogue AND can enable from it —
-     * its docblock says so in as many words, «this section showed the capability catalogue and could
-     * not enable anything». Two doors to one fact is the exact defect this arc is about, and it was
-     * caught by Rod looking at the painted panel, not by a test.
-     *
-     * The rest are the ones the gear was asked for: settings, skills, the specialist agents, and the
-     * preview (greenhouse decisions/0268).
-     *
-     * @var array<string, class-string<\Milpa\Live\Contracts\Component\ComponentDefinitionInterface>>
-     */
-    private const SCREEN_SECTIONS = [
-        'settings' => Live\SettingsScreenComponent::class,
-        'skills' => Live\SkillsScreenComponent::class,
-        'subagents' => Live\SubagentsScreenComponent::class,
-        'preview' => Live\ScreenPreviewComponent::class,
-    ];
-
-
     /** The sign-in door the admin section offers a signed-out human — app-runtime's default, the one the shell's guard reads from the 401 too. */
     public const SIGNIN_PATH = '/webauthn/signin';
+
+    /**
+     * Which deep screens become sections of their own under Agent, keyed by the sidebar key that names them.
+     *
+     * Not every screen: `sessions` IS the Agent section, `decisions` is a tab of that region, and
+     * `capabilities` is the panel's own Plugins section — two doors to one fact is the defect
+     * (greenhouse decisions/0268).
+     *
+     * @var array<string, class-string<ComponentDefinitionInterface>>
+     */
+    private const SCREEN_SECTIONS = [
+        'settings' => SettingsScreenComponent::class,
+        'skills' => SkillsScreenComponent::class,
+        'subagents' => SubagentsScreenComponent::class,
+        'preview' => ScreenPreviewComponent::class,
+    ];
 
     public function __construct(private readonly DIContainerInterface $container)
     {
@@ -185,35 +151,52 @@ final class AgentWorkspacePlugin implements PluginInterface, RouteProviderInterf
     }
 
     /**
-     * Wire the shell controller (composed through the event dispatcher) and the live event feed (backed by
-     * the shared event log). The kernel registers the dispatcher and the Config bag BEFORE any plugin
-     * boots, so both are present here — the assert documents that invariant. Subscribing to
-     * {@see CHANGED_EVENT} is how any plugin's live update reaches connected clients: the dispatched
-     * {@see ShellEvent} is appended to the log the SSE feed reads.
+     * The component definitions this plugin declares, read from the sites that declare them: the region's
+     * surfaces ({@see Surfaces::components()}), the deep screens ({@see DeepScreens::components()}), and the
+     * two that never enter the shell's registry — the composer's field, which the registry itself registers,
+     * and {@see AgentViewComponent}, built inside `AgentView::of()` for the admin's guest section. A component
+     * nobody can discover is a capability nobody can use (greenhouse decisions/0214); the second list of the
+     * same fact was retired in decisions/0388.
+     *
+     * @return list<class-string<ComponentDefinitionInterface>>
+     */
+    public function declaredComponents(): array
+    {
+        return [
+            ...Surfaces::components(),
+            ...DeepScreens::components(),
+            ComposerMessageComponent::class,
+            AgentViewComponent::class,
+        ];
+    }
+
+    /**
+     * Build the shell's surfaces, declare them on the one registry, and wire the live change feed.
+     *
+     * The kernel registers the dispatcher and the Config bag before any plugin boots. What enters the
+     * container is only what somebody resolves from it: the door, the three controllers, the data, the
+     * registry, the settings screen and the Mercure hub — the surfaces and the store are handed to what
+     * uses them, not to the container: thirteen registrations nothing read came out without a byte of
+     * output changing (greenhouse evidence/0705).
      */
     public function boot(): void
     {
-        // 🚨 REFUSE WHILE THE APP STILL DECLARES `desktop`, and refuse HERE — first thing, before a
-        // single service is registered. The error has to reach whoever wrote `config/app.php`, which is
-        // the same reasoning as the framework's boot guard for an unjudgeable operation
-        // (greenhouse decisions/0279, decisions/0284).
+        // Refuse while the app still declares the legacy `desktop` key — first, before a single service
+        // is registered, so the error reaches whoever wrote `config/app.php` (greenhouse decisions/0279, 0284).
         WorkspaceKeys::refuseLegacy($this->configBag());
 
         $events = $this->container->get(MilpaEventDispatcherInterface::class);
         assert($events instanceof MilpaEventDispatcherInterface);
 
-        // Every event this package dispatches, declared HERE — where the dispatcher enters the package — so the
-        // house counts them from the emitter, never from a scan of source (greenhouse decisions/0228). A dispatcher
-        // that keeps no declarations is asked nothing; dispatching stays exactly what it was.
+        // Every event this package dispatches, declared where the dispatcher enters the package, so the house
+        // counts them from the emitter and never from a scan of source (greenhouse decisions/0228).
         if ($events instanceof DeclaredEvents) {
             $events->declare(...AgentWorkspaceEvents::declarations());
         }
 
-        // The door (greenhouse decisions/0209): the declared gate, judged once; the catalog in the declared
-        // locale; and the strict gate registered under its class name so the router can resolve it from the
-        // container — unless the app registered its own instance first. «Absent» is asked of the underlying
-        // PSR-11 container: the wrapper's has() also says yes to anything it could auto-wire, and an auto-wired
-        // gate would speak English whatever the app declared.
+        // The door, judged once, in the declared locale — unless the app registered its own instance first.
+        // «Absent» is asked of the UNDERLYING container: the wrapper's has() also says yes to anything it could
+        // auto-wire, and an auto-wired gate would speak English whatever the app declared (decisions/0209).
         $settings = $this->settings();
         $catalog = $settings->catalog();
         if (!$this->container->getContainer()->has(LoopbackOnlyMiddleware::class)) {
@@ -223,178 +206,86 @@ final class AgentWorkspacePlugin implements PluginInterface, RouteProviderInterf
         $log = new ShellEventLog($this->logPath());
 
         $store = new DesktopStore($this->sessionsPath(), $this->settingsPath());
-        $this->container->registerService(DesktopStore::class, $store);
+        // The controllers the router resolves from the container on every request, kept explicit: the
+        // container's auto-wiring would build them, but the core contract only promises it MAY
+        // (greenhouse decisions/0388 — promoting that MAY is a core acta, not this plugin's call).
         $this->container->registerService(MutationController::class, new MutationController($store));
+        $this->container->registerService(AssetsController::class, new AssetsController());
 
         $data = new DesktopData($this->container, $log, $this->sessionsPath(), $store);
         $this->container->registerService(DesktopData::class, $data);
 
+        // The hub, under milpa/mercure's own name, so a governed turn over HTTP streams its session events to
+        // the SAME hub the shell reads (greenhouse decisions/0190). No hub configured: nothing registered, and the
+        // turn simply does not stream.
         $mercure = $this->mercure();
-        // Expose the Mercure hub to the runtime under milpa/mercure's own name, so a governed agent turn run
-        // over the HTTP surface streams its session.* events — reasoning included — to the SAME hub the shell
-        // reads (greenhouse decisions/0190). AgentOperations' broadcaster() finds it here and BroadcastingEventStore
-        // publishes to `milpa/sessions/<id>`; the shell subscribes to that topic. A Desktop with no hub configured
-        // registers nothing and the turn simply does not stream, which is the honest default.
         if ($mercure !== null) {
-            $this->container->registerService(\Milpa\Mercure\MercureService::class, $mercure->service());
+            $this->container->registerService(MercureService::class, $mercure->service());
         }
-        // milpa/live — the framework's official UI system — powers the whole shell (greenhouse decisions/0189,
-        // 0211). ONE registry holds every Desktop component and its renderer: the shell composes the page
-        // through it and `POST /desktop/live` is built over the SAME one, so an interaction re-renders through
-        // the renderer that painted the surface. The registry is extensible: an agent or a human declares new
-        // components on it the same way the shell declares its own.
+
+        // ONE registry holds every workspace component and its renderer: the page composes through it and the
+        // live endpoint re-renders through the same one (greenhouse decisions/0189, 0211).
         $desktopComponents = new DesktopComponents($this->liveSecret('signing'), $this->liveSecret('csrf'), $events);
         $this->container->registerService(DesktopComponents::class, $desktopComponents);
         $composerField = new ComposerField($this->liveSecret('signing'), $this->liveSecret('csrf'), $events, $desktopComponents, $catalog);
-        $this->container->registerService(ComposerField::class, $composerField);
 
+        // The region's surfaces (greenhouse decisions/0189, 0191): built here and handed to the registry through
+        // {@see Surfaces}. Context receives DesktopData directly; contributed panels are additive, never the
+        // primary source of context (decisions/0288).
+        $tabs = new Tabs($this->liveSecret('signing'), $events, $catalog);
+        $workBoard = new WorkBoard($this->liveSecret('signing'), $data, $events);
+        $activity = new Activity($this->liveSecret('signing'), $data, $events);
+        $context = new Context($this->liveSecret('signing'), $events, $data, $catalog);
+        $gate = new Gate($this->liveSecret('signing'), $events);
+        $thinking = new Thinking($this->liveSecret('signing'), $events);
+        $agentMessage = new AgentMessage($this->liveSecret('signing'), $events);
+        $messages = new MessagePrototypes($this->liveSecret('signing'), $events);
+        $conversation = new Conversation($this->liveSecret('signing'), $events, $data, $catalog);
+        $sessionStrip = new SessionStrip($this->liveSecret('signing'), $data, $events, $catalog);
 
-
-        // The main tablist is the shell's third pure-Milpa-Components surface (greenhouse decisions/0189): the
-        // tablist declares the shared `desktop.tab` signal; the panes and composer dock project it.
-        $tabs = new \Milpa\AgentWorkspace\Live\Tabs($this->liveSecret('signing'), $events, $catalog);
-        $this->container->registerService(\Milpa\AgentWorkspace\Live\Tabs::class, $tabs);
-
-        // The Work board is the shell's fourth pure-Milpa-Components surface (greenhouse decisions/0189): a
-        // projection component with a signed envelope and lifecycle events; drag-drop persists via /desktop/work.
-        $workBoard = new \Milpa\AgentWorkspace\Live\WorkBoard($this->liveSecret('signing'), $data, $events);
-        $this->container->registerService(\Milpa\AgentWorkspace\Live\WorkBoard::class, $workBoard);
-
-        // The Activity tab is the shell's fifth pure-Milpa-Components surface (greenhouse decisions/0189): the
-        // session's live fact stream + a counter projection, as a signed component with lifecycle events.
-        $activity = new \Milpa\AgentWorkspace\Live\Activity($this->liveSecret('signing'), $data, $events);
-        $this->container->registerService(\Milpa\AgentWorkspace\Live\Activity::class, $activity);
-
-        // The Context tab is the shell's sixth pure-Milpa-Components surface (greenhouse decisions/0189).
-        //
-        // 🚨 IT GETS `$data`, AND FOR TWO YEARS IT DID NOT. Read the line above: `Activity` is built with
-        // `$data` and so is every sibling; `Context` was built without it, so the tab NAMED Context was
-        // the one surface in this region with nothing of its own to read. It rendered only what plugins
-        // contributed — and an app with no contributing plugin opened «Context» and got a note about
-        // `ShellComposition::addPanel()`, which answers a question about the extension mechanism to
-        // somebody asking what the agent can see. Rod, on seeing it: «ahí deberían aparecer los datos
-        // del contexto». The panels are still an addition; the context is now the content
-        // (greenhouse decisions/0288).
-        $context = new \Milpa\AgentWorkspace\Live\Context($this->liveSecret('signing'), $events, $data, $catalog);
-        $this->container->registerService(\Milpa\AgentWorkspace\Live\Context::class, $context);
-
-        // The consent gate is the shell's seventh and last pure-Milpa-Components surface (greenhouse
-        // decisions/0189): the durable question, a signed component whose visibility is a shared signal.
-        $gate = new \Milpa\AgentWorkspace\Live\Gate($this->liveSecret('signing'), $events);
-        $this->container->registerService(\Milpa\AgentWorkspace\Live\Gate::class, $gate);
-
-        // The conversation's message types become Milpa Components too (greenhouse decisions/0191). The first:
-        // the thinking block — a declared component whose prototype the shell clones per turn and feeds live.
-        $thinking = new \Milpa\AgentWorkspace\Live\Thinking($this->liveSecret('signing'), $events);
-        $this->container->registerService(\Milpa\AgentWorkspace\Live\Thinking::class, $thinking);
-
-        // The agent message is a component too (greenhouse decisions/0191): it carries its foot tools — copy
-        // the answer, regenerate it — and a plugin adds more by hooking its render events.
-        $agentMessage = new \Milpa\AgentWorkspace\Live\AgentMessage($this->liveSecret('signing'), $events);
-        $this->container->registerService(\Milpa\AgentWorkspace\Live\AgentMessage::class, $agentMessage);
-
-        // The plainer message types (user, tool, task, system) as components too (greenhouse decisions/0191).
-        $messages = new \Milpa\AgentWorkspace\Live\MessagePrototypes($this->liveSecret('signing'), $events);
-        $this->container->registerService(\Milpa\AgentWorkspace\Live\MessagePrototypes::class, $messages);
-
-        // The conversation itself is a component that composes the message components (greenhouse decisions/0191).
-        $conversation = new \Milpa\AgentWorkspace\Live\Conversation($this->liveSecret('signing'), $events, $data, $catalog);
-        $this->container->registerService(\Milpa\AgentWorkspace\Live\Conversation::class, $conversation);
-
-        // The session strip of embed mode (greenhouse decisions/0210) is a component too (decisions/0189): the
-        // sidebar's reach in one row when the sidebar is folded, signed, with lifecycle events.
-        $sessionStrip = new \Milpa\AgentWorkspace\Live\SessionStrip($this->liveSecret('signing'), $data, $events, $catalog);
-        $this->container->registerService(\Milpa\AgentWorkspace\Live\SessionStrip::class, $sessionStrip);
-
-        // The two screens that were still raw HTML in the shell's template become declared views too
-        // (greenhouse decisions/0211, phase B): the Settings screen — whose Save says «Saved» only when
-        // the door did — and the entry overlay, the one ceremony every «New session» control runs.
-        // 🚨 THE TWO FACTS THE KEY FIELD NEEDS, ASKED OF THE APP AND NOT ASSUMED.
-        //
-        // Whether anything can JUDGE who may write a credential: an `OperationHttpPolicy` is what
-        // matches an operation's scopes against the caller's, and an app without one cannot expose
-        // `provider:declare` at all — the framework refuses to boot rather than publish it unguarded
-        // (greenhouse decisions/0275). Asked of the UNDERLYING container, like the gate and the
-        // sections above: the wrapper's has() also says yes to anything it could auto-wire, and a
-        // policy is not auto-wireable.
-        //
-        // And whether a key is already declared — WHETHER, never which. `SecretOverlay::declared()`
-        // answers paths; nothing in the framework can read a value back (greenhouse decisions/0267).
+        // The Settings screen asks the app two facts and assumes neither (greenhouse decisions/0267, 0275, 0285):
+        // whether a credential write can be AUTHORIZED — named as what is missing, a judge (`OperationHttpPolicy`)
+        // or a door (`AuthContextFactory`), because a judge with nobody it can judge is not an answer — and
+        // WHETHER a key is declared, never which. Both asked of the underlying container; `AppRoot` is what a
+        // booting plugin can see, and its path is a property (decisions/0276).
         $container = $this->container;
-        $settingsScreen = new \Milpa\AgentWorkspace\Live\SettingsScreen(
+        $settingsScreen = new SettingsScreen(
             $this->liveSecret('signing'),
             $data,
             $events,
             $catalog,
-            // 🚨 IT ASKS WHETHER A WRITE CAN BE AUTHORIZED, NOT WHETHER A JUDGE EXISTS — and the
-            // difference was a field that lied while you typed into it.
-            //
-            // This used to ask only for an `OperationHttpPolicy`. Measured on cattle with `milpa/auth`
-            // installed and `passkey.rpId` absent: the policy IS in the container, so the fields were
-            // offered — and `AuthContextFactory` is NOT, because without a relying party the passkey
-            // door mounts ZERO routes and nothing can produce a principal. A judge with nobody it can
-            // judge is not an answer (greenhouse decisions/0285).
-            //
-            // So the closure names WHAT IS MISSING rather than answering yes or no: the screen has two
-            // different sentences to say, and a boolean could only carry one of them.
-            //
-            // Asked of the UNDERLYING container in both halves: the wrapper's has() also says yes to
-            // anything it could auto-wire, and neither of these is auto-wireable.
             static function () use ($container): string {
                 $registered = $container->getContainer();
-                if (!$registered->has(\Milpa\Command\OperationHttpPolicy::class)) {
-                    return \Milpa\AgentWorkspace\Live\SettingsScreen::NO_POLICY;
+                if (!$registered->has(OperationHttpPolicy::class)) {
+                    return SettingsScreen::NO_POLICY;
                 }
-                if (!interface_exists(\Milpa\Auth\Contracts\AuthContextFactory::class)
-                    || !$registered->has(\Milpa\Auth\Contracts\AuthContextFactory::class)) {
-                    return \Milpa\AgentWorkspace\Live\SettingsScreen::NO_DOOR;
+                if (!interface_exists(AuthContextFactory::class) || !$registered->has(AuthContextFactory::class)) {
+                    return SettingsScreen::NO_DOOR;
                 }
 
                 return '';
             },
             static function () use ($container): bool {
-                if (!class_exists(\Milpa\AppRuntime\Config\SecretOverlay::class)) {
+                if (!class_exists(SecretOverlay::class)) {
                     return false;
                 }
-                // `AppRoot` and not the kernel: measured on cattle, the kernel is not registered while a
-                // plugin boots but the app's root already is (greenhouse decisions/0276).
-                $root = $container->getContainer()->has(\Milpa\Plugin\Contracts\AppRoot::class)
-                    ? $container->get(\Milpa\Plugin\Contracts\AppRoot::class)
-                    : null;
-                // A PROPERTY, not a method — `AppRoot` is a readonly value object. `method_exists`
-                // here returned false forever and the field would have reported «no key» always: a
-                // silently wrong answer, which is worse than a loud one.
-                $path = $root instanceof \Milpa\Plugin\Contracts\AppRoot ? $root->path : '';
+                $root = $container->getContainer()->has(AppRoot::class) ? $container->get(AppRoot::class) : null;
+                $path = $root instanceof AppRoot ? $root->path : '';
 
-                return $path !== '' && \in_array('agent.apiKey', \Milpa\AppRuntime\Config\SecretOverlay::declared($path), true);
+                return $path !== '' && \in_array('agent.apiKey', SecretOverlay::declared($path), true);
             },
         );
-        $this->container->registerService(\Milpa\AgentWorkspace\Live\SettingsScreen::class, $settingsScreen);
+        $this->container->registerService(SettingsScreen::class, $settingsScreen);
 
-        // The composer bar is a declared view too (greenhouse decisions/0211, phase C): the last surface the
-        // shell hand-stitched. Its markup is a renderer's, its behaviour `desktop-composer.js`, and the mode
-        // its chip shows travels in a signed envelope like every other component's state.
-        // Where the panel's Stack section is, resolved ONCE and handed down as a PROP (greenhouse
-        // decisions/0255): the bar never goes asking whether milpa/admin is installed. Empty in an app
-        // with no panel, and the degraded notice then says the state without offering a dead link.
-        $stackUrl = \Milpa\AgentWorkspace\Live\PanelLink::fromConfig($this->configBag())->stack();
-        $composerBar = new \Milpa\AgentWorkspace\Live\ComposerBar($this->liveSecret('signing'), $data, $composerField, $events, $catalog, $stackUrl);
-        $this->container->registerService(\Milpa\AgentWorkspace\Live\ComposerBar::class, $composerBar);
+        // Where the panel's Stack section is, resolved ONCE and handed down as a prop: the bar never asks whether
+        // milpa/admin is installed (greenhouse decisions/0255).
+        $stackUrl = PanelLink::fromConfig($this->configBag())->stack();
+        $composerBar = new ComposerBar($this->liveSecret('signing'), $data, $composerField, $events, $catalog, $stackUrl);
 
-        // 🚨 THE SHARED SURFACES ARE DECLARED BY THE HOST, BEFORE ANYTHING CAPTURES THE REGISTRY.
-        //
-        // They used to be declared inside `ShellController`'s constructor, and the admin panel — which
-        // paints 17 of them — depended on that by accident: it worked because this line happened to run.
-        // Nothing asserted the panel could stand without the page's controller, and nothing would have
-        // noticed, because `AgentViewRenderer::paint()` catches per surface and answers 200 with a small
-        // warning div. Measured: 17 `data-failed-component` markers, no exception
-        // (greenhouse decisions/0283).
-        //
-        // Declared HERE, once, for the same reason `DeepScreens` is declared once in `adminSections()`:
-        // `declare()` builds a fresh renderer per call and a view captures the instances the registry
-        // holds when it is built, so a second declaration site would let two sections carry two
-        // renderers for one name — which the panel refuses outright (greenhouse decisions/0211).
-        (new Live\Surfaces(
+        // Declared by the HOST, once, before anything captures the registry: `declare()` builds a fresh renderer
+        // per call and a view captures the instances the registry holds when it is built, so a second declaration
+        // site would let two sections carry two renderers for one name (greenhouse decisions/0211, 0283).
+        (new Surfaces(
             $data,
             $events,
             $catalog,
@@ -412,9 +303,6 @@ final class AgentWorkspacePlugin implements PluginInterface, RouteProviderInterf
             $messages,
         ))->declareOn($desktopComponents);
 
-
-        $this->container->registerService(AssetsController::class, new AssetsController());
-
         // The same wiring the shell page uses, offered to the surfaces that cannot write headers.
         $this->container->registerService(HubController::class, new HubController($this->mercure(), $this->liveSecret('signing')));
 
@@ -430,114 +318,68 @@ final class AgentWorkspacePlugin implements PluginInterface, RouteProviderInterf
     }
 
     /**
-     * The shell and its live event feed — both served over HTTP for a host to load at a real origin — each
-     * carrying the EFFECTIVE gate ({@see DesktopSettings::effectiveMiddleware()}, greenhouse decisions/0209):
-     * the declared stack when every entry names a PSR-15 middleware class (an empty list included), loopback-only
-     * the moment the declaration is anything else. The assets (`/desktop/assets/*`) carry none: public package
-     * files, and a JSON refusal to a `<link>` or `<script>` would break the page silently. The export is gated.
+     * The shell's routes, each behind the EFFECTIVE gate ({@see DesktopSettings::effectiveMiddleware()}, greenhouse
+     * decisions/0209): the declared stack when every entry names a PSR-15 middleware class (an empty list included),
+     * loopback-only the moment the declaration is anything else. The component assets carry none: public package
+     * files, and a JSON refusal to a `<link>` or `<script>` would break the page silently.
+     *
+     * The hub route exists because a surface inside the panel contributes markup to somebody else's response and
+     * cannot mint the cookie the hub reads (greenhouse decisions/0253); the assets route is ONE family, `{file}`
+     * capturing `<name>.css` and `<name>.js` alike for {@see DesktopAssets::path()} to judge (decisions/0211).
      */
     public function routes(): array
     {
-        $middleware = $this->settings()->effectiveMiddleware();
-
         return [
-            // WHERE A SURFACE THAT CANNOT SET COOKIES ASKS FOR ITS CONNECTION. The workspace inside the
-            // panel is a DeclaredView: it contributes markup to somebody else's response and never owns
-            // the headers, so it cannot mint the cookie the hub reads (greenhouse decisions/0253).
-            new Route(
-                path: '/workspace/hub',
-                methods: HttpMethod::GET,
-                name: 'desktop.hub',
-                middleware: $middleware,
-                handler: new HandlerReference(HubController::class, 'connect'),
+            ...Route::behind(
+                $this->settings()->effectiveMiddleware(),
+                Route::get('/workspace/hub', [HubController::class, 'connect'], 'desktop.hub'),
+                Route::post('/workspace/settings', [MutationController::class, 'saveSettings'], 'desktop.settings.save'),
+                Route::post('/workspace/sessions', [MutationController::class, 'createSession'], 'desktop.sessions.create'),
+                Route::post('/workspace/work', [MutationController::class, 'moveWork'], 'desktop.work.move'),
             ),
-            // Per-component files (greenhouse decisions/0211): `/desktop/assets/c/<component>.css|js`. ONE
-            // route family — the placeholder captures the whole last segment, so `<name>.css` and `<name>.js`
-            // both land here and {@see DesktopAssets::path()} decides which package file, if any, they name.
-            // Public like the design-system stylesheets: a JSON 401 to a `<link>` breaks the page in silence.
-            new Route(
-                path: DesktopAssets::BASE . '{file}',
-                methods: HttpMethod::GET,
-                name: 'desktop.assets.component',
-                handler: new HandlerReference(AssetsController::class, 'component'),
-            ),
-            new Route(
-                path: '/workspace/settings',
-                methods: HttpMethod::POST,
-                name: 'desktop.settings.save',
-                middleware: $middleware,
-                handler: new HandlerReference(MutationController::class, 'saveSettings'),
-            ),
-            new Route(
-                path: '/workspace/sessions',
-                methods: HttpMethod::POST,
-                name: 'desktop.sessions.create',
-                middleware: $middleware,
-                handler: new HandlerReference(MutationController::class, 'createSession'),
-            ),
-            new Route(
-                path: '/workspace/work',
-                methods: HttpMethod::POST,
-                name: 'desktop.work.move',
-                middleware: $middleware,
-                handler: new HandlerReference(MutationController::class, 'moveWork'),
-            ),
+            Route::get(DesktopAssets::BASE . '{file}', [AssetsController::class, 'component'], 'desktop.assets.component'),
         ];
     }
 
     /**
-     * The Desktop's one section in the admin panel: «Agent» — the conversation composed INLINE in the
-     * panel's own document, behind the same door (greenhouse decisions/0211, slice 3).
+     * The workspace's one section in the admin panel, «Agent» — the conversation composed INLINE in the panel's
+     * document, behind the same door — plus the deep screens as sections under it (greenhouse decisions/0211,
+     * 0268). The section declares a whole VIEW ({@see AgentView}); the admin registers it under a layer of its
+     * own and emits one runtime for the page.
      *
-     * The section declares a whole VIEW ({@see AgentView}), not one component: the region's root plus every
-     * `desktop-*` component behind it, with the SHELL's own definitions and renderers, the props they mount
-     * with and the signals the page must seed. The admin registers the tree under a layer of its own,
-     * compiles it into main, emits ONE runtime for the page — every file those renderers declared, each
-     * once — and serves them all from its own live wire. The iframe of decisions/0210 is gone with it.
+     * Called by milpa/admin at request time, and by nothing else.
      *
-     * Called by milpa/admin at request time, and by nothing else: without the admin there is nobody to call
-     * this, and `AdminSection` would not even be loadable.
-     *
-     * @return list<\Milpa\Admin\Section\AdminSection>
+     * @return list<AdminSection>
      */
     public function adminSections(): array
     {
         $settings = $this->settings();
         $catalog = $settings->catalog();
-        // Asked of the UNDERLYING container, like the gate above: the wrapper's has() also says yes to
-        // anything it could auto-wire, and neither of these can be auto-wired — a plugin whose boot() never
-        // ran would fatal inside the admin's discovery instead of declaring the section it can declare.
+        // Asked of the UNDERLYING container: neither can be auto-wired, and a plugin whose boot() never ran must
+        // declare what it can instead of fataling inside the admin's discovery.
         $registered = $this->container->getContainer();
         $live = $registered->has(DesktopComponents::class) ? $this->container->get(DesktopComponents::class) : null;
         $data = $registered->has(DesktopData::class) ? $this->container->get(DesktopData::class) : null;
 
-        // 🚨 DECLARED BEFORE ANY VIEW IS BUILT, and the panel's own guard is why.
-        //
-        // `declare()` creates a fresh renderer per call, and a view CAPTURES the instances the registry
-        // holds at the moment it is built. Declaring after the Agent section meant Agent carried the old
-        // instance and every child carried the new one, and the panel refused the whole page: «component
-        // «desktop-capabilities» is painted by different renderers in section «agent-settings» and
-        // section «agent»» — one renderer per name, and never one shadowing another
-        // (greenhouse decisions/0211, caught building decisions/0268).
-        //
-        // Here, once, so every section that follows captures the same instances. The shell controller
-        // declares the same list for its own page, on a request where this never runs.
+        // The deep screens, declared here ONCE before any view is built, so every section captures the same
+        // instances: the panel refuses one name painted by different renderers in two sections
+        // (greenhouse decisions/0211, 0268).
         if ($live instanceof DesktopComponents) {
-            $screen = $registered->has(Live\SettingsScreen::class) ? $this->container->get(Live\SettingsScreen::class) : null;
-            Live\DeepScreens::declareOn(
+            $screen = $registered->has(SettingsScreen::class) ? $this->container->get(SettingsScreen::class) : null;
+            DeepScreens::declareOn(
                 $live,
                 $data instanceof DesktopData ? $data : null,
                 null,
                 $catalog,
                 hidden: false,
-                settings: $screen instanceof Live\SettingsScreen ? $screen : null,
+                settings: $screen instanceof SettingsScreen ? $screen : null,
             );
         }
 
         return [
-            \Milpa\Admin\Section\AdminSection::ofView(
+            AdminSection::ofView(
                 id: AgentViewComponent::SECTION,
-                title: $catalog->tr(Live\Screens::title(AgentViewComponent::SECTION)),
+                title: $catalog->tr(Screens::title(AgentViewComponent::SECTION)),
                 view: AgentView::of(
                     $live instanceof DesktopComponents ? $live : new DesktopComponents($this->liveSecret('signing'), $this->liveSecret('csrf')),
                     $settings,
@@ -548,34 +390,22 @@ final class AgentWorkspacePlugin implements PluginInterface, RouteProviderInterf
                 ),
                 order: 60,
                 group: 'agent',
-                icon: Live\Screens::icon(AgentViewComponent::SECTION),
+                icon: Screens::icon(AgentViewComponent::SECTION),
             ),
             ...self::screenSections($live instanceof DesktopComponents ? $live : null, $data, $catalog),
         ];
     }
 
     /**
-     * THE DEEP SCREENS, AS SECTIONS UNDER AGENT — behind its gear, out of the main navigation.
+     * The deep screens as sections under Agent, behind its gear: `{route}/s/{id}` already routes any declared id
+     * and one middleware stack covers every panel route; what a screen needed was a way to say whose it is —
+     * `parent` (greenhouse decisions/0268). Titles and order are the workspace's own ({@see Screens}), so the two
+     * doors cannot disagree about a screen's name. Empty when the registry is absent: a section whose components
+     * nothing can resolve is a menu entry that 500s.
      *
-     * They were reachable through exactly one door: the `/desktop` page, whose own sidebar switched
-     * between them. So the panel could show the conversation and nothing else about the agent, and the
-     * page could not be retired without orphaning every screen behind it (greenhouse decisions/0268).
-     *
-     * 🚨 THE CHEAP ANSWER WOULD HAVE BEEN A `settings` SLOT ON THE ADMIN'S CONTRACT. The true one is
-     * that these screens ARE sections and only needed a way to say whose they are — `{route}/s/{id}`
-     * already routes any declared id and one middleware stack already covers every panel route. What
-     * was missing was one optional field.
-     *
-     * Their titles are the SAME catalog keys the Desktop's own sidebar names them with, so the two
-     * doors can never disagree about what a screen is called. Their order is the order that sidebar
-     * lists them in, for the same reason.
-     *
-     * Empty when the registry is absent: a section whose components nothing can resolve is a menu
-     * entry that 500s, and this plugin already answers that way for its own region.
-     *
-     * @return list<\Milpa\Admin\Section\AdminSection>
+     * @return list<AdminSection>
      */
-    private static function screenSections(?DesktopComponents $live, ?DesktopData $data, I18n\Catalog $catalog): array
+    private static function screenSections(?DesktopComponents $live, ?DesktopData $data, Catalog $catalog): array
     {
         if ($live === null) {
             return [];
@@ -583,13 +413,13 @@ final class AgentWorkspacePlugin implements PluginInterface, RouteProviderInterf
         $sections = [];
         $order = 10;
         foreach (self::SCREEN_SECTIONS as $key => $component) {
-            $sections[] = \Milpa\Admin\Section\AdminSection::ofView(
+            $sections[] = AdminSection::ofView(
                 id: AgentViewComponent::SECTION . '-' . $key,
-                title: $catalog->tr(Live\Screens::title($key)),
-                view: Admin\ScreenView::of($live, $component::contract()->name, AgentViewComponent::SECTION . '-' . $key . '-region', $catalog),
+                title: $catalog->tr(Screens::title($key)),
+                view: ScreenView::of($live, $component::contract()->name, AgentViewComponent::SECTION . '-' . $key . '-region', $catalog),
                 order: $order,
                 group: 'agent',
-                icon: Live\Screens::icon($key),
+                icon: Screens::icon($key),
                 parent: AgentViewComponent::SECTION,
             );
             $order += 10;
@@ -597,8 +427,6 @@ final class AgentWorkspacePlugin implements PluginInterface, RouteProviderInterf
 
         return $sections;
     }
-
-
 
     /** The runtime's config bag, or null when this plugin booted without a kernel (as in unit tests). */
     private function configBag(): ?Config
@@ -610,57 +438,41 @@ final class AgentWorkspacePlugin implements PluginInterface, RouteProviderInterf
 
     /**
      * The door as the app declared it, judged (greenhouse decisions/0209): `workspace.middleware` and
-     * `workspace.locale` from the runtime's config bag, the defaults when the plugin has no bag (booted
-     * without a kernel, as in unit tests) — read on demand, so `routes()` answers before `boot()` too.
+     * `workspace.locale` from the runtime's config bag, the defaults when the plugin has no bag — read on
+     * demand, so `routes()` answers before `boot()` too.
      */
     public function settings(): DesktopSettings
     {
-        $config = $this->container->get(Config::class);
-
-        return DesktopSettings::fromConfig($config instanceof Config ? $config : null);
+        return DesktopSettings::fromConfig($this->configBag());
     }
 
     /**
      * The backing services this plugin needs the host to run (greenhouse decisions/0201): the Mercure hub the
-     * shell and the agent sessions stream through. Declared, not started — an admin panel lists it, probes its
-     * port and projects a compose fragment; running it is the operator's call. The declaration reads the
-     * wiring's `workspace.mercure.*` keys (plus the optional, declaration-only `cors_origin`), so the hub it
-     * describes is the hub the app publishes to; the keys travel as secret config references, never as values.
+     * shell and the agent sessions stream through. Declared, not started — the operator lists it, probes it and
+     * projects a compose fragment. The declaration reads `workspace.mercure.*`, so the hub it describes is the
+     * hub the app publishes to; the keys travel as secret config references, never as values.
      *
      * @return list<ServiceDeclaration>
      */
     public function services(): array
     {
-        $config = $this->container->get(Config::class);
-
-        return [MercureServiceDeclaration::fromConfig($config instanceof Config ? $config : null)];
+        return [MercureServiceDeclaration::fromConfig($this->configBag())];
     }
 
     /** The Mercure hub wiring, when the app configured `workspace.mercure.*`; null otherwise (log-only). */
     private function mercure(): ?MercureConfig
     {
-        $config = $this->container->get(Config::class);
+        $config = $this->configBag();
 
-        return $config instanceof Config ? MercureConfig::fromConfig($config) : null;
+        return $config !== null ? MercureConfig::fromConfig($config) : null;
     }
 
     /**
-     * Where this app lives — asked, or walked to, never taken from the working directory.
-     *
-     * The two paths below used to default to `getcwd()`, and what that resolves to depends on HOW the app
-     * was launched: `php -S … -t public public/router.php` — the form this README documents — leaves the
-     * working directory alone, but the shorter `php -S … -t public` makes PHP's built-in server chdir()
-     * into the DOCROOT on every request. Under that form these defaults put the app's settings and its
-     * whole SESSION STORE inside `public/`, where they are served.
-     *
-     * A default that changes meaning with the command line is not a default, it is a trap — and the same
-     * shape, in `milpa/app-runtime`, put passkey credentials and one-time WebAuthn challenges on the public
-     * web (greenhouse evidence/0535). So: the kernel first, and failing that the platform's own
-     * {@see RootResolver}, which walks UP to the nearest composer.json. From `public/` that lands on the app.
-     *
-     * It asks the PSR-11 REGISTRY rather than `DIContainerInterface::has()`, which answers true for any
-     * auto-wirable class and would hand back a kernel rooted wherever that constructor decided
-     * (greenhouse evidence/0522).
+     * Where this app lives: the kernel first, else the platform's own {@see RootResolver} walking up to the
+     * nearest composer.json — never the working directory, whose meaning changes with how `php -S` was
+     * launched and once put a session store under `public/` (greenhouse evidence/0535). Asked of the PSR-11
+     * REGISTRY: the wrapper's has() would auto-wire a kernel rooted wherever its constructor decided
+     * (evidence/0522).
      */
     private function root(): string
     {
@@ -678,8 +490,7 @@ final class AgentWorkspacePlugin implements PluginInterface, RouteProviderInterf
     /** Where persisted Desktop settings live: `workspace.settings.path` in config, else `.milpa/desktop-settings.json`. */
     private function settingsPath(): string
     {
-        $config = $this->container->get(Config::class);
-        $configured = WorkspaceKeys::read($config instanceof Config ? $config : null, 'settings.path');
+        $configured = WorkspaceKeys::read($this->configBag(), 'settings.path');
 
         return is_string($configured) && $configured !== '' ? $configured : $this->root() . '/.milpa/desktop-settings.json';
     }
@@ -687,27 +498,23 @@ final class AgentWorkspacePlugin implements PluginInterface, RouteProviderInterf
     /** Where the app's session store lives: `workspace.sessions.path` in config, else `.milpa/sessions/`. */
     private function sessionsPath(): string
     {
-        $config = $this->container->get(Config::class);
-        $configured = WorkspaceKeys::read($config instanceof Config ? $config : null, 'sessions.path');
+        $configured = WorkspaceKeys::read($this->configBag(), 'sessions.path');
 
         return is_string($configured) && $configured !== '' ? $configured : $this->root() . '/.milpa/sessions';
     }
 
-    /** Where the shared event log lives: `workspace.events.log` in config, else a per-app temp file. */
     /**
-     * The HMAC secret every Desktop component signs its state envelope and its CSRF token with.
+     * The HMAC secret every workspace component signs its state envelope and its CSRF token with.
      *
-     * ONE signing key per page (greenhouse decisions/0211): `workspace.live.<kind>_secret` still wins when the
-     * app declares it, but the DEFAULT is now the house's own `live.secret` — the key every other milpa/live
-     * endpoint in the app verifies with, so an envelope signed by a Desktop surface is not, to the house's
-     * endpoint, a tampered one. Only when the house declares neither does it fall back to a stable value
-     * derived from this package's path, which is a per-install default and not a secret: declare `live.secret`
-     * (or `workspace.live.*_secret`) for a real deployment.
+     * ONE signing key per page (greenhouse decisions/0211): `workspace.live.<kind>_secret` wins when declared,
+     * else the house's own `live.secret` — the key every other milpa/live endpoint verifies with — and only
+     * when the house declares neither, a stable per-install value derived from this package's path, which is
+     * a default and not a secret.
      */
     private function liveSecret(string $kind): string
     {
-        $config = $this->container->get(Config::class);
-        if (!$config instanceof Config) {
+        $config = $this->configBag();
+        if ($config === null) {
             return hash('sha256', __DIR__ . '|milpa-live|' . $kind);
         }
 
@@ -724,22 +531,15 @@ final class AgentWorkspacePlugin implements PluginInterface, RouteProviderInterf
         return hash('sha256', __DIR__ . '|milpa-live|' . $kind);
     }
 
+    /** Where the shared event log lives: `workspace.events.log` in config, else a per-app temp file. */
     private function logPath(): string
     {
-        $config = $this->container->get(Config::class);
-        $configured = WorkspaceKeys::read($config instanceof Config ? $config : null, 'events.log');
+        $configured = WorkspaceKeys::read($this->configBag(), 'events.log');
 
         return is_string($configured) && $configured !== ''
             ? $configured
             : sys_get_temp_dir() . '/milpa-desktop-shell-events.log';
     }
-
-    /*
-     * NO HAY `feedTiming()` AQUÍ. Alimentaba la ventana y el intervalo del feed SSE
-     * (`GET /desktop/events`), que nadie abría: el único `EventSource` del paquete lee el hub de
-     * Mercure, no esa ruta. La ruta, su controlador, su formateador y esta configuración se fueron
-     * juntos con la página (greenhouse decisions/0283).
-     */
 
     /** No persistent state to create: the shell is served, not stored. */
     public function install(): void

@@ -17,6 +17,7 @@ namespace Milpa\AgentWorkspace\Live;
 use Milpa\AgentWorkspace\Data\DesktopData;
 use Milpa\AgentWorkspace\I18n\Catalog;
 use Milpa\Interfaces\Event\MilpaEventDispatcherInterface;
+use Milpa\Live\Contracts\Component\ComponentDefinitionInterface;
 
 /**
  * THE AGENT'S DEEP SCREENS, DECLARED IN ONE PLACE FOR BOTH DOORS.
@@ -57,40 +58,50 @@ final class DeepScreens
         bool $hidden = true,
         ?SettingsScreen $settings = null,
     ): void {
-        // Declared with the rest when the caller has one, because it is one of the screens both doors
-        // show and leaving it out cost exactly what this list exists to prevent: the shell declared it
-        // at boot with the shell's own visibility, so the panel's Settings section painted hidden while
-        // its siblings painted visible (greenhouse decisions/0268).
-        if ($settings !== null) {
-            $live->declare(
-                new SettingsScreenComponent(),
-                static fn (array $props): string => $settings->render($hidden),
-            );
+        foreach (self::paints($data, $events, $catalog, $hidden, $settings) as $class => $paint) {
+            if ($paint !== null) {
+                $live->declare(new $class(), static fn (array $props): string => $paint($live, $props));
+            }
         }
-        $live->declare(
-            new SkillsScreenComponent(),
-            static fn (array $props): string => (new SkillsScreen($live->codec(), $data, $events, $catalog))->render($hidden),
-        );
-        $live->declare(
-            new SubagentsScreenComponent(),
-            static fn (array $props): string => (new SubagentsScreen($live->codec(), $data, $events, $catalog))->render($hidden),
-        );
-        $live->declare(
-            new ScreenPreviewComponent(),
-            static fn (array $props): string => (new ScreenPreview($live->codec(), $data, $events, $catalog))->render($hidden),
-        );
-        /*
-         * NO DECLARA `desktop-decisions` AQUÍ, Y MOVERLO ARREGLÓ UNA DEPENDENCIA DE ORDEN.
-         *
-         * 🚨 La bandeja no es una pantalla profunda: no es sección de nadie —`SCREEN_SECTIONS` son
-         * settings, skills, subagents y preview— y en cambio la REGIÓN Agent la pinta como pestaña. Así
-         * que su declaración vivía en la ruta de las secciones y la región dependía de que esa ruta
-         * hubiera corrido primero.
-         *
-         * Lo cazó el control del despachador sin contrato: pintaba la región tras `boot()` y
-         * `desktop-decisions` era la ÚNICA superficie con `data-failed-component`. Es la misma clase de
-         * acoplamiento que este arco le quitó al controlador de la página, una capa más adentro
-         * (greenhouse decisions/0283). Vive en {@see Surfaces} con las demás superficies de la región.
-         */
+    }
+
+    /**
+     * The screens this class declares — the same map {@see declareOn()} walks, asked for its keys.
+     *
+     * Settings is in the list whether or not a host hands an instance: the list says what this class
+     * DECLARES, and a host that has the screen declares it (greenhouse decisions/0388).
+     *
+     * @return list<class-string<ComponentDefinitionInterface>>
+     */
+    public static function components(): array
+    {
+        return array_keys(self::paints(null, null, new Catalog(), true, null));
+    }
+
+    /**
+     * Every deep screen's definition, mapped to what paints it — or to `null` when the host handed nothing
+     * to paint it with, which is the Settings screen without its instance.
+     *
+     * @return array<class-string<ComponentDefinitionInterface>, ?\Closure(DesktopComponents, array<string, mixed>): string>
+     */
+    private static function paints(
+        ?DesktopData $data,
+        ?MilpaEventDispatcherInterface $events,
+        Catalog $catalog,
+        bool $hidden,
+        ?SettingsScreen $settings,
+    ): array {
+        return [
+            // Declared with the rest when the caller has one: it is one of the screens both doors show, and
+            // leaving it out is what this list exists to prevent — the panel's Settings section once painted
+            // hidden while its siblings painted visible (greenhouse decisions/0268).
+            SettingsScreenComponent::class => $settings === null ? null : static fn (DesktopComponents $live, array $props): string => $settings->render($hidden),
+            SkillsScreenComponent::class => static fn (DesktopComponents $live, array $props): string => (new SkillsScreen($live->codec(), $data, $events, $catalog))->render($hidden),
+            SubagentsScreenComponent::class => static fn (DesktopComponents $live, array $props): string => (new SubagentsScreen($live->codec(), $data, $events, $catalog))->render($hidden),
+            ScreenPreviewComponent::class => static fn (DesktopComponents $live, array $props): string => (new ScreenPreview($live->codec(), $data, $events, $catalog))->render($hidden),
+            // NOT `desktop-decisions`: the inbox is a REGION surface, not a deep screen — no section paints it,
+            // the Agent region does, so it lives in {@see Surfaces}. Declaring it here made the region depend
+            // on the sections path having run first (greenhouse decisions/0283).
+        ];
     }
 }

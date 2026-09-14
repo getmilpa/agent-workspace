@@ -1,5 +1,28 @@
 # Upgrading
 
+## To 0.76
+
+Three retirements, each measured byte-identical on a fresh app before it shipped (greenhouse `decisions/0388`,
+`evidence/0705`, `evidence/0706`):
+
+- **`AgentWorkspacePlugin::COMPONENTS` is gone.** It was a second list of what `Surfaces` and `DeepScreens`
+  declare. Ask the plugin — `declaredComponents()` — or the declaring sites: `Surfaces::components()` and
+  `DeepScreens::components()`.
+- **The surfaces and the store are no longer registered in the container.** `Tabs`, `WorkBoard`, `Activity`,
+  `Context`, `Gate`, `Thinking`, `AgentMessage`, `MessagePrototypes`, `Conversation`, `SessionStrip`, `ComposerBar`,
+  `ComposerField` and `DesktopStore` were registered by `boot()` and resolved by nobody — no package in the family, no test, no
+  documented door (greenhouse `evidence/0705`). `$container->get(Tabs::class)` now throws instead of handing back
+  the shared instance, and **there is no replacement for holding a surface instance**: the registry
+  (`DesktopComponents`) returns definitions and renderers, never the surface. A plugin that wants to extend a
+  surface subscribes to its render events — `desktop.<surface>.before_render` / `after_render`, documented in the
+  README — which is the door that always existed. The controllers (`MutationController`, `AssetsController`,
+  `HubController`) stay registered: the router resolves them on every request.
+- **`routes()` declares by verb** (`Route::get`/`Route::post` behind one door, `Route::behind`) and therefore
+  **requires `milpa/http >= 0.5`**. The route table is the same; only the declaration ORDER changed (the four
+  gated routes first, the public component assets last).
+
+The metadata `version` now tracks the package version (`// x-release-please-version`); it read `0.1.0` before.
+
 ## From `milpa/desktop-app`
 
 This package was renamed. Replace the requirement and the namespace:
