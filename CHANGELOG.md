@@ -3,6 +3,17 @@
 All notable changes to milpa/desktop-app are documented here. This project adheres to
 [Semantic Versioning](https://semver.org/) and [Keep a Changelog](https://keepachangelog.com/).
 
+## [0.76.0](https://github.com/getmilpa/agent-workspace/compare/v0.75.0...v0.76.0) (2026-09-14)
+
+
+### ⚠ BREAKING CHANGES
+
+* **plugin:** AgentWorkspacePlugin::COMPONENTS is gone (use declaredComponents(), Surfaces::components() or DeepScreens::components()); the surfaces and DesktopStore are no longer registered in the container; routes() needs milpa/http >= 0.5.
+
+### Features
+
+* **plugin:** keep only the registrations somebody reads, declare routes by verb, one list for the components ([3cfb8e8](https://github.com/getmilpa/agent-workspace/commit/3cfb8e89c0d86118a81d50cc608876bd9105254b))
+
 ## [0.75.0](https://github.com/getmilpa/agent-workspace/compare/v0.74.1...v0.75.0) (2026-09-12)
 
 
