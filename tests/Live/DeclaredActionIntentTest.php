@@ -16,6 +16,7 @@ namespace Milpa\AgentWorkspace\Tests\Live;
 
 use Milpa\Command\Effect\Mutation;
 use Milpa\AgentWorkspace\AgentWorkspacePlugin;
+use Milpa\Container\DIContainer;
 use Milpa\AgentWorkspace\Live\SettingsScreenComponent;
 use Milpa\Live\ValueObjects\ActionContract;
 use PHPUnit\Framework\Attributes\CoversClass;
@@ -57,7 +58,7 @@ final class DeclaredActionIntentTest extends TestCase
         // The additive promise: the 41 actions that did not migrate say nothing, and nothing is answered
         // on their behalf. If this ever reads `true`, silence has started meaning «safe».
         $undeclared = 0;
-        foreach (AgentWorkspacePlugin::COMPONENTS as $class) {
+        foreach ((new AgentWorkspacePlugin(new DIContainer()))->declaredComponents() as $class) {
             foreach (array_keys($class::contract()->actions) as $name) {
                 $action = $class::contract()->action((string) $name);
                 if ($action === null || $action->declaresEffects()) {

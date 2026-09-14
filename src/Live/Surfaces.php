@@ -17,6 +17,7 @@ namespace Milpa\AgentWorkspace\Live;
 use Milpa\AgentWorkspace\Data\DesktopData;
 use Milpa\AgentWorkspace\I18n\Catalog;
 use Milpa\Interfaces\Event\MilpaEventDispatcherInterface;
+use Milpa\Live\Contracts\Component\ComponentDefinitionInterface;
 
 /**
  * EVERY WORKSPACE SURFACE, DECLARED ON A REGISTRY — one list, and the host is a caller.
@@ -72,56 +73,65 @@ final class Surfaces
      */
     public function declareOn(DesktopComponents $live): void
     {
-        $live->declare(new TabsComponent(), fn (array $props): string => $this->tabsOf()->render());
-        $live->declare(new SessionStripComponent(), fn (array $props): string => $this->sessionStripOf()->render());
-        $live->declare(new ConversationComponent(), fn (array $props): string => $this->conversationOf()->render(\is_string($props['agent'] ?? null) ? $props['agent'] : ''));
-        $live->declare(new ComposerBarComponent(), fn (array $props): string => $this->composerBarOf()->render());
-        $live->declare(new GateComponent(), fn (array $props): string => $this->gateOf()->render());
-        $live->declare(new WorkBoardComponent(), fn (array $props): string => $this->workBoardOf()->render());
-        $live->declare(new ActivityComponent(), fn (array $props): string => $this->activityOf()->render());
-        $live->declare(new ContextComponent(), fn (array $props): string => $this->contextOf()->render(\is_array($props['sections'] ?? null) ? $props['sections'] : []));
-        $live->declare(new ThinkingComponent(), fn (array $props): string => $this->thinkingOf()->render());
-        $live->declare(new AgentMessageComponent(), fn (array $props): string => $this->agentMessageOf()->render());
-        $live->declare(new UserMessageComponent(), fn (array $props): string => $this->messages()->user());
-        $live->declare(new ToolCallComponent(), fn (array $props): string => $this->messages()->tool());
-        $live->declare(new TaskComponent(), fn (array $props): string => $this->messages()->task());
-        $live->declare(new SystemNoticeComponent(), fn (array $props): string => $this->messages()->system());
-        $live->declare(new ResultClaimComponent(), fn (array $props): string => $this->messages()->resultClaim());
-        // The turn's own contents (greenhouse decisions/0254): the question it parked, and the boundary a
-        // compaction left behind.
-        $live->declare(new AskGrantComponent(), fn (array $props): string => $this->messages()->askGrant());
-        $live->declare(new CompactedComponent(), fn (array $props): string => $this->messages()->compacted());
-        // The two screens phase B took out of the template (greenhouse decisions/0211): the Settings screen
-        // and the entry overlay were the last raw HTML the shell hand-wrote.
+        foreach ($this->paints() as $class => $paint) {
+            $live->declare(new $class(), static fn (array $props): string => $paint($live, $props));
+        }
+    }
 
-        // Phase D: the four screens whose markup the template still carried and whose behaviour and CSS
-        // the page's own inline script and `<style>` still paid for. Each is a declared view now, and each
-        // is built HERE from the registry's own codec — one signing key per page (greenhouse
-        // decisions/0211), which is also why they need no constructor argument of their own.
-        // ONE LIST, TWO DOORS: the panel declares these same screens as sections under Agent, and a
-        // second declaration site here would be free to drift (greenhouse decisions/0268).
-        // 🚨 THE DECISIONS INBOX IS A REGION SURFACE, NOT A DEEP SCREEN, and it was declared with the
-        // screens. No section paints it — `SCREEN_SECTIONS` are settings, skills, subagents and preview
-        // — while the Agent REGION paints it as a tab, so the region depended on the sections path
-        // having run first.
-        //
-        // Caught by the control for a dispatcher with no declaration contract: it painted the region
-        // after `boot()` and `desktop-decisions` was the ONLY surface carrying
-        // `data-failed-component`. Same class of coupling this arc took out of the page's controller,
-        // one layer in (greenhouse decisions/0283).
-        $live->declare(
-            new DecisionsInboxComponent(),
-            fn (array $props): string => (new DecisionsInbox(
+    /**
+     * The definitions {@see declareOn()} registers — the same map, asked for its keys.
+     *
+     * This is what the plugin answers to `components:catalogue`: ONE list, read from the site that
+     * declares, so the catalogue and the registry cannot disagree. It used to be a second list kept on
+     * the plugin and a test that compared the two — a second list is a lie waiting to happen, and a test
+     * that guards one is a defence, not a design (greenhouse decisions/0388).
+     *
+     * @return list<class-string<ComponentDefinitionInterface>>
+     */
+    public static function components(): array
+    {
+        return array_keys((new self())->paints());
+    }
+
+    /**
+     * Every surface's definition, mapped to what paints it. A paint receives the registry the surface was
+     * declared on and the render props, and answers the markup. One row per surface: adding a surface to
+     * the region is adding a row here, and nowhere else in this class.
+     *
+     * @return array<class-string<ComponentDefinitionInterface>, \Closure(DesktopComponents, array<string, mixed>): string>
+     */
+    private function paints(): array
+    {
+        return [
+            TabsComponent::class => fn (DesktopComponents $live, array $props): string => $this->tabsOf()->render(),
+            SessionStripComponent::class => fn (DesktopComponents $live, array $props): string => $this->sessionStripOf()->render(),
+            ConversationComponent::class => fn (DesktopComponents $live, array $props): string => $this->conversationOf()->render(\is_string($props['agent'] ?? null) ? $props['agent'] : ''),
+            ComposerBarComponent::class => fn (DesktopComponents $live, array $props): string => $this->composerBarOf()->render(),
+            GateComponent::class => fn (DesktopComponents $live, array $props): string => $this->gateOf()->render(),
+            WorkBoardComponent::class => fn (DesktopComponents $live, array $props): string => $this->workBoardOf()->render(),
+            ActivityComponent::class => fn (DesktopComponents $live, array $props): string => $this->activityOf()->render(),
+            ContextComponent::class => fn (DesktopComponents $live, array $props): string => $this->contextOf()->render(\is_array($props['sections'] ?? null) ? $props['sections'] : []),
+            ThinkingComponent::class => fn (DesktopComponents $live, array $props): string => $this->thinkingOf()->render(),
+            AgentMessageComponent::class => fn (DesktopComponents $live, array $props): string => $this->agentMessageOf()->render(),
+            UserMessageComponent::class => fn (DesktopComponents $live, array $props): string => $this->messages()->user(),
+            ToolCallComponent::class => fn (DesktopComponents $live, array $props): string => $this->messages()->tool(),
+            TaskComponent::class => fn (DesktopComponents $live, array $props): string => $this->messages()->task(),
+            SystemNoticeComponent::class => fn (DesktopComponents $live, array $props): string => $this->messages()->system(),
+            ResultClaimComponent::class => fn (DesktopComponents $live, array $props): string => $this->messages()->resultClaim(),
+            AskGrantComponent::class => fn (DesktopComponents $live, array $props): string => $this->messages()->askGrant(),
+            CompactedComponent::class => fn (DesktopComponents $live, array $props): string => $this->messages()->compacted(),
+            // A REGION surface, not a deep screen: no section paints the inbox, the Agent region paints it
+            // as a tab — so it is declared with the region, never with the sections (greenhouse decisions/0283).
+            // The render request's principal wins over the caller's default: the shell knows who is signed
+            // in per request, and a screen answering as the wrong principal is worse than one answering as nobody.
+            DecisionsInboxComponent::class => fn (DesktopComponents $live, array $props): string => (new DecisionsInbox(
                 $live->codec(),
                 $this->data,
                 $this->events,
                 $this->catalog(),
-                // The render request's prop wins over the caller's default: the shell knows who is
-                // signed in per request, and a screen answering as the wrong principal is worse than
-                // one answering as nobody.
                 \is_string($props['principal'] ?? null) && $props['principal'] !== '' ? $props['principal'] : '',
             ))->render(false),
-        );
+        ];
     }
 
     /**
