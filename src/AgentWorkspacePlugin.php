@@ -110,7 +110,7 @@ use Milpa\Runtime\Support\RootResolver;
  * Installing the plugin IS the activation: a Milpa without it simply has no workspace.
  */
 #[PluginMetadata(
-    version: '0.76.0', // x-release-please-version
+    version: '0.76.1', // x-release-please-version
     author: 'Rodrigo Vicente - TeamX Agency',
     site: 'https://teamx.agency',
     name: 'AgentWorkspace',
