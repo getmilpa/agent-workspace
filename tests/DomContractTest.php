@@ -148,7 +148,8 @@ final class DomContractTest extends TestCase
         // A real session on disk: the work board's cards and columns, and the counters the panels show.
         $dir = sys_get_temp_dir() . '/milpa-dom-contract-' . uniqid('', true);
         mkdir($dir);
-        file_put_contents($dir . '/s1.json', json_encode([
+        $sessionFile = $dir . '/' . \Milpa\AgentWorkspace\Admin\PanelSession::forPrincipal(null) . '.json';
+        file_put_contents($sessionFile, json_encode([
             'goal' => 'Prove the contract', 'state' => 'working', 'turns' => 1, 'tool_calls' => 2,
             'work' => [['title' => 'a card', 'status' => 'pending', 'origin' => 'planned']],
         ], \JSON_THROW_ON_ERROR));
@@ -165,7 +166,7 @@ final class DomContractTest extends TestCase
         // recorded event and the other carries no data at all.
         $pages = self::region($data, $events) . self::region(null, $events);
 
-        unlink($dir . '/s1.json');
+        unlink($sessionFile);
         unlink($dir . '/events.log');
         // …AND THE SETTINGS SCREEN IN THE STATE WHERE IT ACCEPTS A KEY. The field is offered only when
         // something in the app can judge WHO may write a credential — an app with no

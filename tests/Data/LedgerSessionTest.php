@@ -26,6 +26,23 @@ use PHPUnit\Framework\TestCase;
  */
 final class LedgerSessionTest extends TestCase
 {
+    /** A returned invocation is settled even without an answer; a later user turn is still live. */
+    public function testRunTerminationDoesNotCloseTheSessionOrAFollowingTurn(): void
+    {
+        $turn = ['session.turn', ['role' => 'user', 'content' => 'go']];
+        foreach (['output_truncated', 'interrupted', 'error', 'unknown', 'final_answer'] as $reason) {
+            $ended = [$turn, ['session.run_terminated', ['reason' => $reason, 'receipt' => null]]];
+            $record = LedgerSession::fold('s', self::rows('s', $ended));
+            self::assertSame('idle', $record['state'], $reason);
+            self::assertFalse($record['ended'], 'the session remains resumable');
+            self::assertSame(1, $record['turns']);
+            self::assertSame('working', LedgerSession::fold('s', self::rows('s', [...$ended, $turn]))['state']);
+            self::assertSame('waiting', LedgerSession::fold('s', self::rows('s', [$turn, ['session.question_asked', ['question' => 'May I?']], $ended[1]]))['state']);
+            self::assertSame('paused', LedgerSession::fold('s', self::rows('s', [$turn, ['session.sequence_paused', ['sequenceId' => 'deploy']], $ended[1]]))['state']);
+            self::assertSame('ended', LedgerSession::fold('s', self::rows('s', [...$ended, ['session.ended', ['because' => 'human ended the session']]]))['state']);
+        }
+    }
+
     /** @param list<array{0: string, 1: array<string, mixed>}> $events */
     private static function rows(string $sid, array $events, int $from = 1): array
     {

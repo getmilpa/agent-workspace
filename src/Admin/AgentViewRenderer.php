@@ -209,6 +209,11 @@ final class AgentViewRenderer implements ComponentRendererInterface, DeclaresCli
         $catalog = $this->catalogFor($state);
         $assets = ClientAssets::empty();
 
+        if (($state->data['state'] ?? null) !== AgentViewComponent::STATE_SIGNED_OUT) {
+            // Every composed reader receives the session this authenticated render represents.
+            $this->data?->select(self::agentSession($state));
+        }
+
         $html = ($state->data['state'] ?? null) === AgentViewComponent::STATE_SIGNED_OUT
             ? $this->signedOut($state, $catalog)
             : $this->live($state, $request->context, $catalog, $assets);
@@ -423,7 +428,7 @@ final class AgentViewRenderer implements ComponentRendererInterface, DeclaresCli
     {
         $principal = $state->meta['principal'] ?? '';
 
-        return 'desk-admin-' . substr(hash('sha256', 'milpa/admin|agent|' . (\is_string($principal) ? $principal : '')), 0, 16);
+        return PanelSession::forPrincipal(\is_string($principal) ? $principal : null);
     }
 
     /** The signed-out region: no view is composed — the door, with the way back to this section. */

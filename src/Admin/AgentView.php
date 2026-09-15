@@ -101,7 +101,14 @@ final class AgentView
             // rendered perfectly and its Save button fired nothing, the console saying the guard module
             // was not loaded (greenhouse decisions/0272).
             assets: DesktopAssets::runtimeAssets(),
-            signals: ShellSignals::of($catalog, $data),
+            signalsFromContext: static function (\Milpa\Live\ValueObjects\ComponentContext $context) use ($catalog, $data, $settings): array {
+                if ($settings->gateLabel() === DesktopSettings::GATE_PASSKEY && $context->principal === null) {
+                    return ShellSignals::of($catalog);
+                }
+                $data?->select(PanelSession::forPrincipal($context->principal));
+
+                return ShellSignals::of($catalog, $data);
+            },
             computed: ShellSignals::computed(),
         );
     }

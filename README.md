@@ -396,6 +396,14 @@ module. The page **composes** them and emits **one** runtime.
   the composer is an interaction with the field's own `milpaField` data (`reset('')` / `change(text)`), never a
   synthetic `input` event.
 
+On a panel reload, the session selector, counters and initial signals use the same session as the
+authenticated principal's signed ticket. A different session's pending turn does not make this panel
+look busy. `session.run_terminated` settles an unanswered turn, including truncation and unknown
+termination reasons; a later user turn becomes working again. Pending questions, paused sequences and
+an explicitly ended session retain their precedence. This projection reports recorded turn state,
+not task success or a live process check. Identity-dependent seeds resolve through `milpa/admin`
+0.34's `DeclaredView::signalsFromContext` when the active view receives its render context.
+
 ### The declared components, and what each module registers
 
 Every module is one file, registered through `MilpaLive.register(name, factory)` — the runtime **throws** if

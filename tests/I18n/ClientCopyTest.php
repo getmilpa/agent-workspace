@@ -114,7 +114,7 @@ final class ClientCopyTest extends TestCase
         $view = AgentView::of($live, new DesktopSettings(), $catalog, null, '', '');
 
         $names = [];
-        foreach (['milpa-live-signals' => $view->signals, 'milpa-live-computed' => $view->computed] as $id => $declared) {
+        foreach (['milpa-live-signals' => $view->resolveSignals(new \Milpa\Live\ValueObjects\ComponentContext('agent')), 'milpa-live-computed' => $view->computed] as $id => $declared) {
             self::assertIsArray($declared, $id . ' is an array of names');
             foreach (array_keys($declared) as $name) {
                 $names[(string) $name] = $id;

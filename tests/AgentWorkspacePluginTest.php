@@ -209,7 +209,7 @@ final class AgentWorkspacePluginTest extends TestCase
         self::assertInstanceOf(AgentViewComponent::class, $view->definitions['desktop-agent']);
         self::assertInstanceOf(AgentViewRenderer::class, $view->renderers['desktop-agent']);
         self::assertFalse($view->seedsNothing(), 'the view seeds the signals its surfaces read');
-        self::assertSame('chat', $view->signals['desktop.tab']);
+        self::assertSame('chat', $view->resolveSignals(new \Milpa\Live\ValueObjects\ComponentContext('agent'))['desktop.tab']);
         self::assertArrayHasKey('session.summary', $view->computed);
 
         // The props follow the declared door and locale — the gate the topbar chip says, the title in Spanish.
