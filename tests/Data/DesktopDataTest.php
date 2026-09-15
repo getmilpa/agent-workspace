@@ -29,6 +29,44 @@ use PHPUnit\Framework\TestCase;
  */
 final class DesktopDataTest extends TestCase
 {
+    public function testTokenBudgetReadsTheNativeWindowWithoutChangingItsLedger(): void
+    {
+        $root = sys_get_temp_dir() . '/milpa-token-budget-' . bin2hex(random_bytes(8));
+        mkdir($root . '/var', 0700, true);
+        $file = $root . '/var/agent-sessions.jsonl';
+        try {
+            $kernel = Kernel::boot(['root' => $root, 'plugins' => []]);
+            $kernel->container()->registerService(Kernel::class, $kernel);
+            $data = new DesktopData($kernel->container());
+            self::assertSame([], $data->tokenBudget('missing'));
+            $store = new \Milpa\Agent\SessionStore(new \Milpa\EventStore\FileEventStore($file));
+            $store->start('measured', 'Measure the native window');
+            $store->recordTurn('measured', 'user', 'áéíó');
+            $store->recordTurn('measured', 'assistant', 'hello');
+            self::assertSame([['class' => 'turn', 'messages' => 2, 'est_tokens' => 3]], $data->tokenBudget('measured'));
+
+            $store->compact('measured', 'Done', 0);
+            $store->setPlan('measured', 'Next');
+            $before = file_get_contents($file);
+            $budget = array_column($data->tokenBudget('measured'), null, 'class');
+            self::assertSame(['summary', 'briefing', 'turn'], array_keys($budget));
+            self::assertSame(1, $budget['summary']['messages']);
+            self::assertSame(1, $budget['briefing']['messages']);
+            self::assertGreaterThan(0, $budget['summary']['est_tokens']);
+            self::assertGreaterThan(0, $budget['briefing']['est_tokens']);
+            self::assertSame(['class' => 'turn', 'messages' => 2, 'est_tokens' => 3], $budget['turn']);
+            self::assertSame([], $data->tokenBudget('missing'));
+            self::assertSame([], $data->tokenBudget());
+            self::assertSame($before, file_get_contents($file));
+        } finally {
+            if (is_file($file)) {
+                unlink($file);
+            }
+            rmdir($root . '/var');
+            rmdir($root);
+        }
+    }
+
     public function testCapabilitiesAreTheBootedPluginsMetadata(): void
     {
         $kernel = Kernel::boot(['root' => sys_get_temp_dir(), 'plugins' => [AgentWorkspacePlugin::class]]);
