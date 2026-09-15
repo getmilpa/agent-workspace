@@ -59,6 +59,7 @@ final class Surfaces
         private readonly ?AgentMessage $agentMessage = null,
         private readonly ?Conversation $conversation = null,
         private readonly ?MessagePrototypes $messages = null,
+        private readonly ?DeliveryEvidenceRenderer $deliveryEvidence = null,
     ) {
     }
 
@@ -74,7 +75,13 @@ final class Surfaces
     public function declareOn(DesktopComponents $live): void
     {
         foreach ($this->paints() as $class => $paint) {
-            $live->declare(new $class(), static fn (array $props): string => $paint($live, $props));
+            if ($paint instanceof \Milpa\Live\Contracts\Rendering\ComponentRendererInterface) {
+                $definition = new $class();
+                $live->components()->register($definition::contract()->name, $definition);
+                $live->renderers()->registerFor($definition::contract()->name, $paint);
+            } else {
+                $live->declare(new $class(), static fn (array $props): string => $paint($live, $props));
+            }
         }
     }
 
@@ -98,11 +105,12 @@ final class Surfaces
      * declared on and the render props, and answers the markup. One row per surface: adding a surface to
      * the region is adding a row here, and nowhere else in this class.
      *
-     * @return array<class-string<ComponentDefinitionInterface>, \Closure(DesktopComponents, array<string, mixed>): string>
+     * @return array<class-string<ComponentDefinitionInterface>, (\Closure(DesktopComponents, array<string, mixed>): string)|\Milpa\Live\Contracts\Rendering\ComponentRendererInterface>
      */
     private function paints(): array
     {
         return [
+            DeliveryEvidenceComponent::class => $this->deliveryEvidence ?? new DeliveryEvidenceRenderer(catalog: $this->catalogue ?? new Catalog()),
             TabsComponent::class => fn (DesktopComponents $live, array $props): string => $this->tabsOf()->render(),
             SessionStripComponent::class => fn (DesktopComponents $live, array $props): string => $this->sessionStripOf()->render(),
             ConversationComponent::class => fn (DesktopComponents $live, array $props): string => $this->conversationOf()->render(\is_string($props['agent'] ?? null) ? $props['agent'] : ''),

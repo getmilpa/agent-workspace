@@ -1,0 +1,5 @@
+/* Apache-2.0 · (c) Rodrigo Vicente - TeamX Agency */
+.desktop-delivery-evidence { margin: var(--space-4, 1rem) 0; padding: var(--space-4, 1rem); }
+.desktop-delivery-evidence dl { display: grid; grid-template-columns: minmax(8rem, 1fr) 2fr; gap: .4rem 1rem; }
+.desktop-delivery-evidence dd { margin: 0; overflow-wrap: anywhere; }
+@media (max-width: 40rem) { .desktop-delivery-evidence dl { grid-template-columns: 1fr; } }
