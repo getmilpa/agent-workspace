@@ -89,6 +89,7 @@ final class AgentViewRenderer implements ComponentRendererInterface, DeclaresCli
      * @var list<string>
      */
     public const array SURFACES = [
+        'desktop-delivery-evidence',
         'desktop-tabs',
         'desktop-conversation',
         'desktop-gate',
@@ -282,6 +283,7 @@ final class AgentViewRenderer implements ComponentRendererInterface, DeclaresCli
             // Above the conversation: it names WHICH session you are reading, which is a question you
             // ask before the messages, not after them.
             . $paint('desktop-session-strip')
+            . $paint('desktop-delivery-evidence')
             . '<div class="view view--session" data-view="session" x-data>'
             . $paint('desktop-tabs')
             . '<div class="view--session__scroll">' . $panes . '</div>'

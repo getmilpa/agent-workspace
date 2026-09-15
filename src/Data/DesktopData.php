@@ -854,8 +854,8 @@ final class DesktopData
 
         $byClass = [];
         foreach ($session->classifiedWindow() as $message) {
-            $class = is_string($message['class'] ?? null) ? $message['class'] : 'other';
-            $content = is_string($message['content'] ?? null) ? $message['content'] : '';
+            $class = $message['class'];
+            $content = $message['content'];
             if (!isset($byClass[$class])) {
                 $byClass[$class] = ['class' => $class, 'messages' => 0, 'est_tokens' => 0];
             }

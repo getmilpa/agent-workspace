@@ -114,7 +114,7 @@ final class DeclaredViewsTest extends TestCase
             self::assertInstanceOf(DeclaresClientAssets::class, $renderer, $name . ' declares its client assets');
             self::assertEquals(DesktopAssets::of($name), $renderer->clientAssets(), $name . ' declares exactly its own files');
         }
-        self::assertSame(21, $painted, 'every workspace surface is a declared view — four fewer since the page took its chrome with it (greenhouse decisions/0283), and one fewer since the Capabilities screen was retired as a duplicate of the panel\'s own Plugins section (greenhouse decisions/0290)');
+        self::assertSame(22, $painted, 'every workspace surface is a declared view — four fewer since the page took its chrome with it (greenhouse decisions/0283), and one fewer since the Capabilities screen was retired as a duplicate of the panel\'s own Plugins section (greenhouse decisions/0290)');
     }
 
     /**

@@ -1,0 +1,596 @@
+{
+  "positive": {
+    "session": "desk-admin-05fa9d289514018c",
+    "termination": {
+      "reason": "output_truncated",
+      "receipt": null
+    },
+    "meaning": "sampled_observation_not_a_lock_or_approval",
+    "state": "observed",
+    "declaration": {
+      "schema": "milpa.delivery-scope/v1",
+      "session": "desk-admin-05fa9d289514018c",
+      "scope": {
+        "artifactPath": "src/Plugins/Owned/Services/FocusCounterView.php",
+        "screen": {
+          "definition": {
+            "props": {
+              "goal": 6,
+              "locale": "es",
+              "name": "focus"
+            },
+            "type": "focus-counter"
+          },
+          "name": "focus",
+          "type": "focus-counter"
+        },
+        "test": {
+          "filter": "",
+          "path": "tests/Plugins/Owned"
+        },
+        "workspace": "w2f7cce7ff755b1c2"
+      },
+      "sha256": "96287bb104a7252e0c113d7c9d6b67f0950c5a85d5be3406f017c52d0f295902",
+      "provenance": {
+        "source": "agent_invocation",
+        "channel": "lab",
+        "principal": {
+          "id": "fixture-0715",
+          "verified": false
+        }
+      },
+      "seq": 224
+    },
+    "evidence": {
+      "ok": true,
+      "session": "desk-admin-05fa9d289514018c",
+      "schema": "milpa.acceptance-evidence/v1",
+      "authorization": "not_evaluated",
+      "humanApproval": "not_recorded",
+      "scope": {
+        "test": {
+          "path": "tests/Plugins/Owned",
+          "filter": ""
+        },
+        "screen": {
+          "definition": {
+            "props": {
+              "goal": 6,
+              "locale": "es",
+              "name": "focus"
+            },
+            "type": "focus-counter"
+          },
+          "name": "focus",
+          "type": "focus-counter"
+        },
+        "coverage": "requested_test_scope",
+        "inputs": "native_copied_files_and_screen_build",
+        "browserBehavior": "not_observed"
+      },
+      "candidate": {
+        "workspace": "w2f7cce7ff755b1c2",
+        "artifact": {
+          "path": "src/Plugins/Owned/Services/FocusCounterView.php",
+          "sha256": "0ff4753f8db540c649f1d51d5260f4c708b7b41c4353523aff5b162ecc5c2ccc"
+        },
+        "verification": {
+          "scope": "producer_declaration",
+          "detail": "syntax, strict_types, class, namespace and static conformance, behavior (FocusCounterViewTest green)"
+        },
+        "evidence": {
+          "trialRunSeq": 95,
+          "toolCallSeq": 97,
+          "baselineSha256": "73ece2db83189d4a9517992cabe4fbdf0b090497ab14fa1a84caab9779a785ba",
+          "promotionSha256": "22d015e714ea9b820a57db50fe39b744c5006e3b7dfc91c4544ce88fd0b77ef6"
+        },
+        "authorization": "not_evaluated",
+        "next": null,
+        "state": "promoted",
+        "reason": "receipt_and_host_match",
+        "inputScope": "recorded_copied_files"
+      },
+      "state": "current_evidence",
+      "test": {
+        "workspace": "w84b258d6a383c3d1",
+        "trialRunSeq": 208,
+        "toolCallSeq": 210,
+        "scope": {
+          "path": "tests/Plugins/Owned",
+          "filter": ""
+        },
+        "coversRequestedScope": true,
+        "exit": 0,
+        "outcome": "passed",
+        "effectSeq": 209,
+        "candidate": {
+          "path": "src/Plugins/Owned/Services/FocusCounterView.php",
+          "sha256": "0ff4753f8db540c649f1d51d5260f4c708b7b41c4353523aff5b162ecc5c2ccc"
+        },
+        "tests": 11,
+        "assertions": 274,
+        "failures": 0,
+        "errors": 0,
+        "evidenceDigest": "2a60323ee6caeca85c4d7bfbfde899ccabd68c3116e8fb9debfbe849dfa782bf",
+        "state": "current",
+        "receipt": {
+          "toolCallSeq": 210,
+          "characters": 1002,
+          "sha256": "6122f9ad37e11784d6f38589710c5b26cf1cc0ee107cde497e39109a73b83b8e"
+        },
+        "ran": true
+      },
+      "screen": {
+        "state": "current",
+        "revision": "7e86ae08730a9a7c0f1847bc68e176dd1b2421f6af62610ca1eb0f1d52e0744a",
+        "build": "9078d73c3b224382acddc76931d3cc311ca560182ef306524d5f43e0ec891259",
+        "toolCallSeq": 218,
+        "meaning": "immutable_draft_read_only"
+      }
+    },
+    "review": {
+      "ok": true,
+      "result": {
+        "kind": "draft",
+        "name": "focus",
+        "before": null,
+        "definition": {
+          "type": "focus-counter",
+          "props": {
+            "locale": "es",
+            "goal": 6,
+            "name": "focus"
+          }
+        },
+        "build": "9078d73c3b224382acddc76931d3cc311ca560182ef306524d5f43e0ec891259",
+        "createdAt": "2026-09-15T06:48:04+00:00",
+        "nonce": "62e663e194d0fe42acffe557",
+        "id": "7e86ae08730a9a7c0f1847bc68e176dd1b2421f6af62610ca1eb0f1d52e0744a",
+        "current": null,
+        "restorable": false,
+        "fresh": true,
+        "reviewAt": "/live/review?revision=7e86ae08730a9a7c0f1847bc68e176dd1b2421f6af62610ca1eb0f1d52e0744a",
+        "previewAt": "/live/preview?revision=7e86ae08730a9a7c0f1847bc68e176dd1b2421f6af62610ca1eb0f1d52e0744a"
+      }
+    },
+    "report": {
+      "evidenceState": "current_evidence",
+      "candidateWorkspace": "w2f7cce7ff755b1c2",
+      "artifactSha256": "0ff4753f8db540c649f1d51d5260f4c708b7b41c4353523aff5b162ecc5c2ccc",
+      "test": {
+        "state": "current",
+        "outcome": "passed",
+        "ran": true,
+        "tests": 11,
+        "assertions": 274,
+        "failures": 0,
+        "errors": 0,
+        "coversRequestedScope": true,
+        "scope": {
+          "path": "tests/Plugins/Owned",
+          "filter": ""
+        }
+      },
+      "screen": {
+        "state": "current",
+        "revision": "7e86ae08730a9a7c0f1847bc68e176dd1b2421f6af62610ca1eb0f1d52e0744a",
+        "reviewUrl": "/live/review?revision=7e86ae08730a9a7c0f1847bc68e176dd1b2421f6af62610ca1eb0f1d52e0744a"
+      },
+      "authorization": "not_evaluated",
+      "humanApproval": "not_recorded",
+      "browserBehavior": "not_observed",
+      "readyForHumanReview": true
+    }
+  },
+  "indeterminate": {
+    "session": "desk-admin-05fa9d289514018c",
+    "termination": {
+      "reason": "output_truncated",
+      "receipt": null
+    },
+    "meaning": "sampled_observation_not_a_lock_or_approval",
+    "state": "observed",
+    "declaration": {
+      "schema": "milpa.delivery-scope/v1",
+      "session": "desk-admin-05fa9d289514018c",
+      "scope": {
+        "artifactPath": "src/Plugins/Owned/Services/FocusCounterView.php",
+        "screen": {
+          "definition": {
+            "props": {
+              "goal": 6,
+              "locale": "es",
+              "name": "focus"
+            },
+            "type": "focus-counter"
+          },
+          "name": "focus",
+          "type": "focus-counter"
+        },
+        "test": {
+          "filter": "",
+          "path": "tests/Plugins/Owned"
+        },
+        "workspace": "wf7e3351d1cf88b43"
+      },
+      "sha256": "d8b74e9952f0e939bf492515e6a635ee31ab7e83f21d91c87f82f2e4464cbeae",
+      "provenance": {
+        "source": "agent_invocation",
+        "channel": "lab",
+        "principal": {
+          "id": "fixture-0715",
+          "verified": false
+        }
+      },
+      "seq": 220
+    },
+    "evidence": {
+      "ok": true,
+      "session": "desk-admin-05fa9d289514018c",
+      "schema": "milpa.acceptance-evidence/v1",
+      "authorization": "not_evaluated",
+      "humanApproval": "not_recorded",
+      "scope": {
+        "test": {
+          "path": "tests/Plugins/Owned",
+          "filter": ""
+        },
+        "screen": {
+          "definition": {
+            "props": {
+              "goal": 6,
+              "locale": "es",
+              "name": "focus"
+            },
+            "type": "focus-counter"
+          },
+          "name": "focus",
+          "type": "focus-counter"
+        },
+        "coverage": "requested_test_scope",
+        "inputs": "native_copied_files_and_screen_build",
+        "browserBehavior": "not_observed"
+      },
+      "candidate": {
+        "workspace": "wf7e3351d1cf88b43",
+        "artifact": {
+          "path": "src/Plugins/Owned/Services/FocusCounterView.php",
+          "sha256": "0ff4753f8db540c649f1d51d5260f4c708b7b41c4353523aff5b162ecc5c2ccc"
+        },
+        "verification": {
+          "scope": "producer_declaration",
+          "detail": "syntax, strict_types, class, namespace and static conformance, behavior (FocusCounterViewTest green)"
+        },
+        "evidence": {
+          "trialRunSeq": 95,
+          "toolCallSeq": 97,
+          "baselineSha256": "269613669bea3cfab8bd374836ca040d0a338139589fe9d5adfe529d9c943cda",
+          "promotionSha256": "22d015e714ea9b820a57db50fe39b744c5006e3b7dfc91c4544ce88fd0b77ef6"
+        },
+        "authorization": "not_evaluated",
+        "next": null,
+        "state": "promoted",
+        "reason": "receipt_and_host_match",
+        "inputScope": "recorded_copied_files"
+      },
+      "state": "indeterminate",
+      "test": {
+        "state": "indeterminate",
+        "meaning": "failed_call_without_trial_receipt",
+        "scope": {
+          "path": "",
+          "filter": ""
+        },
+        "toolCallSeq": 207,
+        "receipt": {
+          "toolCallSeq": 207,
+          "characters": 57,
+          "sha256": "d196f6b6597b3cd395f1cca46de750ad5880d829be8fd4d29e6ef288122a4c0a"
+        }
+      },
+      "screen": {
+        "state": "current",
+        "revision": "6adcd48c356076903cb788a8c899ec38bac00f3bb664898d700c881c04bdeb74",
+        "build": "522682e776e22a9b9cdcf47abd1924fef0c915676aaf57b26328041cecb8f7dc",
+        "toolCallSeq": 214,
+        "meaning": "immutable_draft_read_only"
+      }
+    },
+    "review": {
+      "ok": true,
+      "result": {
+        "kind": "draft",
+        "name": "focus",
+        "before": null,
+        "definition": {
+          "type": "focus-counter",
+          "props": {
+            "locale": "es",
+            "goal": 6,
+            "name": "focus"
+          }
+        },
+        "build": "522682e776e22a9b9cdcf47abd1924fef0c915676aaf57b26328041cecb8f7dc",
+        "createdAt": "2026-09-15T06:48:11+00:00",
+        "nonce": "6c6ce1df2bca47b50471da81",
+        "id": "6adcd48c356076903cb788a8c899ec38bac00f3bb664898d700c881c04bdeb74",
+        "current": null,
+        "restorable": false,
+        "fresh": true,
+        "reviewAt": "/live/review?revision=6adcd48c356076903cb788a8c899ec38bac00f3bb664898d700c881c04bdeb74",
+        "previewAt": "/live/preview?revision=6adcd48c356076903cb788a8c899ec38bac00f3bb664898d700c881c04bdeb74"
+      }
+    },
+    "report": {
+      "evidenceState": "indeterminate",
+      "candidateWorkspace": "wf7e3351d1cf88b43",
+      "artifactSha256": "0ff4753f8db540c649f1d51d5260f4c708b7b41c4353523aff5b162ecc5c2ccc",
+      "test": {
+        "state": "indeterminate",
+        "outcome": null,
+        "ran": null,
+        "tests": null,
+        "assertions": null,
+        "failures": null,
+        "errors": null,
+        "coversRequestedScope": null,
+        "scope": {
+          "path": "",
+          "filter": ""
+        }
+      },
+      "screen": {
+        "state": "current",
+        "revision": "6adcd48c356076903cb788a8c899ec38bac00f3bb664898d700c881c04bdeb74",
+        "reviewUrl": "/live/review?revision=6adcd48c356076903cb788a8c899ec38bac00f3bb664898d700c881c04bdeb74"
+      },
+      "authorization": "not_evaluated",
+      "humanApproval": "not_recorded",
+      "browserBehavior": "not_observed",
+      "readyForHumanReview": false
+    }
+  },
+  "missing": {
+    "session": "desk-admin-05fa9d289514018c",
+    "termination": {
+      "reason": "output_truncated",
+      "receipt": null
+    },
+    "meaning": "sampled_observation_not_a_lock_or_approval",
+    "state": "scope_missing",
+    "declaration": null,
+    "report": null
+  },
+  "partial": {
+    "pid": 2350982,
+    "meaning": "sampled_observation_not_a_lock_or_approval",
+    "sdkOperationParity": true,
+    "before": {
+      "ok": true,
+      "session": "factual-report-partial",
+      "schema": "milpa.acceptance-evidence/v1",
+      "authorization": "not_evaluated",
+      "humanApproval": "not_recorded",
+      "scope": {
+        "test": {
+          "path": "tests/Plugins/Owned",
+          "filter": ""
+        },
+        "screen": {
+          "name": "focus",
+          "type": "focus-counter",
+          "definition": {
+            "type": "focus-counter",
+            "props": {
+              "locale": "es",
+              "goal": 6,
+              "name": "focus"
+            }
+          }
+        },
+        "coverage": "requested_test_scope",
+        "inputs": "native_copied_files_and_screen_build",
+        "browserBehavior": "not_observed"
+      },
+      "candidate": {
+        "workspace": "w0dd4b66ac059c686",
+        "artifact": {
+          "path": "src/Plugins/Owned/Services/FocusCounterView.php",
+          "sha256": "0ff4753f8db540c649f1d51d5260f4c708b7b41c4353523aff5b162ecc5c2ccc"
+        },
+        "verification": {
+          "scope": "producer_declaration",
+          "detail": "syntax, strict_types, class, namespace and static conformance, behavior (FocusCounterViewTest green)"
+        },
+        "evidence": {
+          "trialRunSeq": 95,
+          "toolCallSeq": 97,
+          "baselineSha256": "13d4518d9736e1bf2378f0f05b2ad4a5cfd34bde3d0622df7d042b1ca6d58267",
+          "promotionSha256": "22d015e714ea9b820a57db50fe39b744c5006e3b7dfc91c4544ce88fd0b77ef6"
+        },
+        "authorization": "not_evaluated",
+        "next": null,
+        "state": "promoted",
+        "reason": "receipt_and_host_match",
+        "inputScope": "recorded_copied_files"
+      },
+      "state": "incomplete",
+      "test": {
+        "workspace": "w692a71425fad7693",
+        "trialRunSeq": 208,
+        "toolCallSeq": 210,
+        "scope": {
+          "path": "tests/Plugins/Owned",
+          "filter": "FocusCounterViewTest"
+        },
+        "coversRequestedScope": false,
+        "exit": 0,
+        "outcome": "passed",
+        "effectSeq": 209,
+        "candidate": {
+          "path": "src/Plugins/Owned/Services/FocusCounterView.php",
+          "sha256": "0ff4753f8db540c649f1d51d5260f4c708b7b41c4353523aff5b162ecc5c2ccc"
+        },
+        "tests": 3,
+        "assertions": 32,
+        "failures": 0,
+        "errors": 0,
+        "evidenceDigest": "165c03caf933ba49079d9634ae352c75974ded0357aba4eeec3edbae63b667fd",
+        "state": "partial",
+        "receipt": {
+          "toolCallSeq": 210,
+          "characters": 1031,
+          "sha256": "7068208256df1cb903e857373ccb861204e4507f8c7900c8ebb13c31473d98f2"
+        },
+        "ran": true
+      },
+      "screen": {
+        "state": "current",
+        "revision": "c3fbd1fd72fa370fe39a72a7c0122f580eeea3ddd04eed88da86294983f78d0a",
+        "build": "3447c910980bf70607b4d07509ee0ab517f75498ba6b87eec1ebfa6b867bb2c6",
+        "toolCallSeq": 218,
+        "meaning": "immutable_draft_read_only"
+      }
+    },
+    "review": {
+      "ok": true,
+      "result": {
+        "kind": "draft",
+        "name": "focus",
+        "before": null,
+        "definition": {
+          "type": "focus-counter",
+          "props": {
+            "locale": "es",
+            "goal": 6,
+            "name": "focus"
+          }
+        },
+        "build": "3447c910980bf70607b4d07509ee0ab517f75498ba6b87eec1ebfa6b867bb2c6",
+        "createdAt": "2026-09-15T04:14:44+00:00",
+        "nonce": "bbe0d149de805136db8af98f",
+        "id": "c3fbd1fd72fa370fe39a72a7c0122f580eeea3ddd04eed88da86294983f78d0a",
+        "current": null,
+        "restorable": false,
+        "fresh": true,
+        "reviewAt": "/live/review?revision=c3fbd1fd72fa370fe39a72a7c0122f580eeea3ddd04eed88da86294983f78d0a",
+        "previewAt": "/live/preview?revision=c3fbd1fd72fa370fe39a72a7c0122f580eeea3ddd04eed88da86294983f78d0a"
+      }
+    },
+    "after": {
+      "ok": true,
+      "session": "factual-report-partial",
+      "schema": "milpa.acceptance-evidence/v1",
+      "authorization": "not_evaluated",
+      "humanApproval": "not_recorded",
+      "scope": {
+        "test": {
+          "path": "tests/Plugins/Owned",
+          "filter": ""
+        },
+        "screen": {
+          "name": "focus",
+          "type": "focus-counter",
+          "definition": {
+            "type": "focus-counter",
+            "props": {
+              "locale": "es",
+              "goal": 6,
+              "name": "focus"
+            }
+          }
+        },
+        "coverage": "requested_test_scope",
+        "inputs": "native_copied_files_and_screen_build",
+        "browserBehavior": "not_observed"
+      },
+      "candidate": {
+        "workspace": "w0dd4b66ac059c686",
+        "artifact": {
+          "path": "src/Plugins/Owned/Services/FocusCounterView.php",
+          "sha256": "0ff4753f8db540c649f1d51d5260f4c708b7b41c4353523aff5b162ecc5c2ccc"
+        },
+        "verification": {
+          "scope": "producer_declaration",
+          "detail": "syntax, strict_types, class, namespace and static conformance, behavior (FocusCounterViewTest green)"
+        },
+        "evidence": {
+          "trialRunSeq": 95,
+          "toolCallSeq": 97,
+          "baselineSha256": "13d4518d9736e1bf2378f0f05b2ad4a5cfd34bde3d0622df7d042b1ca6d58267",
+          "promotionSha256": "22d015e714ea9b820a57db50fe39b744c5006e3b7dfc91c4544ce88fd0b77ef6"
+        },
+        "authorization": "not_evaluated",
+        "next": null,
+        "state": "promoted",
+        "reason": "receipt_and_host_match",
+        "inputScope": "recorded_copied_files"
+      },
+      "state": "incomplete",
+      "test": {
+        "workspace": "w692a71425fad7693",
+        "trialRunSeq": 208,
+        "toolCallSeq": 210,
+        "scope": {
+          "path": "tests/Plugins/Owned",
+          "filter": "FocusCounterViewTest"
+        },
+        "coversRequestedScope": false,
+        "exit": 0,
+        "outcome": "passed",
+        "effectSeq": 209,
+        "candidate": {
+          "path": "src/Plugins/Owned/Services/FocusCounterView.php",
+          "sha256": "0ff4753f8db540c649f1d51d5260f4c708b7b41c4353523aff5b162ecc5c2ccc"
+        },
+        "tests": 3,
+        "assertions": 32,
+        "failures": 0,
+        "errors": 0,
+        "evidenceDigest": "165c03caf933ba49079d9634ae352c75974ded0357aba4eeec3edbae63b667fd",
+        "state": "partial",
+        "receipt": {
+          "toolCallSeq": 210,
+          "characters": 1031,
+          "sha256": "7068208256df1cb903e857373ccb861204e4507f8c7900c8ebb13c31473d98f2"
+        },
+        "ran": true
+      },
+      "screen": {
+        "state": "current",
+        "revision": "c3fbd1fd72fa370fe39a72a7c0122f580eeea3ddd04eed88da86294983f78d0a",
+        "build": "3447c910980bf70607b4d07509ee0ab517f75498ba6b87eec1ebfa6b867bb2c6",
+        "toolCallSeq": 218,
+        "meaning": "immutable_draft_read_only"
+      }
+    },
+    "report": {
+      "evidenceState": "incomplete",
+      "candidateWorkspace": "w0dd4b66ac059c686",
+      "artifactSha256": "0ff4753f8db540c649f1d51d5260f4c708b7b41c4353523aff5b162ecc5c2ccc",
+      "test": {
+        "state": "partial",
+        "outcome": "passed",
+        "ran": true,
+        "tests": 3,
+        "assertions": 32,
+        "failures": 0,
+        "errors": 0,
+        "coversRequestedScope": false,
+        "scope": {
+          "path": "tests/Plugins/Owned",
+          "filter": "FocusCounterViewTest"
+        }
+      },
+      "screen": {
+        "state": "current",
+        "revision": "c3fbd1fd72fa370fe39a72a7c0122f580eeea3ddd04eed88da86294983f78d0a",
+        "reviewUrl": "/live/review?revision=c3fbd1fd72fa370fe39a72a7c0122f580eeea3ddd04eed88da86294983f78d0a"
+      },
+      "authorization": "not_evaluated",
+      "humanApproval": "not_recorded",
+      "browserBehavior": "not_observed",
+      "readyForHumanReview": false
+    }
+  }
+}

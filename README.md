@@ -778,3 +778,15 @@ where scoped reviewers compare immutable proposals, try isolated test data,
 activate an exact revision, or restore its baseline. Older hosts keep their
 existing active-screen preview. The workspace grants no new permissions and
 implements no second promotion service. See Greenhouse decision 0329.
+
+### Delivery evidence
+
+The Agent section includes a read-only delivery evidence component. It reads the scope declared
+in the authenticated panel session and the runtime's current trial and screen-review receipts.
+It preserves unknown values, keeps human approval separate, and links to the exact revision.
+Reload to sample again; file changes can make an earlier trial historical.
+
+This reader needs `milpa/app-runtime >=0.161` and `milpa/agent` in the app. These remain optional:
+when the reader is unavailable the workspace still renders. Failed or inconsistent reads show a
+localized retry message without retaining the previous evidence or interrupting the conversation.
+A sampled report is neither a transaction lock nor permission to activate a revision.

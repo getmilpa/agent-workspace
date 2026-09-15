@@ -301,6 +301,10 @@ final class AgentWorkspacePlugin implements PluginInterface, RouteProviderInterf
             $agentMessage,
             $conversation,
             $messages,
+            new \Milpa\AgentWorkspace\Live\DeliveryEvidenceRenderer(
+                (new \Milpa\AgentWorkspace\Data\DeliveryEvidence($this->root(), $this->container))->read(...),
+                $catalog,
+            ),
         ))->declareOn($desktopComponents);
 
         // The same wiring the shell page uses, offered to the surfaces that cannot write headers.
