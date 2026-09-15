@@ -31,7 +31,7 @@ namespace Milpa\AgentWorkspace\Data;
  *   tool_calls · `session.tool_called`                          work · the last `todo_changed` per todo
  *   activity · every event, in order                            started_by · the opening event's principal
  *   state · ended › waiting (a question is open) › paused (a sequence is parked) › working (a user turn
- *           without an answer yet) › idle
+ *           without a later answer or run termination) › idle
  */
 final class LedgerSession
 {
@@ -85,6 +85,7 @@ final class LedgerSession
         $toolCalls = 0;
         $lastUser = 0;
         $lastAnswer = 0;
+        $lastRunEnd = 0;
         $question = null;
         $sequence = null;
         $ended = false;
@@ -119,6 +120,11 @@ final class LedgerSession
                     break;
                 case 'session.model_called':
                     ++$steps;
+                    break;
+                case 'session.run_terminated':
+                    // The invocation returned even when no answer was produced. Its reason does not
+                    // decide success; a later user turn remains active (greenhouse 0396/0714).
+                    $lastRunEnd = $seq;
                     break;
                 case 'session.model_returned':
                     $usage = \is_array($p['usage'] ?? null) ? $p['usage'] : [];
@@ -165,7 +171,7 @@ final class LedgerSession
         $state = $ended ? 'ended'
             : ($question !== null ? 'waiting'
             : ($sequence !== null ? 'paused'
-            : ($lastUser > $lastAnswer ? 'working' : 'idle')));
+            : ($lastUser > max($lastAnswer, $lastRunEnd) ? 'working' : 'idle')));
 
         return [
             'id' => $id,
