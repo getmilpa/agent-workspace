@@ -3,6 +3,13 @@
 All notable changes to milpa/desktop-app are documented here. This project adheres to
 [Semantic Versioning](https://semver.org/) and [Keep a Changelog](https://keepachangelog.com/).
 
+## [0.79.0](https://github.com/getmilpa/agent-workspace/compare/v0.78.0...v0.79.0) (2026-09-16)
+
+
+### Features
+
+* open server-recognized panel tasks (greenhouse 0406/0724) ([#91](https://github.com/getmilpa/agent-workspace/issues/91)) ([73f76b7](https://github.com/getmilpa/agent-workspace/commit/73f76b7a7c3edc546e86591e459f5a63c765476f))
+
 ## [0.78.0](https://github.com/getmilpa/agent-workspace/compare/v0.77.0...v0.78.0) (2026-09-16)
 
 
