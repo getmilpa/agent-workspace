@@ -105,7 +105,7 @@ final class AgentView
                 if ($settings->gateLabel() === DesktopSettings::GATE_PASSKEY && $context->principal === null) {
                     return ShellSignals::of($catalog);
                 }
-                $data?->select(PanelSession::forPrincipal($context->principal));
+                $data?->selectForPanel($context);
 
                 return ShellSignals::of($catalog, $data);
             },

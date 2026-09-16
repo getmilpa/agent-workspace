@@ -211,13 +211,25 @@ final class AgentViewRenderer implements ComponentRendererInterface, DeclaresCli
         $assets = ClientAssets::empty();
 
         if (($state->data['state'] ?? null) !== AgentViewComponent::STATE_SIGNED_OUT) {
-            // Every composed reader receives the session this authenticated render represents.
-            $this->data?->select(self::agentSession($state));
+            $selection = $this->data?->selectForPanel($request->context) ?? PanelSession::fromContext($request->context);
+            if ($selection->id === null) {
+                $html = '<div data-panel-session-unavailable role="alert">'
+                    . '<p>' . self::attr($catalog->tr('agent.session.unavailable')) . '</p>'
+                    . '<a href="' . self::attr(self::meta($state, 'next', AgentViewComponent::sectionPath(null))) . '">'
+                    . self::attr($catalog->tr('agent.session.return')) . '</a></div>';
+
+                return new RenderResult(output: $html, state: $state, clientAssets: $assets);
+            }
+            $state = new StateSnapshot($state->componentId, $state->componentName, $state->version, $state->data, [
+                'panel_session' => $selection->id,
+                'principal' => $request->context->principal ?? '',
+            ] + $state->meta);
+            $context = $selection->inContext($request->context);
         }
 
         $html = ($state->data['state'] ?? null) === AgentViewComponent::STATE_SIGNED_OUT
             ? $this->signedOut($state, $catalog)
-            : $this->live($state, $request->context, $catalog, $assets);
+            : $this->live($state, $context ?? $request->context, $catalog, $assets);
 
         return new RenderResult(output: $html, state: $state, clientAssets: $assets);
     }
@@ -417,17 +429,12 @@ final class AgentViewRenderer implements ComponentRendererInterface, DeclaresCli
             . '</script>';
     }
 
-    /**
-     * The agent session the region drives, DERIVED from who the admin authenticated.
-     *
-     * `/desktop` mints an id and keeps it in a cookie, so a reload continues the same governed session; a
-     * component rendered inside the host's response cannot set one. Deriving it from the principal buys
-     * the same continuity by other means — the same human returning to the panel returns to the same
-     * session — and keeps two humans behind the same door out of each other's. With no principal (a panel
-     * on the loopback gate, one operator by construction) the id is the panel's own, stable and shared.
-     */
+    /** The server-admitted task, with the stable principal session retained for legacy mounts. */
     private static function agentSession(StateSnapshot $state): string
     {
+        if (\is_string($state->meta['panel_session'] ?? null)) {
+            return $state->meta['panel_session'];
+        }
         $principal = $state->meta['principal'] ?? '';
 
         return PanelSession::forPrincipal(\is_string($principal) ? $principal : null);

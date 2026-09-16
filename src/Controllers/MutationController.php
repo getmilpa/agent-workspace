@@ -15,6 +15,7 @@ declare(strict_types=1);
 namespace Milpa\AgentWorkspace\Controllers;
 
 use Milpa\AgentWorkspace\Data\DesktopStore;
+use Milpa\AgentWorkspace\Http\RequestPrincipal;
 use Nyholm\Psr7\Response;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
@@ -47,7 +48,7 @@ final class MutationController
     {
         $body = json_decode((string) $request->getBody(), true);
         $goal = is_array($body) && is_string($body['goal'] ?? null) ? $body['goal'] : '';
-        $id = $this->store->createSession($goal);
+        $id = $this->store->createSession($goal, RequestPrincipal::of($request) ?? '');
 
         return $this->json(['ok' => true, 'id' => $id]);
     }

@@ -30,6 +30,8 @@ final class Catalog
     /** @var array<string, array<string, string>> */
     private const MESSAGES = [
         'en' => [
+            'agent.session.unavailable' => 'This task is unavailable for this identity. No message will be sent from this page.',
+            'agent.session.return' => 'Return to your previous session',
             'evidence.refreshing' => 'Reading the recorded delivery…',
             'evidence.criteria_form' => 'Delivery criteria',
             'evidence.awaiting_candidate' => 'Delivery criteria are recorded. A candidate still needs to be selected.',
@@ -349,6 +351,8 @@ final class Catalog
             'context.panels.title' => 'Plugin panels',
         ],
         'es' => [
+            'agent.session.unavailable' => 'Esta tarea no está disponible para esta identidad. No se enviarán mensajes desde esta página.',
+            'agent.session.return' => 'Volver a tu sesión anterior',
             'evidence.refreshing' => 'Consultando la entrega registrada…',
             'evidence.criteria_form' => 'Criterios de entrega',
             'evidence.awaiting_candidate' => 'Los criterios de entrega están registrados. Falta seleccionar un candidato.',
