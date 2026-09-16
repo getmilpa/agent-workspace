@@ -165,6 +165,16 @@ final class DomContractTest extends TestCase
         // `data-activity-empty` only exists while nothing has been recorded, so one region carries a
         // recorded event and the other carries no data at all.
         $pages = self::region($data, $events) . self::region(null, $events);
+        // Conditional delivery inputs: the empty session and the native candidate offer are distinct renders.
+        foreach ([
+            ['state' => 'scope_missing', 'report' => null, 'canDeclareExpectation' => true],
+            ['state' => 'awaiting_candidate', 'report' => null, 'declaration' => null,
+                'expectation' => ['expected' => ['test' => ['path' => 'tests/Owned', 'filter' => ''], 'screen' => ['name' => 'focus', 'type' => 'focus-counter']]],
+                'candidateSelection' => ['scope' => ['workspace' => 'w0123456789ab', 'artifactPath' => 'src/Focus.php']]],
+        ] as $sample) {
+            $renderer = new \Milpa\AgentWorkspace\Live\DeliveryEvidenceRenderer(static fn (string $session): array => ['session' => $session] + $sample);
+            $pages .= $renderer->render(new \Milpa\AgentWorkspace\Live\DeliveryEvidenceComponent(), new RenderRequest(new ComponentContext('delivery')))->output;
+        }
 
         unlink($sessionFile);
         unlink($dir . '/events.log');

@@ -200,6 +200,15 @@
     if (!d) { return Promise.reject(new Error('desktop-guard not loaded')); }
     last = text;
     var bar = composer();
+    var input = { prompt: text, session: SESSION, mode: bar ? bar.mode() : 'ask' };
+    try {
+      var delivery = d.delivery ? d.delivery.prepare() : {};
+      if (typeof delivery.expectation === 'string') { input.expectation = delivery.expectation; }
+      if (typeof delivery.deliveryCandidate === 'string') { input.deliveryCandidate = delivery.deliveryCandidate; }
+    } catch (error) {
+      d.failed(error, error.message);
+      return Promise.resolve(null);
+    }
     // The turn's own state is set HERE, at the start of the turn the Desktop asked for. The hub's
     // `session.state` fact was the ONLY writer before, so on a Desktop with no hub wired a running turn
     // was invisible: the send button never became a stop and the topbar kept reading «Ready». The hub
@@ -209,7 +218,7 @@
     return fetch(ROUTE, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ prompt: text, session: SESSION, mode: bar ? bar.mode() : 'ask' }),
+      body: JSON.stringify(input),
     }).then(d.guarded).then(function (response) {
       return response.json();
     }).then(function (result) {
@@ -219,8 +228,13 @@
       report(result);
       if (result && result.ok) { counters(result); }
 
-      return result;
-    }).catch(function (err) { working(false); d.failed(err, tr('guard.unreachable')); });
+      return d.delivery ? d.delivery.refresh().then(function () { return result; }) : result;
+    }).catch(function (err) {
+      working(false);
+      d.failed(err, tr('guard.unreachable'));
+      // A lost response can follow a recorded declaration. Recover from the server before another send.
+      return d.delivery ? d.delivery.refresh() : undefined;
+    });
   }
 
   /**
