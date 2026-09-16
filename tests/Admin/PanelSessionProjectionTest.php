@@ -81,11 +81,11 @@ final class PanelSessionProjectionTest extends TestCase
                 $id = PanelSession::forPrincipal($principal);
                 // Both consumers must select independently; a prior render may have selected somebody else.
                 $data->select($principal === 'reader' ? $owner : $reader);
-                $signals = $view->resolveSignals(new ComponentContext('agent', principal: $principal, meta: ['query' => ['principal' => 'reader', 'session' => $reader]]));
+                $signals = $view->resolveSignals(new ComponentContext('agent', principal: $principal, meta: ['query' => ['principal' => 'reader']]));
                 self::assertSame($working, $signals['session.working']);
                 self::assertSame($turns, $signals['session.turns']);
                 $data->select($principal === 'reader' ? $owner : $reader);
-                $page = $shell->compose($catalogue, $active, ['session' => $reader, 'principal' => 'reader'], $principal);
+                $page = $shell->compose($catalogue, $active, ['principal' => 'reader'], $principal);
                 self::assertSame($working, $page->seeds->signals['session.working']);
                 self::assertSame($turns, $page->seeds->signals['session.turns']);
                 self::assertStringContainsString('"agent":"' . $id . '"', $page->html);

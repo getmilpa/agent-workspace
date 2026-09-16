@@ -779,6 +779,20 @@ activate an exact revision, or restore its baseline. Older hosts keep their
 existing active-screen preview. The workspace grants no new permissions and
 implements no second promotion service. See Greenhouse decision 0329.
 
+### Panel task selection
+
+The session picker and **New session** open a task recognized by the server. Creation records the
+principal supplied by the authenticated request; identity fields in the request body are ignored.
+The panel offers tasks created for that identity and its previous stable session. The selected task
+supplies the conversation, delivery criteria, candidate, composer destination and signed hub ticket.
+Reloading its URL preserves that selection, and returning to the previous task preserves its criteria.
+
+An explicit unknown, malformed or foreign selection displays an unavailable message without a composer
+or session ticket. Existing arbitrary session files without panel provenance are not automatically
+adopted. A loopback panel with no authenticated principal retains its shared local operator.
+This is admission to the panel surface; direct agent operations retain their own authorization rules.
+It does not establish global stream ownership, sharing, transfer or concurrent revocation.
+
 ### Delivery evidence
 
 The Agent section includes a read-only delivery evidence component. It reads the scope declared

@@ -64,7 +64,7 @@ final class DesktopStore
     /**
      * Create a new session in the store and return its generated id. Nothing runs — it is a record.
      */
-    public function createSession(string $goal): string
+    public function createSession(string $goal, ?string $panelPrincipal = null): string
     {
         if (!is_dir($this->sessionsPath)) {
             mkdir($this->sessionsPath, 0o775, true);
@@ -82,6 +82,9 @@ final class DesktopStore
             'tool_calls' => 0,
             'work' => [],
         ];
+        if ($panelPrincipal !== null) {
+            $session['panel_principal'] = $panelPrincipal;
+        }
         file_put_contents(
             $this->sessionsPath . '/' . $id . '.json',
             json_encode($session, JSON_THROW_ON_ERROR | JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT),
@@ -89,6 +92,26 @@ final class DesktopStore
         );
 
         return $id;
+    }
+
+    /** Server-created panel tasks for this identity; unowned legacy records are not adopted.
+     * @return list<string>
+     */
+    public function panelSessionIds(string $principal): array
+    {
+        $ids = [];
+        foreach (glob($this->sessionsPath . '/desk-*.json') ?: [] as $file) {
+            $id = basename($file, '.json');
+            if (preg_match('/^desk-[0-9a-f]{16}$/', $id) !== 1) {
+                continue;
+            }
+            $row = json_decode((string) file_get_contents($file), true);
+            if (\is_array($row) && ($row['id'] ?? null) === $id && ($row['panel_principal'] ?? null) === $principal) {
+                $ids[] = $id;
+            }
+        }
+
+        return $ids;
     }
 
     /**

@@ -40,9 +40,12 @@ final class DeliveryEvidenceRenderer implements ComponentRendererInterface, Decl
         if ($component::contract()->name !== DeliveryEvidenceComponent::NAME || !$this->supportsTarget($request->target)) {
             throw new \InvalidArgumentException('Delivery evidence requires its HTML component.');
         }
-        $session = PanelSession::forPrincipal($request->context->principal);
+        $session = PanelSession::fromContext($request->context)->id;
         $sample = ['session' => $session, 'state' => 'unavailable', 'report' => null];
         try {
+            if ($session === null) {
+                throw new \DomainException('The panel did not admit the requested task.');
+            }
             if ($this->read !== null) {
                 $sample = ($this->read)($session);
                 if (($sample['session'] ?? null) !== $session) {

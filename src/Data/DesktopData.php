@@ -652,11 +652,24 @@ final class DesktopData
             ];
         }
 
-        return array_values($out);
+        return array_values($this->panelSessionIds === null ? $out : array_intersect_key($out, array_flip($this->panelSessionIds)));
     }
 
     /** The session the UI selected (a sidebar click posts `?session=<id>`), when it names a real one. */
     private ?string $selectedId = null;
+
+    /** @var list<string>|null A panel render offers only the authority's recognized tasks. */
+    private ?array $panelSessionIds = null;
+
+    /** Select from authenticated server context and share that resolution with composed surfaces. */
+    public function selectForPanel(\Milpa\Live\ValueObjects\ComponentContext $context): \Milpa\AgentWorkspace\Admin\PanelSession
+    {
+        $selection = \Milpa\AgentWorkspace\Admin\PanelSession::fromContext($context, $this->store);
+        $this->panelSessionIds = $selection->allowed;
+        $this->selectedId = $selection->id ?? '';
+
+        return $selection;
+    }
 
     /**
      * Select the active session by id. A well-formed id is selected whether the store, the ledger, or nobody

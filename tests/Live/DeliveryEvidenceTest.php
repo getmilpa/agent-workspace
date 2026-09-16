@@ -74,7 +74,7 @@ final class DeliveryEvidenceTest extends TestCase
         });
         $component = new DeliveryEvidenceComponent();
         foreach (['owner','reader'] as $actor) {
-            $request = new RenderRequest(new ComponentContext('evidence', principal:$actor, meta:['query' => ['session' => 'forged']]), props:['sample' => ['report' => 'approved'],'session' => 'forged']);
+            $request = new RenderRequest(new ComponentContext('evidence', principal:$actor, meta:['query' => ['principal' => 'forged']]), props:['sample' => ['report' => 'approved'],'session' => 'forged']);
             $r = $renderer->render($component, $request);
             self::assertStringContainsString('Ready for human review', $r->output);
             self::assertStringNotContainsString('data-evidence-sample', $r->output);
