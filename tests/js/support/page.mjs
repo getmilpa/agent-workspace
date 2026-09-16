@@ -50,6 +50,10 @@ export const SIGNALS = {
  * `tr('…')` key the shipped modules use is missing from it.
  */
 export const CATALOG = {
+  'evidence.refreshing': 'Reading the recorded delivery…',
+  'evidence.refresh_failed': 'Delivery evidence could not be refreshed. Reload the page before sending another message.',
+  'evidence.invalid_criteria': 'Enter a test path, screen name and screen type.',
+  'evidence.invalid_definition': 'Screen definition must be a JSON object.',
   'model.unreachable': '%s · not answering',
   'model.not_served': '%s · this provider does not serve it',
   'composer.model.asking': 'asking the endpoint…',
@@ -294,8 +298,13 @@ export class El {
   get className() { return this.attrs.class || ''; }
   set className(value) { this.attrs.class = String(value); }
   getAttribute(name) { return name === 'id' ? (this.id || null) : (this.attrs[name] === undefined ? null : String(this.attrs[name])); }
+  hasAttribute(name) { return this.getAttribute(name) !== null; }
   setAttribute(name, value) { if (name === 'id') { this.id = String(value); } else { this.attrs[name] = String(value); } }
   removeAttribute(name) { delete this.attrs[name]; }
+  replaceWith(other) {
+    const parent = this.parent;
+    if (parent) { parent.insertBefore(other, this); parent.removeChild(this); }
+  }
   addEventListener(type, fn) { (this.listeners[type] ||= []).push(fn); }
   /**
    * Fire a listener the way a click does — the harness's stand-in for a user acting on the page.

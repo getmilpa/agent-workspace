@@ -90,7 +90,7 @@ final class DesktopAssets
      * @var array<string, list<string>> component name => the extensions the package ships for it
      */
     private const array FILES = [
-        'desktop-delivery-evidence' => ['css'],
+        'desktop-delivery-evidence' => ['css', 'js'],
         'desktop-tabs' => ['css', 'js'],
         'desktop-gate' => ['css', 'js'],
         'desktop-activity' => ['css', 'js'],

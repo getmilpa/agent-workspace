@@ -11,7 +11,7 @@ declare(strict_types=1);
 
 namespace Milpa\AgentWorkspace\Data;
 
-use Milpa\AppRuntime\Agent\{AcceptanceEvidence,DeliveryScope};
+use Milpa\AppRuntime\Agent\{AcceptanceEvidence,DeliveryExpectation,DeliveryScope};
 use Milpa\AppRuntime\Operations\AgentOperations;
 use Milpa\AppRuntime\Web\{ScreenDrafts,ScreenDraftOperations};
 use Milpa\Interfaces\Di\DIContainerInterface;
@@ -42,11 +42,31 @@ final readonly class DeliveryEvidence
         }
         $events = $store->stream($session);
         $declaration = DeliveryScope::read($events, $session);
+        $supportsExpectation = class_exists(DeliveryExpectation::class);
+        $expectation = $supportsExpectation ? DeliveryExpectation::read($events, $session) : null;
         $ends = array_values(array_filter($events, static fn ($e) => $e->type === 'session.run_terminated'));
         $last = $ends === [] ? null : $ends[array_key_last($ends)]->payload;
-        $base = ['session' => $session, 'termination' => $last, 'meaning' => 'sampled_observation_not_a_lock_or_approval'];
+        $base = ['session' => $session, 'termination' => $last, 'meaning' => 'sampled_observation_not_a_lock_or_approval',
+            'expectation' => $expectation,
+            // Offer the initial form conservatively. The SDK still adjudicates every submission.
+            'canDeclareExpectation' => $supportsExpectation && $events === [],
+            'candidateSelection' => null];
         if ($declaration === null) {
-            return $base + ['state' => 'scope_missing', 'declaration' => null, 'report' => null];
+            if ($expectation !== null) {
+                // Only the latest native edit candidate is offered; the SDK verifies its physical state.
+                foreach (array_reverse($events) as $event) {
+                    if ($event->type !== 'session.trial_run_recorded' || ($event->payload['operation'] ?? null) !== 'edit') {
+                        continue;
+                    }
+                    try {
+                        $base['candidateSelection'] = DeliveryScope::forCandidate($this->root, $events, $session, $event->payload['workspace']);
+                    } catch (\InvalidArgumentException) {
+                        // A missing, stale or unpromoted candidate offers no selection.
+                    }
+                    break;
+                }
+            }
+            return $base + ['state' => $expectation === null ? 'scope_missing' : 'awaiting_candidate', 'declaration' => null, 'report' => null];
         }
         $scope = $declaration['scope'];
         $read = fn (): array => ['ok' => true, 'session' => $session] + AcceptanceEvidence::read(

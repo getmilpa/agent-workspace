@@ -790,3 +790,16 @@ This reader needs `milpa/app-runtime >=0.161` and `milpa/agent` in the app. Thes
 when the reader is unavailable the workspace still renders. Failed or inconsistent reads show a
 localized retry message without retaining the previous evidence or interrupting the conversation.
 A sampled report is neither a transaction lock nor permission to activate a revision.
+
+With `milpa/app-runtime >=0.162`, a new panel session can also record delivery criteria with its
+first message. Choose an exact test path and optional filter, screen name/type and optional JSON
+definition, then enable **Record these criteria with my next message**. The existing `/agent`
+invocation records them before execution. Once recorded, the panel reads them from the session;
+they cannot be edited or inferred from the tests a candidate happened to run.
+
+After a native candidate is promoted, **Use this candidate with my next message** selects it for
+the next invocation. The runtime binds its artifact and producer receipts to the prior criteria.
+The panel refreshes from an authenticated server render after every turn, including refusals;
+an uncertain refresh hides the previous evidence and requires a reload before another send.
+Selection grants no approval and activates no screen. Existing sessions without criteria and hosts
+without this optional runtime contract retain their existing delivery path.

@@ -80,16 +80,22 @@ final class ThePanelPaintsEverySurfaceWithoutThePageTest extends TestCase
     private static function panelView(): string
     {
         $events = new EventDispatcher(new NullLogger());
-        $data = new DesktopData(new DIContainer(), null, sys_get_temp_dir());
+        $directory = sys_get_temp_dir() . '/milpa-panel-empty-' . bin2hex(random_bytes(6));
+        mkdir($directory);
+        $data = new DesktopData(new DIContainer(), null, $directory);
         $catalog = new Catalog();
         $live = new DesktopComponents('signing', 'csrf', $events);
 
         (new Surfaces($data, $events, $catalog))->declareOn($live);
         DeepScreens::declareOn($live, $data, null, $catalog, hidden: false);
 
-        return (new AgentViewRenderer($live, $data))->render(
-            new AgentViewComponent(),
-            new RenderRequest(new ComponentContext('milpa-admin-section-agent', route: '/milpa/admin'), ['gate' => 'loopback']),
-        )->output;
+        try {
+            return (new AgentViewRenderer($live, $data))->render(
+                new AgentViewComponent(),
+                new RenderRequest(new ComponentContext('milpa-admin-section-agent', route: '/milpa/admin'), ['gate' => 'loopback']),
+            )->output;
+        } finally {
+            rmdir($directory);
+        }
     }
 }
