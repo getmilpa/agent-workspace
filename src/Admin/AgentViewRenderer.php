@@ -283,10 +283,10 @@ final class AgentViewRenderer implements ComponentRendererInterface, DeclaresCli
             // Above the conversation: it names WHICH session you are reading, which is a question you
             // ask before the messages, not after them.
             . $paint('desktop-session-strip')
-            . $paint('desktop-delivery-evidence')
             . '<div class="view view--session" data-view="session" x-data>'
             . $paint('desktop-tabs')
-            . '<div class="view--session__scroll">' . $panes . '</div>'
+            // Criteria and receipts can grow; keep them in the scroller so the composer stays reachable.
+            . '<div class="view--session__scroll">' . $paint('desktop-delivery-evidence') . $panes . '</div>'
             . '<div id="milpa-composer-dock" class="view--session__dock" :hidden="$store.milpa[\'desktop.tab\'] !== \'chat\'">' . $paint('desktop-composer') . '</div>'
             . '</div>'
 
