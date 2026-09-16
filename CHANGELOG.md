@@ -3,6 +3,13 @@
 All notable changes to milpa/desktop-app are documented here. This project adheres to
 [Semantic Versioning](https://semver.org/) and [Keep a Changelog](https://keepachangelog.com/).
 
+## [0.78.0](https://github.com/getmilpa/agent-workspace/compare/v0.77.0...v0.78.0) (2026-09-16)
+
+
+### Features
+
+* **workspace:** carry prior delivery criteria through the panel ([#89](https://github.com/getmilpa/agent-workspace/issues/89)) ([4423855](https://github.com/getmilpa/agent-workspace/commit/44238558a9217662f4e443ec95b8f44408fd1a59))
+
 ## [0.77.0](https://github.com/getmilpa/agent-workspace/compare/v0.76.1...v0.77.0) (2026-09-15)
 
 
