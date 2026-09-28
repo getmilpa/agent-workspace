@@ -3,6 +3,13 @@
 All notable changes to milpa/desktop-app are documented here. This project adheres to
 [Semantic Versioning](https://semver.org/) and [Keep a Changelog](https://keepachangelog.com/).
 
+## [0.81.0](https://github.com/getmilpa/agent-workspace/compare/v0.80.0...v0.81.0) (2026-09-28)
+
+
+### Features
+
+* **panel:** mount the inbox's own doors to answer, run and decide (greenhouse 0495) ([#95](https://github.com/getmilpa/agent-workspace/issues/95)) ([2771ec7](https://github.com/getmilpa/agent-workspace/commit/2771ec7fd1d47632e42bfc33b4e2f3dc3d6d3d54))
+
 ## [0.80.0](https://github.com/getmilpa/agent-workspace/compare/v0.79.0...v0.80.0) (2026-09-28)
 
 
