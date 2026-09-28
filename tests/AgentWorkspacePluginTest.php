@@ -60,7 +60,7 @@ final class AgentWorkspacePluginTest extends TestCase
         $plugin = new AgentWorkspacePlugin(new DIContainer());
 
         $routes = $plugin->routes();
-        self::assertCount(9, $routes);
+        self::assertCount(15, $routes);
         foreach ($routes as $route) {
             self::assertInstanceOf(Route::class, $route);
             self::assertNotNull($route->handler);
@@ -69,9 +69,25 @@ final class AgentWorkspacePluginTest extends TestCase
         // one public route — the component assets (greenhouse decisions/0388).
         $paths = array_map(static fn (Route $r): string => $r->path, $routes);
         self::assertSame(
-            ['/workspace/hub', '/workspace/settings', '/workspace/sessions', '/workspace/work', '/workspace/grant', '/workspace/answer', '/workspace/sequence', '/workspace/decide', '/workspace/assets/c/{file}'],
+            ['/workspace/hub', '/workspace/settings', '/workspace/sessions', '/workspace/work', '/workspace/grant', '/workspace/answer', '/workspace/sequence', '/workspace/decide', '/workspace/turn', '/workspace/goal', '/workspace/skill', '/workspace/config', '/workspace/provider', '/workspace/model', '/workspace/assets/c/{file}'],
             $paths,
         );
+    }
+
+    public function testEachPanelDoorIsMountedWithTheVerbThePanelAsksBy(): void
+    {
+        // greenhouse decisions/0497: «Find models» and a skill are reads the panel asks by GET; every other door
+        // is a POST. A door mounted with the wrong verb is the same silent refusal as no door at all.
+        $verbs = [];
+        foreach ((new AgentWorkspacePlugin(new DIContainer()))->routes() as $route) {
+            $verbs[$route->path] = array_map(static fn (\Milpa\Http\HttpMethod $m): string => $m->value, $route->methods);
+        }
+        foreach (\Milpa\AgentWorkspace\Controllers\PanelDoorController::DOORS as $door) {
+            self::assertSame([$door['verb']], $verbs[$door['path']] ?? null, $door['path']);
+        }
+        self::assertSame(['GET'], $verbs['/workspace/model']);
+        self::assertSame(['GET'], $verbs['/workspace/skill']);
+        self::assertSame(['POST'], $verbs['/workspace/turn']);
     }
 
     public function testEveryRouteButTheAssetsCarriesTheDoorLoopbackOnlyByDefault(): void
@@ -79,7 +95,7 @@ final class AgentWorkspacePluginTest extends TestCase
         $plugin = new AgentWorkspacePlugin(new DIContainer());
 
         self::assertSame([LoopbackOnlyMiddleware::class], $plugin->settings()->effectiveMiddleware());
-        self::assertSame(['/workspace/hub', '/workspace/settings', '/workspace/sessions', '/workspace/work', '/workspace/grant', '/workspace/answer', '/workspace/sequence', '/workspace/decide'], self::gatedPaths($plugin->routes()));
+        self::assertSame(['/workspace/hub', '/workspace/settings', '/workspace/sessions', '/workspace/work', '/workspace/grant', '/workspace/answer', '/workspace/sequence', '/workspace/decide', '/workspace/turn', '/workspace/goal', '/workspace/skill', '/workspace/config', '/workspace/provider', '/workspace/model'], self::gatedPaths($plugin->routes()));
         foreach ($plugin->routes() as $route) {
             $isAsset = \in_array($route->path, self::ASSETS, true);
             self::assertSame($isAsset ? [] : [LoopbackOnlyMiddleware::class], $route->middleware, $route->path);
@@ -101,7 +117,7 @@ final class AgentWorkspacePluginTest extends TestCase
 
         $typo = self::withConfig(['workspace' => ['middleware' => [AllowAllMiddleware::class, 'Acme\\Nope']]]);
         self::assertSame([LoopbackOnlyMiddleware::class], $typo->routes()[0]->middleware, 'the whole stack falls to loopback-only — never the half that loads');
-        self::assertSame(8, \count(self::gatedPaths($typo->routes())));
+        self::assertSame(14, \count(self::gatedPaths($typo->routes())));
         self::assertSame('fallback', $typo->settings()->gateKind());
     }
 
@@ -241,7 +257,7 @@ final class AgentWorkspacePluginTest extends TestCase
         $plugin->enable();
         $plugin->disable();
 
-        self::assertCount(9, $plugin->routes(), 'the hub a headerless surface asks, the per-component assets the panel loads, the three write endpoints, the seat grant and the inbox\'s three doors (greenhouse decisions/0283, 0493, 0495)');
+        self::assertCount(15, $plugin->routes(), 'the hub a headerless surface asks, the per-component assets the panel loads, the three write endpoints, the seat grant, the inbox\'s three doors and the composer\'s and Settings\' six (greenhouse decisions/0283, 0493, 0495, 0497)');
         $paths = array_map(static fn ($r): string => $r->path, $plugin->routes());
         self::assertContains('/workspace/work', $paths, 'the session export (autopsy/video material)');
     }

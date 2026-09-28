@@ -72,8 +72,8 @@
 
   // The door this app signs in at (`#milpa-desktop-guard`), written by the shell as DATA and only when the
   // Desktop really stands behind the passkey gate. It is the FALLBACK for a 401 whose BODY names none: the
-  // Desktop's own doors answer `{"signin":"…"}`, but app-runtime's operation doors (`/agent`, `/agent/goal`,
-  // `/skill/invoke`) answer a bare `MILPA_UNAUTHENTICATED`. Without it a session that expired mid-page left
+  // Desktop's own doors answer `{"signin":"…"}`, but the doors that project an operation (`/workspace/turn`,
+  // `/workspace/goal`, `/workspace/skill`, …) answer the policy's bare `MILPA_UNAUTHENTICATED`. Without it a session that expired mid-page left
   // the human reading a runtime error with no way back in; with it, every 401 is the same door.
   var DOORS = (function () {
     var el = document.getElementById('milpa-desktop-guard');
@@ -196,7 +196,9 @@
       var headers = { 'Content-Type': 'application/json' };
       if (token) { headers['Confirm-Token'] = token; }
 
-      return fetch('/config/set', {
+      // The panel's own door to `config:set` (greenhouse decisions/0497): a fresh app mounts no `/config/set`,
+      // and saving the model there answered 404 and said nothing (evidence/1024, B2).
+      return fetch('/workspace/config', {
         method: 'POST',
         headers: headers,
         body: JSON.stringify({ key: key, value: value }),
@@ -212,13 +214,24 @@
 
   /** What the endpoint says it serves: `{reached, models}`, or a rejection the caller words. */
   function providerModels() {
-    return fetch('/agent/model?ask=1', { headers: { Accept: 'application/json' } })
+    return fetch('/workspace/model?ask=1', { headers: { Accept: 'application/json' } })
       .then(guarded)
       .then(function (response) { return response.json(); });
   }
 
+  /**
+   * What a refused call says, in the door's own sentence when it gave one — a 501 names the package that brings the
+   * operation, a refusal names who may decide (greenhouse decisions/0497) — else its status. Never an empty «HTTP 0».
+   */
+  function reason(err) {
+    if (err && err.body && typeof err.body.error === 'string' && err.body.error !== '') { return err.body.error; }
+
+    return (err && err.status) ? 'HTTP ' + err.status : tr('guard.unreachable');
+  }
+
   live.desktop = {
     tr: tr,
+    reason: reason,
     signal: signal,
     guarded: guarded,
     guardedFlow: guardedFlow,

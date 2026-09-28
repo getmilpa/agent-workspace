@@ -37,8 +37,11 @@
     return;
   }
 
-  /** The governed turn's HTTP surface — the `agent` operation's own projection. */
-  var ROUTE = '/agent';
+  /**
+   * The governed turn's HTTP surface: the panel's own door to the `agent` operation (greenhouse decisions/0497). A
+   * fresh app mounts no `/agent`; the turn carries the chip's mode, and only the session's line may send it.
+   */
+  var ROUTE = '/workspace/turn';
   /** Where the server tells the page which agent session this Desktop drives. */
   var SESSION_TAG = 'milpa-desktop-session';
 
