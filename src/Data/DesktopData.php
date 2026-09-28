@@ -313,9 +313,7 @@ final class DesktopData
      * relation and the judgement are app-runtime's ({@see \Milpa\AppRuntime\Agent\SeatFrontier}): this reads
      * them, it does not decide them. Guarded so an app without the runtime or the agent store degrades to none.
      *
-     * Each row is `{session, goal, seat, refusals: list<{seq, tool, plugin, permission}>}`, as the runtime answers it.
-     *
-     * @return list<array<string, mixed>>
+     * @return list<array{session: string, goal: string, seat: string, refusals: list<array{seq: int, tool: string, plugin: ?string, permission: string}>}>
      */
     public function seatFrontier(string $principal): array
     {
@@ -330,9 +328,7 @@ final class DesktopData
         if (!$kernel instanceof Kernel || $file === null || !is_file($file)) {
             return [];
         }
-        $rows = $class::forRoot($kernel->root(), new \Milpa\Agent\SessionStore(new \Milpa\EventStore\FileEventStore($file)))->sessionsFor($principal);
-
-        return \is_array($rows) ? array_values(array_filter($rows, 'is_array')) : [];
+        return $class::forRoot($kernel->root(), new \Milpa\Agent\SessionStore(new \Milpa\EventStore\FileEventStore($file)))->sessionsFor($principal);
     }
 
     /**
@@ -342,7 +338,7 @@ final class DesktopData
      */
     public function seatSessionIds(string $principal): array
     {
-        return array_values(array_filter(array_column($this->seatFrontier($principal), 'session'), 'is_string'));
+        return array_column($this->seatFrontier($principal), 'session');
     }
 
     /**
