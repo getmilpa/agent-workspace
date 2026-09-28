@@ -313,13 +313,26 @@ final class DesktopData
      * relation and the judgement are app-runtime's ({@see \Milpa\AppRuntime\Agent\SeatFrontier}): this reads
      * them, it does not decide them. Guarded so an app without the runtime or the agent store degrades to none.
      *
-     * @return list<array{session: string, goal: string, seat: string, refusals: list<array{seq: int, tool: string, plugin: ?string, permission: string}>}>
+     * Each row is `{session, goal, seat, refusals: list<{seq, tool, plugin, permission}>}`, as the runtime answers it.
+     *
+     * @return list<array<string, mixed>>
      */
     public function seatFrontier(string $principal): array
     {
-        $frontier = $this->frontier();
+        // NAMED AS A STRING, like the admin's installer: milpa/app-runtime is where the relation lives and this
+        // package does not require it, so a class reference would be a type this package cannot promise.
+        $class = 'Milpa\\AppRuntime\\Agent\\SeatFrontier';
+        if ($principal === '' || !class_exists($class) || !class_exists(\Milpa\Agent\SessionStore::class) || !class_exists(\Milpa\EventStore\FileEventStore::class)) {
+            return [];
+        }
+        $kernel = $this->container->has(Kernel::class) ? $this->container->get(Kernel::class) : null;
+        $file = $this->ledgerFile();
+        if (!$kernel instanceof Kernel || $file === null || !is_file($file)) {
+            return [];
+        }
+        $rows = $class::forRoot($kernel->root(), new \Milpa\Agent\SessionStore(new \Milpa\EventStore\FileEventStore($file)))->sessionsFor($principal);
 
-        return $frontier === null || $principal === '' ? [] : $frontier->sessionsFor($principal);
+        return \is_array($rows) ? array_values(array_filter($rows, 'is_array')) : [];
     }
 
     /**
@@ -329,22 +342,7 @@ final class DesktopData
      */
     public function seatSessionIds(string $principal): array
     {
-        return array_column($this->seatFrontier($principal), 'session');
-    }
-
-    /** The runtime's frontier over this app's ledger and session store, or null when the app has neither. */
-    private function frontier(): ?\Milpa\AppRuntime\Agent\SeatFrontier
-    {
-        if (!class_exists(\Milpa\AppRuntime\Agent\SeatFrontier::class) || !class_exists(\Milpa\Agent\SessionStore::class) || !class_exists(\Milpa\EventStore\FileEventStore::class)) {
-            return null;
-        }
-        $kernel = $this->container->has(Kernel::class) ? $this->container->get(Kernel::class) : null;
-        $file = $this->ledgerFile();
-        if (!$kernel instanceof Kernel || $file === null || !is_file($file)) {
-            return null;
-        }
-
-        return \Milpa\AppRuntime\Agent\SeatFrontier::forRoot($kernel->root(), new \Milpa\Agent\SessionStore(new \Milpa\EventStore\FileEventStore($file)));
+        return array_values(array_filter(array_column($this->seatFrontier($principal), 'session'), 'is_string'));
     }
 
     /**
