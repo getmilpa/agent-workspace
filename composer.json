@@ -62,6 +62,10 @@
                 "plugins": [
                     "Milpa\\AgentWorkspace\\AgentWorkspacePlugin"
                 ],
+                "operator_scopes": [
+                    "agent:read",
+                    "agent:answer"
+                ],
                 "briefing": "This app gains the agent's workspace: conversation, composer, gate, work board, activity and decisions inbox, declared as a section of the Milpa panel and served over the app's own origin. The panel itself comes from milpa/admin; this is a tenant of it, and an app without this capability still has a panel."
             }
         }
