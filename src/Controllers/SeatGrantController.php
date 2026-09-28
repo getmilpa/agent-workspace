@@ -44,8 +44,13 @@ final class SeatGrantController
     /** Named as a string: milpa/app-runtime is where the operation lives, and this package does not require it. */
     private const string OPERATIONS = 'Milpa\\AppRuntime\\Operations\\SessionOperations';
 
-    public function __construct(private readonly DIContainerInterface $container)
-    {
+    /**
+     * @param \Milpa\Command\Operation|null $operation the operation to project; null asks milpa/app-runtime for it
+     */
+    public function __construct(
+        private readonly DIContainerInterface $container,
+        private readonly ?\Milpa\Command\Operation $operation = null,
+    ) {
     }
 
     /** Project the request as `identity:grant` and answer what its ceremony answers. */
@@ -73,6 +78,9 @@ final class SeatGrantController
 
     private function operation(): ?\Milpa\Command\Operation
     {
+        if ($this->operation !== null) {
+            return $this->operation;
+        }
         if (!class_exists(self::OPERATIONS)) {
             return null;
         }

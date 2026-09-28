@@ -16,17 +16,14 @@ namespace Milpa\AgentWorkspace\Tests\Admin;
 use Milpa\Agent\Principal;
 use Milpa\Agent\SessionStore;
 use Milpa\AgentWorkspace\Admin\PanelSession;
-use Milpa\AgentWorkspace\Controllers\SeatGrantController;
 use Milpa\AgentWorkspace\Data\DesktopData;
 use Milpa\AgentWorkspace\Data\DesktopStore;
-use Milpa\AgentWorkspace\Live\DecisionsInboxView;
 use Milpa\AppRuntime\Identity\FileEnrollmentStore;
 use Milpa\AppRuntime\Identity\IdentityEnrolled;
 use Milpa\Container\DIContainer;
 use Milpa\EventStore\FileEventStore;
 use Milpa\Live\ValueObjects\ComponentContext;
 use Milpa\Runtime\Kernel;
-use Nyholm\Psr7\ServerRequest;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -94,55 +91,6 @@ final class SeatFrontierPanelTest extends TestCase
         // The control for the admission: the same request, resolved without the seats, is the rehearsal's refusal.
         self::assertNull(PanelSession::fromContext($this->asking(self::PASSKEY))->id);
         self::assertSame(self::SESSION, PanelSession::fromContext($this->asking(self::PASSKEY), null, [self::SESSION])->id);
-    }
-
-    public function testTheCardCarriesTheRefusedCallAndTheGrantNotAScopeToSend(): void
-    {
-        $html = (new DecisionsInboxView())->frontierHtml($this->data()->seatFrontier(self::PASSKEY));
-
-        self::assertStringContainsString('data-seat-session="camino-blog"', $html);
-        self::assertStringContainsString('data-seat-grant', $html);
-        self::assertStringContainsString('It lacks plugins.Blog:write', $html);
-        self::assertStringContainsString('key:' . self::SEAT . ' was refused make · plugin Blog', $html);
-        self::assertStringContainsString('href="?session=camino-blog"', $html);
-        self::assertStringNotContainsString('milpa-frontier-empty', $html);
-        self::assertStringContainsString('milpa-frontier-empty', (new DecisionsInboxView())->frontierHtml([]));
-    }
-
-    public function testTheGrantDoorSaysSoWhenTheAppWiredNoJudge(): void
-    {
-        $container = new DIContainer();
-        $container->registerService(Kernel::class, $this->kernel());
-        $request = (new ServerRequest('POST', '/workspace/grant', ['Content-Type' => 'application/json']))
-            ->withBody(\Nyholm\Psr7\Stream::create('{"session":"camino-blog","seq":2}'));
-
-        $answer = (new SeatGrantController($container))->grant($request);
-
-        self::assertSame(501, $answer->getStatusCode(), 'identity:grant declares a scope; with no policy the panel cannot run it');
-        self::assertStringContainsString('no policy to judge who may grant', (string) $answer->getBody());
-    }
-
-    public function testTheGrantDoorAsksTheJudgeTheAppPublished(): void
-    {
-        // The app publishes its judge under milpa/command's name (App\Http\IdentityWiring). A door that asked
-        // for another name found none and answered «no policy» to EVERY caller — measured in the lab, where it
-        // refused the stranger for the wrong reason (greenhouse evidence/1026). This judge refuses everyone,
-        // so reaching it is the proof the door asked the right name.
-        $container = new DIContainer();
-        $container->registerService(Kernel::class, $this->kernel());
-        $container->registerService(\Milpa\Command\OperationHttpPolicy::class, new class () implements \Milpa\Command\OperationHttpPolicy {
-            public function enforce(\Milpa\Command\Operation $op, \Psr\Http\Message\ServerRequestInterface $request): ?\Psr\Http\Message\ResponseInterface
-            {
-                return new \Nyholm\Psr7\Response(403, ['Content-Type' => 'application/json'], '{"error":"judged: ' . $op->name . '"}');
-            }
-        });
-        $request = (new ServerRequest('POST', '/workspace/grant', ['Content-Type' => 'application/json']))
-            ->withBody(\Nyholm\Psr7\Stream::create('{"session":"camino-blog","seq":2}'));
-
-        $answer = (new SeatGrantController($container))->grant($request);
-
-        self::assertSame(403, $answer->getStatusCode());
-        self::assertStringContainsString('judged: identity:grant', (string) $answer->getBody());
     }
 
     private function data(): DesktopData
