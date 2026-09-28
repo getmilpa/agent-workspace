@@ -468,13 +468,17 @@ final class AgentWorkspacePlugin implements PluginInterface, RouteProviderInterf
      * The backing services this plugin needs the host to run (greenhouse decisions/0201): the Mercure hub the
      * shell and the agent sessions stream through. Declared, not started — the operator lists it, probes it and
      * projects a compose fragment. The declaration reads `workspace.mercure.*`, so the hub it describes is the
-     * hub the app publishes to; the keys travel as secret config references, never as values.
+     * hub the app publishes to; the keys travel as secret config references, never as values. Nothing is
+     * declared when `workspace.mercure.embedded` says the app's own server is the hub (decisions/0504).
      *
      * @return list<ServiceDeclaration>
      */
     public function services(): array
     {
-        return [MercureServiceDeclaration::fromConfig($this->configBag())];
+        $config = $this->configBag();
+
+        // An embedded hub is the app's own server: nothing for the host to run (greenhouse decisions/0504).
+        return MercureServiceDeclaration::embedded($config) ? [] : [MercureServiceDeclaration::fromConfig($config)];
     }
 
     /** The Mercure hub wiring, when the app configured `workspace.mercure.*`; null otherwise (log-only). */
