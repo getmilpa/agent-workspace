@@ -3,6 +3,13 @@
 All notable changes to milpa/desktop-app are documented here. This project adheres to
 [Semantic Versioning](https://semver.org/) and [Keep a Changelog](https://keepachangelog.com/).
 
+## [0.84.0](https://github.com/getmilpa/agent-workspace/compare/v0.83.0...v0.84.0) (2026-09-28)
+
+
+### Features
+
+* **stack:** the Mercure hub names its signature, and an embedded hub declares no container ([#102](https://github.com/getmilpa/agent-workspace/issues/102)) ([724cd36](https://github.com/getmilpa/agent-workspace/commit/724cd363fff96b5e317529264120026a5e43c25e))
+
 ## [0.83.0](https://github.com/getmilpa/agent-workspace/compare/v0.82.0...v0.83.0) (2026-09-28)
 
 
