@@ -26,6 +26,9 @@
   var DECIDE_ROUTE = '/graph/decide';
   var ANSWER_ROUTE = '/agent/answer';
   var SEQUENCE_ROUTE = '/sequence/run';
+  /** The panel's own door to `identity:grant`, and the ceremony that binds a passkey touch to one call. */
+  var GRANT_ROUTE = '/workspace/grant';
+  var INTENT_ROUTE = '/webauthn/intent/options';
 
   /** The list the cards live in, and the prototype the server rendered for one. */
   var LIST_ID = 'milpa-decisions-list';
@@ -194,8 +197,85 @@
       });
   }
 
+  // ── a seat's frontier: the human who enrolled it grants the scope a refusal names ────────────────
+  // A refusal asks nothing (greenhouse decisions/0317); this is the human deciding it (decisions/0493).
+  // The touch is bound to THIS grant: the house mints a challenge for `identity:grant {session, seq}`,
+  // the passkey signs it, and the assertion travels inside the call so the operation knows who decided.
+  // The card carries the refused call, never a scope: the house re-derives what is missing.
+  function b64uToBuf(value) {
+    var b64 = String(value || '').replace(/-/g, '+').replace(/_/g, '/');
+    while (b64.length % 4) { b64 += '='; }
+    var raw = atob(b64);
+    var bytes = new Uint8Array(raw.length);
+    for (var i = 0; i < raw.length; i++) { bytes[i] = raw.charCodeAt(i); }
+    return bytes.buffer;
+  }
+
+  function bufToB64u(buffer) {
+    var bytes = new Uint8Array(buffer);
+    var raw = '';
+    for (var i = 0; i < bytes.length; i++) { raw += String.fromCharCode(bytes[i]); }
+    return btoa(raw).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+  }
+
+  function seatStatus(card) {
+    return card.querySelector('[data-seat-status]') || statusOf(card);
+  }
+
+  function grantSeat(card) {
+    var d = desk();
+    var status = seatStatus(card);
+    var call = { session: card.getAttribute('data-seat-session') || '', seq: parseInt(card.getAttribute('data-seat-seq') || '', 10) };
+    if (!window.PublicKeyCredential || !navigator.credentials || typeof navigator.credentials.get !== 'function') {
+      status.textContent = tr('frontier.no_passkey');
+      return Promise.resolve(null);
+    }
+    status.textContent = tr('frontier.granting');
+    var ask = fetch(INTENT_ROUTE, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ operation: 'identity:grant', arguments: call, session: call.session }),
+    });
+
+    return (d && d.guarded ? ask.then(d.guarded) : ask)
+      .then(function (response) { return response.json(); })
+      .then(function (options) {
+        return navigator.credentials.get({ publicKey: {
+          challenge: b64uToBuf(options.challenge),
+          rpId: options.rpId,
+          allowCredentials: (options.allowCredentials || []).map(function (c) { return { type: c.type, id: b64uToBuf(c.id) }; }),
+          userVerification: 'required',
+          timeout: 60000,
+        } });
+      })
+      .then(function (touch) {
+        var r = touch.response;
+        return confirmed(GRANT_ROUTE, {
+          session: call.session,
+          seq: call.seq,
+          assertion: {
+            credentialId: bufToB64u(touch.rawId),
+            clientDataJSON: bufToB64u(r.clientDataJSON),
+            authenticatorData: bufToB64u(r.authenticatorData),
+            signature: bufToB64u(r.signature),
+          },
+        });
+      })
+      .then(function (read) {
+        if (!read || read.ok === false) { throw new Error((read && (read.error || read.message)) || 'refused'); }
+        status.textContent = tr('frontier.granted', String(read.granted || ''));
+        card.setAttribute('data-granted', '');
+        var button = card.querySelector('[data-seat-grant]');
+        if (button) { button.setAttribute('hidden', ''); }
+        return read;
+      })
+      .catch(function (err) {
+        status.textContent = tr('frontier.refused_grant', (err && err.message) || 'unknown');
+      });
+  }
+
   if (live && live.desktop) {
-    live.desktop.decisions = { parked: parked, subscribe: subscribe, confirmed: confirmed, run: run, answer: answerParked };
+    live.desktop.decisions = { parked: parked, subscribe: subscribe, confirmed: confirmed, run: run, answer: answerParked, grant: grantSeat };
   }
 
   subscribe();
@@ -260,6 +340,15 @@
       if (!sequenceCard) { return; }
       event.preventDefault();
       run(sequenceCard);
+      return;
+    }
+
+    var grant = target.closest('[data-seat-grant]');
+    if (grant) {
+      var seatCard = grant.closest('[data-seat-session]');
+      if (!seatCard || seatCard.getAttribute('data-granted') !== null) { return; }
+      event.preventDefault();
+      grantSeat(seatCard);
       return;
     }
 

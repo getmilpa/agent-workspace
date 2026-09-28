@@ -68,6 +68,7 @@ final class DomContractTest extends TestCase
      */
     private const array WRITTEN_BY_A_MODULE = [
         'data-answered' => 'desktop-decisions.js stamps it on a graph card once its decision came back accepted',
+        'data-granted' => 'desktop-decisions.js stamps it on a frontier card once identity:grant came back ok (greenhouse decisions/0493)',
     ];
 
     /**
@@ -141,6 +142,7 @@ final class DomContractTest extends TestCase
             $subject = $payload['decisions'] ?? null;
             if ($subject instanceof ComposerRender) {
                 $subject->props['pending'] = [['session' => 's1', 'goal' => 'g', 'question' => 'may I?', 'operation' => 'capabilities:enable', 'reason' => 'it installs', 'sequence' => 'deploy']];
+                $subject->props['frontier'] = [['session' => 'seat-s', 'goal' => 'Build the blog', 'seat' => 'key:95A3', 'refusals' => [['seq' => 42, 'tool' => 'make', 'plugin' => 'Blog', 'permission' => 'plugins.Blog:write']]]];
                 $subject->props['sequences'] = [['name' => 'deploy', 'steps' => ['plugins:list', 'config:set'], 'session' => 'sequence:deploy', 'paused' => true, 'pending_operation' => 'config:set']];
             }
         });
