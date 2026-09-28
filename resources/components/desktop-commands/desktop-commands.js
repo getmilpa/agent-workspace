@@ -10,8 +10,9 @@
  *
  * The house SERVES the list (`#milpa-commands`, JSON data — never script): its own commands (`/goal`,
  * `/mode`, `/help`) and every user-invocable skill. Each is a governed operation of the house and the
- * Desktop invents no action: it calls the runtime's http projection with the METHOD the list declares —
- * `agent:goal` → `POST /agent/goal`, `skill:invoke` → `GET /skill/invoke` (a read projects as GET). The
+ * Desktop invents no action: it calls the panel's own door to the operation (greenhouse decisions/0497) with the
+ * METHOD the list declares — `agent:goal` → `POST /workspace/goal`, `skill:invoke` → `GET /workspace/skill` (a read
+ * projects as GET). A fresh app mounts neither `/agent/goal` nor `/skill/invoke`. The
  * doctrine's boundary holds: a goal or a mode never pre-consents a signature (requiresConfirmation, the
  * Executable+Privileged ceiling) nor third-party egress — the goal only bounds what the automatic mode
  * may already pre-consent.
@@ -157,7 +158,7 @@
       var body = { session: t ? t.session() : '' };
       if (command.args === 'clear') { body.clear = true; } else if (command.args !== '') { body.goal = command.args; }
 
-      return call('POST', '/agent/goal', body).then(function (result) {
+      return call('POST', '/workspace/goal', body).then(function (result) {
         if (!result.ok) {
           if (!result.told) { notice(failure('agent:goal', result)); }
 
@@ -191,7 +192,7 @@
 
     // skill:invoke — the human's path to a user-invocable skill, a read projected as GET. Its `body` is
     // already the wrapped <skill_content> form: it enters the turn AS-IS, the args after it.
-    return call('GET', '/skill/invoke', { name: skill.name }).then(function (result) {
+    return call('GET', '/workspace/skill', { name: skill.name }).then(function (result) {
       if (!result.ok || typeof result.data.body !== 'string') {
         if (!result.told) { notice(failure('skill:invoke', result)); }
 

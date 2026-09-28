@@ -346,9 +346,12 @@ final class AgentWorkspacePlugin implements PluginInterface, RouteProviderInterf
                 Route::post('/workspace/work', [MutationController::class, 'moveWork'], 'desktop.work.move'),
                 // The seat's frontier, decided from the inbox (greenhouse decisions/0493).
                 Route::post('/workspace/grant', [SeatGrantController::class, 'grant'], SeatGrantController::ROUTE_NAME),
-                // The inbox's other buttons, which posted to paths a fresh app never mounts (greenhouse decisions/0495).
+                // The panel's other buttons, which posted to paths a fresh app never mounts (greenhouse decisions/0495,
+                // 0497) — each door with the verb the panel asks by.
                 ...array_map(
-                    static fn (array $door): Route => Route::post($door['path'], [PanelDoorController::class, $door['method']], $door['route']),
+                    static fn (array $door): Route => $door['verb'] === 'GET'
+                        ? Route::get($door['path'], [PanelDoorController::class, $door['method']], $door['route'])
+                        : Route::post($door['path'], [PanelDoorController::class, $door['method']], $door['route']),
                     array_values(PanelDoorController::DOORS),
                 ),
             ),

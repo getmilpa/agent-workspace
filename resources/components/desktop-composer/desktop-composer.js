@@ -264,7 +264,11 @@
           if (models.length === 0) { self.modelNotice = d.tr('composer.model.none'); return; }
           self.modelNotice = '';
           self.fillModels(models);
-        }).catch(function () { self.modelNotice = d.tr('composer.model.unreachable'); });
+        }).catch(function (err) {
+          // The door answered (a refusal, or a 501 naming what the app lacks): say its sentence. Only a call that
+          // never came back is «the endpoint did not answer» — the endpoint was not even asked.
+          self.modelNotice = (err && err.status) ? d.reason(err) : d.tr('composer.model.unreachable');
+        });
       },
 
       /**

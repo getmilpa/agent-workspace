@@ -129,7 +129,8 @@
           var headers = { 'Content-Type': 'application/json' };
           if (token) { headers['Confirm-Token'] = token; }
 
-          return fetch('/provider/declare', {
+          // The panel's own door to `provider:declare` (greenhouse decisions/0497).
+          return fetch('/workspace/provider', {
             method: 'POST',
             headers: headers,
             body: JSON.stringify({ key: 'agent.apiKey', value: value }),
@@ -145,7 +146,7 @@
           self.report(true, tr('settings.model.key.saved'));
         }).catch(function (err) {
           if (input) { input.value = ''; }
-          self.report(false, tr('settings.model.key.refused', (err && err.status) || 0));
+          self.report(false, tr('settings.model.key.refused', d.reason(err)));
         });
       },
       /**
@@ -165,7 +166,7 @@
         return d.config.set(key, value).then(function () {
           self.report(true, tr(okKey));
         }).catch(function (err) {
-          self.report(false, tr(failKey, (err && err.status) || 0));
+          self.report(false, tr(failKey, d.reason(err)));
         });
       },
       /**
@@ -219,7 +220,7 @@
           }
           self.fill(models);
           self.report(true, tr('settings.model.model.found', models.length));
-        }).catch(function (err) { self.report(false, tr('settings.model.model.refused', (err && err.status) || 0)); });
+        }).catch(function (err) { self.report(false, tr('settings.model.model.find_refused', d.reason(err))); });
       },
       /**
        * Put what the provider serves in the select, KEEPING the declared model selected when it is one

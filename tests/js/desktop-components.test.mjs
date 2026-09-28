@@ -131,7 +131,7 @@ test('the endpoint is written where the agent reads it, through the confirm gate
   await settings.declareEndpoint();
 
   assert.equal(calls.length, 2, 'the 428 is a step of the flow, not a failure');
-  assert.equal(calls[0].url, '/config/set', 'agent.baseUrl is governed configuration, not the settings file');
+  assert.equal(calls[0].url, '/workspace/config', 'agent.baseUrl is governed configuration, not the settings file');
   assert.deepEqual(JSON.parse(calls[0].init.body), { key: 'agent.baseUrl', value: 'http://llama.tailf880b7.ts.net:11438' });
   assert.equal(calls[1].init.headers['Confirm-Token'], 't-42', 'the second call carries the token back');
   assert.equal(p.signal('settings.saved').ok, true);
@@ -149,6 +149,32 @@ test('a refused endpoint says so with its status and never says saved', async ()
 
   assert.equal(p.signal('settings.saved').ok, false);
   assert.match(p.signal('settings.saved').text, /404/, 'the door\'s own answer, not an assumption');
+});
+
+test('a model the door cannot save says the door\'s own sentence — never a bare status', async () => {
+  // greenhouse decisions/0497: a door whose operation the app lacks answers 501 naming what brings it, and a
+  // refusal names who may decide. Settings says THAT sentence, not «HTTP 501» — and never «saved».
+  const p = page({ modules: ['desktop-settings'] });
+  p.byId['set-model'] = new El('select', { id: 'set-model', value: 'qwen3.8-27b' });
+  const settings = p.mount('desktopSettings', undefined, settingsRoot());
+  stubFetch(p, [response(501, { ok: false, error: "This app's agent:model declares no scope, so no policy can judge who may run it — the panel does not open it." })]);
+
+  await settings.declareModel();
+
+  assert.equal(p.signal('settings.saved').ok, false);
+  assert.match(p.signal('settings.saved').text, /declares no scope/);
+});
+
+test('Find models refused by the door says why, not that the endpoint was silent', async () => {
+  const p = page({ modules: ['desktop-settings'] });
+  p.byId['set-model'] = new El('select', { id: 'set-model' });
+  const settings = p.mount('desktopSettings', undefined, settingsRoot());
+  stubFetch(p, [response(501, { ok: false, error: 'This app offers no agent:model for the panel to run — it comes with milpa/app-runtime.' })]);
+
+  await settings.findModels();
+
+  assert.equal(p.signal('settings.saved').ok, false);
+  assert.match(p.signal('settings.saved').text, /^Could not ask which models it serves: .*offers no agent:model/, 'a probe saves nothing, so it never says «not saved»');
 });
 
 test('an empty endpoint asks nothing — a blank field is not a declaration', async () => {
@@ -171,7 +197,7 @@ test('the provider key goes to its own operation and the input is cleared either
 
   await settings.declareKey();
 
-  assert.equal(calls[0].url, '/provider/declare');
+  assert.equal(calls[0].url, '/workspace/provider');
   assert.deepEqual(JSON.parse(calls[0].init.body), { key: 'agent.apiKey', value: 'sk-secret' });
   assert.equal(calls[1].init.headers['Confirm-Token'], 't-7');
   // A key left in a field is a key in the next screenshot (greenhouse decisions/0276).
@@ -187,7 +213,7 @@ test('Find models asks the OPERATION and fills the select with what the provider
 
   await settings.findModels();
 
-  assert.equal(calls[0].url, '/agent/model?ask=1', 'the operation declares the egress; a reader of our own would not');
+  assert.equal(calls[0].url, '/workspace/model?ask=1', 'the operation declares the egress; a reader of our own would not');
   assert.deepEqual(select.children.map((o) => o.value), ['qwen3.8-27b', 'llama3.2']);
   assert.match(p.signal('settings.saved').text, /2/, 'it says how many the provider serves');
   assert.equal(p.signal('settings.saved').ok, true);
@@ -230,7 +256,7 @@ test('picking a model is a governed write to the same one writer', async () => {
 
   await settings.declareModel();
 
-  assert.equal(calls[0].url, '/config/set');
+  assert.equal(calls[0].url, '/workspace/config');
   assert.deepEqual(JSON.parse(calls[0].init.body), { key: 'agent.model', value: 'qwen3.8-27b' });
   assert.equal(calls[1].init.headers['Confirm-Token'], 't-9', 'the 428 two-step, from the ONE writer');
   assert.equal(p.signal('settings.saved').text, 'Model saved');

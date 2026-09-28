@@ -67,7 +67,7 @@ test('send routes a COMMAND to the house and a prompt to the turn — and clears
   composer.send();
   await settle();
 
-  assert.equal(calls[0].url, '/agent/goal', 'a real command is the house\'s operation, not the model\'s');
+  assert.equal(calls[0].url, '/workspace/goal', 'a real command is the house\'s operation, not the model\'s');
   assert.deepEqual(JSON.parse(calls[0].init.body), { session: 'desk-0123456789abcdef', goal: 'ship it' });
   assert.equal(bar.field.value, '', 'the field is cleared through its own component');
   assert.equal(chat.children[0].querySelector('[data-user-body]').textContent, '/goal ship it', 'what was sent is in the thread');
@@ -76,7 +76,7 @@ test('send routes a COMMAND to the house and a prompt to the turn — and clears
   composer.send();
   await settle();
 
-  assert.equal(calls[1].url, '/agent', 'anything that is not a command is a prompt');
+  assert.equal(calls[1].url, '/workspace/turn', 'anything that is not a command is a prompt');
   assert.deepEqual(JSON.parse(calls[1].init.body), { prompt: 'and now write it up', session: 'desk-0123456789abcdef', mode: 'ask' });
 });
 
@@ -282,7 +282,7 @@ test('a turn the app refuses leaves nothing «working», and its state label is 
 
 test('a 401 that names NO door still reaches sign-in, through the door the app declared', async () => {
   // Measured on the cattle: the Desktop's own routes answer `{"signin":"/webauthn/signin"}` on a 401, but
-  // app-runtime's operation doors (`/agent`, `/agent/goal`, `/skill/invoke`) answer a bare
+  // the doors that project an operation (`/workspace/turn`, `/workspace/goal`, `/workspace/skill`) answer a bare
   // `MILPA_UNAUTHENTICATED` with no door in it. Before the fallback, a session that expired mid-page left
   // the human reading a raw runtime error and no way back in.
   const { p, chat } = composerPage({ doors: { signin: '/webauthn/signin' } });
@@ -607,7 +607,7 @@ test('the model chip asks the provider ON OPEN, never on render, and once per pa
   await composer.toggleModelMenu({ stopPropagation() {} });
 
   assert.equal(calls.length, 1);
-  assert.equal(calls[0].url, '/agent/model?ask=1');
+  assert.equal(calls[0].url, '/workspace/model?ask=1');
   assert.equal(composer.modelMenuOpen, true);
   const items = p.document.getElementById('milpa-model-menu').children.map((b) => b.getAttribute('data-model'));
   assert.deepEqual(items, ['qwen3.8-27b', 'llama3.2']);
@@ -616,6 +616,17 @@ test('the model chip asks the provider ON OPEN, never on render, and once per pa
   await composer.toggleModelMenu({ stopPropagation() {} });
   await composer.toggleModelMenu({ stopPropagation() {} });
   assert.equal(calls.length, 1);
+});
+
+test('a model chip the door refuses says the door\'s sentence — the endpoint was never asked', async () => {
+  // greenhouse decisions/0497: before the panel had its own door this was a 404 read as «the endpoint did not
+  // answer» — a sentence about a provider nobody had asked. A refusal or a 501 says what it is.
+  const { p, composer } = composerPage();
+  stubFetch(p, [response(403, { error: 'This operation requires scope agent:read', code: 'MILPA_FORBIDDEN' })]);
+
+  await composer.toggleModelMenu({ stopPropagation() {} });
+
+  assert.equal(composer.modelNotice, 'This operation requires scope agent:read');
 });
 
 test('an endpoint that does not answer leaves the menu saying so, with no options', async () => {
@@ -636,7 +647,7 @@ test('picking a model is a governed write through the guard, optimistic and roll
 
   await composer.pickModel('qwen3.8-27b');
 
-  assert.equal(calls[0].url, '/config/set');
+  assert.equal(calls[0].url, '/workspace/config');
   assert.deepEqual(JSON.parse(calls[0].init.body), { key: 'agent.model', value: 'qwen3.8-27b' });
   assert.equal(calls[1].init.headers['Confirm-Token'], 't-3', 'the 428 two-step, from the guard');
   assert.equal(p.signal('agent.model'), 'qwen3.8-27b');
