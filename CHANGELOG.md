@@ -3,6 +3,14 @@
 All notable changes to milpa/desktop-app are documented here. This project adheres to
 [Semantic Versioning](https://semver.org/) and [Keep a Changelog](https://keepachangelog.com/).
 
+## [0.82.0](https://github.com/getmilpa/agent-workspace/compare/v0.81.0...v0.82.0) (2026-09-28)
+
+
+### Features
+
+* **panel:** mount the composer's and Settings' own doors (greenhouse 0497) ([#97](https://github.com/getmilpa/agent-workspace/issues/97)) ([4f9ccf0](https://github.com/getmilpa/agent-workspace/commit/4f9ccf024d4b00498532f733906f11ff364c4aed))
+* **workspace:** the room declares what its operator needs (greenhouse 0498) ([#98](https://github.com/getmilpa/agent-workspace/issues/98)) ([e7a3389](https://github.com/getmilpa/agent-workspace/commit/e7a33893fe265ac75141a51c32018153e41c3acf))
+
 ## [0.81.0](https://github.com/getmilpa/agent-workspace/compare/v0.80.0...v0.81.0) (2026-09-28)
 
 
