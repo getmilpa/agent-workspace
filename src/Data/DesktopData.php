@@ -332,6 +332,29 @@ final class DesktopData
     }
 
     /**
+     * The seats this principal answers for — their key, name, scopes and who enrolled them (greenhouse
+     * decisions/0499) — so the person who gave a seat can compare its key with the resident's own.
+     *
+     * The relation is app-runtime's (`ResidentSeat::seatsFor`, the line of decisions/0493); an app without the
+     * runtime shows none rather than guessing.
+     *
+     * @return list<array{fingerprint: string, label: string|null, scopes: list<string>, authorized_by: string}>
+     */
+    public function seats(string $principal): array
+    {
+        // Named as a string: milpa/app-runtime is where the relation lives and this package does not require it.
+        $class = 'Milpa\\AppRuntime\\Identity\\ResidentSeat';
+        if ($principal === '' || !class_exists($class)) {
+            return [];
+        }
+        $kernel = $this->container->has(Kernel::class) ? $this->container->get(Kernel::class) : null;
+        if (!$kernel instanceof Kernel) {
+            return [];
+        }
+        return $class::seatsFor($kernel->root(), $principal);
+    }
+
+    /**
      * The ids of the sessions whose seat this principal answers for — the tasks a panel may open for it.
      *
      * @return list<string>

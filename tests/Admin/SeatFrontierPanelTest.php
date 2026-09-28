@@ -93,6 +93,21 @@ final class SeatFrontierPanelTest extends TestCase
         self::assertSame(self::SESSION, PanelSession::fromContext($this->asking(self::PASSKEY), null, [self::SESSION])->id);
     }
 
+    /** «Your seats» (greenhouse decisions/0499): the seats a viewer answers for, read from the runtime's own relation. */
+    public function testYourSeatsListsTheSeatForItsLineAndNothingForAnother(): void
+    {
+        $data = $this->data();
+
+        self::assertSame([[
+            'fingerprint' => self::SEAT,
+            'label' => null,
+            'scopes' => ['agent:run', 'agent:read', 'plugins:read'],
+            'authorized_by' => 'key:' . self::HUMAN,
+        ]], $data->seats(self::PASSKEY), 'the passkey the seat\'s key enrolled answers for it');
+        self::assertSame([], $data->seats(self::STRANGER_PASSKEY), 'another line sees no seat');
+        self::assertSame([], $data->seats(''), 'nobody signed in, no seat');
+    }
+
     private function data(): DesktopData
     {
         $container = new DIContainer();

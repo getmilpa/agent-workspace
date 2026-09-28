@@ -175,6 +175,40 @@ final class DecisionsInboxView
     }
 
     /**
+     * The seats the reader answers for (greenhouse decisions/0499) — key, name, scopes and who enrolled it, so the
+     * person who gave a seat can compare the key with the resident's own — and the form that gives the resident
+     * one: a name, and a button that asks the passkey for THIS act. What the seat may do is the house's to
+     * declare; the form carries no scope. The command the resident's key runs appears under it, once.
+     *
+     * @param list<array{fingerprint: string, label: string|null, scopes: list<string>, authorized_by: string}> $seats
+     * @param array<string, string>                                                                             $copy  the caller's words, by key
+     */
+    public function seatsHtml(array $seats, array $copy = []): string
+    {
+        $copy += self::SEATS_COPY;
+        $rows = '';
+        foreach ($seats as $seat) {
+            $rows .= '<li class="decision-card decision-card--seat" data-seat-key="' . $this->esc($seat['fingerprint']) . '">'
+                . '<p class="decision-card__goal">' . $this->esc($seat['label'] ?? $seat['fingerprint']) . '</p>'
+                . '<p class="decision-card__q"><code>' . $this->esc($seat['fingerprint']) . '</code></p>'
+                . '<p class="decision-card__facts">' . $this->esc(implode(' ', $seat['scopes'])) . '</p>'
+                . '<p class="decision-card__facts">' . $this->esc(sprintf($copy['enrolled_by'], $seat['authorized_by'])) . '</p>'
+                . '</li>';
+        }
+
+        return '<ol class="mui-replay__stream" id="milpa-seats-list">' . $rows . '</ol>'
+            . ($rows === '' ? '<div class="mui-empty" id="milpa-seats-empty"><p class="mui-empty__desc">' . $this->esc($copy['empty']) . '</p></div>' : '')
+            . '<div class="decision-card decision-card--give-seat" data-seat-give-form>'
+            . '<p class="decision-card__options">'
+            . '<label>' . $this->esc($copy['label']) . ' <input type="text" class="mui-input" value="resident" data-seat-label></label> '
+            . '<button type="button" class="mui-btn mui-btn--sm mui-btn--primary" data-seat-give>' . $this->esc($copy['give']) . '</button>'
+            . '</p>'
+            . '<p class="decision-card__facts" data-seat-give-status></p>'
+            . '<pre class="decision-card__command" data-seat-command hidden></pre>'
+            . '</div>';
+    }
+
+    /**
      * The two answers a parked question takes — `sí` and `no` are what `agent:answer` reads, whatever the label says.
      *
      * @param array<string, string> $copy
@@ -186,6 +220,14 @@ final class DecisionsInboxView
         return '<button type="button" class="mui-btn mui-btn--sm decision-card__option" data-agent-answer="sí"' . $h . '>' . $this->esc($copy['approve']) . '</button>'
             . '<button type="button" class="mui-btn mui-btn--sm decision-card__option" data-agent-answer="no"' . $h . '>' . $this->esc($copy['deny']) . '</button>';
     }
+
+    /** The English «Your seats» reads when the caller hands no catalog. */
+    private const array SEATS_COPY = [
+        'empty' => 'You answer for no seat yet.',
+        'enrolled_by' => 'enrolled by %s',
+        'label' => 'Seat name',
+        'give' => 'Give the resident a seat',
+    ];
 
     /** The English the frontier cards read when the caller hands no catalog. */
     private const array FRONTIER_COPY = [

@@ -70,6 +70,9 @@ final class PanelDoorController
     /** Ask the provider which models it serves — Settings' «Find models» and the model chip's menu. */
     public const string MODEL = 'agent:model';
 
+    /** Give the resident a seat: mint the invitation its own key accepts by signing (greenhouse decisions/0499). */
+    public const string SEAT = 'identity:seat';
+
     /**
      * Each door's path and route name — never the operation's own, so none collides with a host that exposes
      * the operation globally.
@@ -90,6 +93,8 @@ final class PanelDoorController
         self::CONFIG => ['path' => '/workspace/config', 'route' => 'desktop.door.config', 'method' => 'config', 'from' => 'milpa/app-runtime', 'verb' => 'POST'],
         self::PROVIDER => ['path' => '/workspace/provider', 'route' => 'desktop.door.provider', 'method' => 'provider', 'from' => 'milpa/app-runtime', 'verb' => 'POST'],
         self::MODEL => ['path' => '/workspace/model', 'route' => 'desktop.door.model', 'method' => 'model', 'from' => 'milpa/app-runtime', 'verb' => 'GET'],
+        // greenhouse decisions/0499: station 7 without `config/identity.php` — the human gives the resident a seat here.
+        self::SEAT => ['path' => '/workspace/seat', 'route' => 'desktop.door.seat', 'method' => 'seat', 'from' => 'milpa/app-runtime', 'verb' => 'POST'],
     ];
 
     /** Named as a string: milpa/app-runtime owns the catalogue, and this package does not require it. */
@@ -156,6 +161,12 @@ final class PanelDoorController
     public function model(ServerRequestInterface $request): ResponseInterface
     {
         return $this->door(self::MODEL, $request);
+    }
+
+    /** Project the request as `identity:seat`. */
+    public function seat(ServerRequestInterface $request): ResponseInterface
+    {
+        return $this->door(self::SEAT, $request);
     }
 
     /**

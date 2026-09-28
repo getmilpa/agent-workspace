@@ -77,6 +77,8 @@ final class DecisionsInbox
             'sequences' => $this->data?->declaredSequences() ?? [],
             // The seats this reader enrolled, and what they were refused (greenhouse decisions/0493).
             'frontier' => $this->principal === '' ? [] : ($this->data?->seatFrontier($this->principal) ?? []),
+            // The seats this reader answers for, and the way to give the resident one (greenhouse decisions/0499).
+            'seats' => $this->principal === '' ? [] : ($this->data?->seats($this->principal) ?? []),
             'principal' => $this->principal,
         ]);
         $this->events?->dispatch(self::BEFORE_RENDER, [self::SUBJECT_KEY => $subject]);
@@ -106,6 +108,8 @@ final class DecisionsInbox
         ];
         /** @var list<array{session: string, goal: string, seat: string, refusals: list<array{seq: int, tool: string, plugin: ?string, permission: string}>}> $frontier */
         $frontier = \is_array($props['frontier'] ?? null) ? $props['frontier'] : [];
+        /** @var list<array{fingerprint: string, label: string|null, scopes: list<string>, authorized_by: string}> $seats */
+        $seats = \is_array($props['seats'] ?? null) ? $props['seats'] : [];
         $view = new DecisionsInboxView();
 
         return '<div class="view milpa-decisions" data-view="decisions"'
@@ -122,6 +126,16 @@ final class DecisionsInbox
                 'lacks' => $this->plain('frontier.lacks'),
                 'grant' => $this->plain('frontier.grant'),
                 'open' => $this->plain('frontier.open'),
+            ])
+            // YOUR SEATS (greenhouse decisions/0499): the seats this reader answers for, and the one place a human
+            // gives the resident a seat — no file edited, the resident's own key proving itself by signing.
+            . '<h3 class="milpa-decisions__heading">' . $this->tr('seats.heading') . '</h3>'
+            . '<p class="milpa-decisions__intro">' . $this->tr('seats.intro') . '</p>'
+            . $view->seatsHtml($seats, [
+                'empty' => $this->plain('seats.empty'),
+                'enrolled_by' => $this->plain('seats.enrolled_by'),
+                'label' => $this->plain('seats.label'),
+                'give' => $this->plain('seats.give'),
             ])
             // THE SEQUENCES THIS APP DECLARED, to run from here (greenhouse decisions/0223, F4): a deployment
             // is a list, and the place a human authorizes everything else is where its run starts and where
