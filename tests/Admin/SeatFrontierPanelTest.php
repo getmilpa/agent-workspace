@@ -122,6 +122,29 @@ final class SeatFrontierPanelTest extends TestCase
         self::assertStringContainsString('no policy to judge who may grant', (string) $answer->getBody());
     }
 
+    public function testTheGrantDoorAsksTheJudgeTheAppPublished(): void
+    {
+        // The app publishes its judge under milpa/command's name (App\Http\IdentityWiring). A door that asked
+        // for another name found none and answered «no policy» to EVERY caller — measured in the lab, where it
+        // refused the stranger for the wrong reason (greenhouse evidence/1026). This judge refuses everyone,
+        // so reaching it is the proof the door asked the right name.
+        $container = new DIContainer();
+        $container->registerService(Kernel::class, $this->kernel());
+        $container->registerService(\Milpa\Command\OperationHttpPolicy::class, new class () implements \Milpa\Command\OperationHttpPolicy {
+            public function enforce(\Milpa\Command\Operation $op, \Psr\Http\Message\ServerRequestInterface $request): ?\Psr\Http\Message\ResponseInterface
+            {
+                return new \Nyholm\Psr7\Response(403, ['Content-Type' => 'application/json'], '{"error":"judged: ' . $op->name . '"}');
+            }
+        });
+        $request = (new ServerRequest('POST', '/workspace/grant', ['Content-Type' => 'application/json']))
+            ->withBody(\Nyholm\Psr7\Stream::create('{"session":"camino-blog","seq":2}'));
+
+        $answer = (new SeatGrantController($container))->grant($request);
+
+        self::assertSame(403, $answer->getStatusCode());
+        self::assertStringContainsString('judged: identity:grant', (string) $answer->getBody());
+    }
+
     private function data(): DesktopData
     {
         $container = new DIContainer();

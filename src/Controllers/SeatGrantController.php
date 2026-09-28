@@ -16,7 +16,7 @@ namespace Milpa\AgentWorkspace\Controllers;
 use Milpa\Admin\Http\GovernedAct;
 use Milpa\Console\FileConfirmTokenStore;
 use Milpa\Console\Http\HttpProjector;
-use Milpa\Console\Http\OperationHttpPolicy;
+use Milpa\Command\OperationHttpPolicy;
 use Milpa\Interfaces\Di\DIContainerInterface;
 use Milpa\Runtime\Kernel;
 use Nyholm\Psr7\Factory\Psr17Factory;
