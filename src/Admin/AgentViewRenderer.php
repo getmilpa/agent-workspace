@@ -395,6 +395,9 @@ final class AgentViewRenderer implements ComponentRendererInterface, DeclaresCli
             // inhabits and does not tell the thing that paints the session is the same shape as
             // decisions/0256, one surface further along.
             'desktop-conversation' => ['agent' => $state !== null ? self::agentSession($state) : ''],
+            // The inbox answers as the reader the panel authenticated: the frontier it shows is the seats THIS
+            // principal enrolled (greenhouse decisions/0493), so an inbox with no principal shows none.
+            'desktop-decisions' => ['principal' => \is_string($state?->meta['principal'] ?? null) ? $state->meta['principal'] : ''],
         ];
     }
 

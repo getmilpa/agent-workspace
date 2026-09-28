@@ -75,6 +75,8 @@ final class DecisionsInbox
             'pending' => $this->data?->pendingDecisions() ?? [],
             'graphs' => $this->data?->pendingGraphDecisions() ?? [],
             'sequences' => $this->data?->declaredSequences() ?? [],
+            // The seats this reader enrolled, and what they were refused (greenhouse decisions/0493).
+            'frontier' => $this->principal === '' ? [] : ($this->data?->seatFrontier($this->principal) ?? []),
             'principal' => $this->principal,
         ]);
         $this->events?->dispatch(self::BEFORE_RENDER, [self::SUBJECT_KEY => $subject]);
@@ -102,12 +104,25 @@ final class DecisionsInbox
             'deny' => $this->plain('decisions.deny'),
             'paused_on' => $this->plain('decisions.paused_on'),
         ];
+        /** @var list<array{session: string, goal: string, seat: string, refusals: list<array{seq: int, tool: string, plugin: ?string, permission: string}>}> $frontier */
+        $frontier = \is_array($props['frontier'] ?? null) ? $props['frontier'] : [];
         $view = new DecisionsInboxView();
 
         return '<div class="view milpa-decisions" data-view="decisions"'
             . ' data-milpa-component="desktop-decisions" data-milpa-component-id="' . self::COMPONENT_ID . '"' . ScreenVisibility::attr($props) . '>'
             . '<p class="milpa-decisions__intro">' . $this->tr('decisions.intro') . '</p>'
             . $view->html($pending, $this->plain('decisions.empty'), $graphs, (string) ($props['principal'] ?? ''), $copy)
+            // THE FRONTIER OF THE SEATS YOU ENROLLED (greenhouse decisions/0493): a seat's missing scope is a
+            // refusal, not a question — this is where the human who answers for the seat sees it and decides.
+            . '<h3 class="milpa-decisions__heading">' . $this->tr('frontier.heading') . '</h3>'
+            . '<p class="milpa-decisions__intro">' . $this->tr('frontier.intro') . '</p>'
+            . $view->frontierHtml($frontier, $this->plain('frontier.empty'), [
+                'refused' => $this->plain('frontier.refused'),
+                'plugin' => $this->plain('frontier.plugin'),
+                'lacks' => $this->plain('frontier.lacks'),
+                'grant' => $this->plain('frontier.grant'),
+                'open' => $this->plain('frontier.open'),
+            ])
             // THE SEQUENCES THIS APP DECLARED, to run from here (greenhouse decisions/0223, F4): a deployment
             // is a list, and the place a human authorizes everything else is where its run starts and where
             // its pause is answered.

@@ -23,6 +23,7 @@ use Milpa\AgentWorkspace\Admin\{
 use Milpa\AgentWorkspace\Config\WorkspaceKeys;
 use Milpa\AgentWorkspace\Controllers\{
     AssetsController,
+    SeatGrantController,
     HubController,
     MutationController,
 };
@@ -211,6 +212,7 @@ final class AgentWorkspacePlugin implements PluginInterface, RouteProviderInterf
         // (greenhouse decisions/0388 — promoting that MAY is a core acta, not this plugin's call).
         $this->container->registerService(MutationController::class, new MutationController($store));
         $this->container->registerService(AssetsController::class, new AssetsController());
+        $this->container->registerService(SeatGrantController::class, new SeatGrantController($this->container));
 
         $data = new DesktopData($this->container, $log, $this->sessionsPath(), $store);
         $this->container->registerService(DesktopData::class, $data);
@@ -340,6 +342,8 @@ final class AgentWorkspacePlugin implements PluginInterface, RouteProviderInterf
                 Route::post('/workspace/settings', [MutationController::class, 'saveSettings'], 'desktop.settings.save'),
                 Route::post('/workspace/sessions', [MutationController::class, 'createSession'], 'desktop.sessions.create'),
                 Route::post('/workspace/work', [MutationController::class, 'moveWork'], 'desktop.work.move'),
+                // The seat's frontier, decided from the inbox (greenhouse decisions/0493).
+                Route::post('/workspace/grant', [SeatGrantController::class, 'grant'], SeatGrantController::ROUTE_NAME),
             ),
             Route::get(DesktopAssets::BASE . '{file}', [AssetsController::class, 'component'], 'desktop.assets.component'),
         ];

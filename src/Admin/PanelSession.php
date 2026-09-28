@@ -36,15 +36,22 @@ final readonly class PanelSession
         return 'desk-admin-' . substr(hash('sha256', 'milpa/admin|agent|' . ($principal ?? '')), 0, 16);
     }
 
-    /** Resolve a requested task against server-recorded provenance, or reject an explicit unknown choice. */
-    public static function fromContext(ComponentContext $context, ?DesktopStore $store = null): self
+    /**
+     * Resolve a requested task against server-recorded provenance, or reject an explicit unknown choice.
+     *
+     * Besides the principal's own tasks, it may open the sessions of the seats it answers for (greenhouse
+     * decisions/0493): the enrollment relation is resolved server side by the caller, never taken from a prop.
+     *
+     * @param list<string> $seatSessions the sessions of the seats this principal enrolled
+     */
+    public static function fromContext(ComponentContext $context, ?DesktopStore $store = null, array $seatSessions = []): self
     {
         $resolved = $context->meta[self::CONTEXT_KEY] ?? null;
         if ($resolved instanceof self && $resolved->principal === $context->principal) {
             return $resolved;
         }
         $default = self::forPrincipal($context->principal);
-        $allowed = [$default, ...($store?->panelSessionIds($context->principal ?? '') ?? [])];
+        $allowed = [$default, ...($store?->panelSessionIds($context->principal ?? '') ?? []), ...$seatSessions];
         $query = $context->meta['query'] ?? [];
         $requested = \is_array($query) && \array_key_exists('session', $query) ? $query['session'] : $default;
 

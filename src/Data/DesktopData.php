@@ -306,6 +306,48 @@ final class DesktopData
     }
 
     /**
+     * The sessions of the seats this principal answers for, each with its open refusals (greenhouse decisions/0493).
+     *
+     * A seat's missing scope stays a refusal (decisions/0317); what reaches the panel is the human who enrolled
+     * the seat seeing it, so the decision the resident needs is in front of the one who can make it. The
+     * relation and the judgement are app-runtime's ({@see \Milpa\AppRuntime\Agent\SeatFrontier}): this reads
+     * them, it does not decide them. Guarded so an app without the runtime or the agent store degrades to none.
+     *
+     * @return list<array{session: string, goal: string, seat: string, refusals: list<array{seq: int, tool: string, plugin: ?string, permission: string}>}>
+     */
+    public function seatFrontier(string $principal): array
+    {
+        $frontier = $this->frontier();
+
+        return $frontier === null || $principal === '' ? [] : $frontier->sessionsFor($principal);
+    }
+
+    /**
+     * The ids of the sessions whose seat this principal answers for — the tasks a panel may open for it.
+     *
+     * @return list<string>
+     */
+    public function seatSessionIds(string $principal): array
+    {
+        return array_column($this->seatFrontier($principal), 'session');
+    }
+
+    /** The runtime's frontier over this app's ledger and session store, or null when the app has neither. */
+    private function frontier(): ?\Milpa\AppRuntime\Agent\SeatFrontier
+    {
+        if (!class_exists(\Milpa\AppRuntime\Agent\SeatFrontier::class) || !class_exists(\Milpa\Agent\SessionStore::class) || !class_exists(\Milpa\EventStore\FileEventStore::class)) {
+            return null;
+        }
+        $kernel = $this->container->has(Kernel::class) ? $this->container->get(Kernel::class) : null;
+        $file = $this->ledgerFile();
+        if (!$kernel instanceof Kernel || $file === null || !is_file($file)) {
+            return null;
+        }
+
+        return \Milpa\AppRuntime\Agent\SeatFrontier::forRoot($kernel->root(), new \Milpa\Agent\SessionStore(new \Milpa\EventStore\FileEventStore($file)));
+    }
+
+    /**
      * The sequences this app declared in `config/sequences.php`, each with the pause it may be parked at.
      *
      * A deployment is a list (greenhouse decisions/0223), and the Desktop is where a human authorizes
@@ -664,7 +706,7 @@ final class DesktopData
     /** Select from authenticated server context and share that resolution with composed surfaces. */
     public function selectForPanel(\Milpa\Live\ValueObjects\ComponentContext $context): \Milpa\AgentWorkspace\Admin\PanelSession
     {
-        $selection = \Milpa\AgentWorkspace\Admin\PanelSession::fromContext($context, $this->store);
+        $selection = \Milpa\AgentWorkspace\Admin\PanelSession::fromContext($context, $this->store, $this->seatSessionIds($context->principal ?? ''));
         $this->panelSessionIds = $selection->allowed;
         $this->selectedId = $selection->id ?? '';
 

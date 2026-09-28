@@ -139,6 +139,42 @@ final class DecisionsInboxView
     }
 
     /**
+     * The frontier of the seats the reader enrolled (greenhouse decisions/0493): one card per open refusal —
+     * which seat, which call, which plugin, which scope it lacks — with the action to GRANT that scope, and a
+     * link to the seat's session. A refusal asks nothing (decisions/0317); this is where the human who
+     * answers for the seat decides it. The button carries the refused call's session and sequence number and
+     * never a scope: the house re-derives what is missing from the recorded call when it grants.
+     *
+     * @param list<array{session: string, goal: string, seat: string, refusals: list<array{seq: int, tool: string, plugin: ?string, permission: string}>}> $frontier
+     * @param array<string, string>                                                                                                                        $copy     the caller's words, by key
+     */
+    public function frontierHtml(array $frontier, string $empty = self::FRONTIER_COPY['empty'], array $copy = []): string
+    {
+        $copy += self::FRONTIER_COPY;
+        $cards = '';
+        foreach ($frontier as $seat) {
+            foreach ($seat['refusals'] as $refusal) {
+                $facts = sprintf($copy['refused'], $seat['seat'], $refusal['tool'])
+                    . ($refusal['plugin'] !== null ? ' · ' . sprintf($copy['plugin'], $refusal['plugin']) : '');
+                $cards .= '<li class="decision-card decision-card--frontier" data-seat-session="' . $this->esc($seat['session']) . '"'
+                    . ' data-seat-seq="' . $refusal['seq'] . '" data-seat-permission="' . $this->esc($refusal['permission']) . '">'
+                    . ($seat['goal'] !== '' ? '<p class="decision-card__goal">' . $this->esc($seat['goal']) . '</p>' : '')
+                    . '<p class="decision-card__q">' . $this->esc(sprintf($copy['lacks'], $refusal['permission'])) . '</p>'
+                    . '<p class="decision-card__facts">' . $this->esc($facts) . '</p>'
+                    . '<p class="decision-card__facts" data-seat-status></p>'
+                    . '<p class="decision-card__options">'
+                    . '<button type="button" class="mui-btn mui-btn--sm mui-btn--primary" data-seat-grant>' . $this->esc(sprintf($copy['grant'], $refusal['permission'])) . '</button>'
+                    . '<a class="mui-btn mui-btn--sm decision-card__open" href="?session=' . rawurlencode($seat['session']) . '">' . $this->esc($copy['open']) . '</a>'
+                    . '</p>'
+                    . '</li>';
+            }
+        }
+
+        return '<ol class="mui-replay__stream" id="milpa-frontier-list">' . $cards . '</ol>'
+            . ($cards === '' ? '<div class="mui-empty" id="milpa-frontier-empty"><p class="mui-empty__desc">' . $this->esc($empty) . '</p></div>' : '');
+    }
+
+    /**
      * The two answers a parked question takes — `sí` and `no` are what `agent:answer` reads, whatever the label says.
      *
      * @param array<string, string> $copy
@@ -150,6 +186,16 @@ final class DecisionsInboxView
         return '<button type="button" class="mui-btn mui-btn--sm decision-card__option" data-agent-answer="sí"' . $h . '>' . $this->esc($copy['approve']) . '</button>'
             . '<button type="button" class="mui-btn mui-btn--sm decision-card__option" data-agent-answer="no"' . $h . '>' . $this->esc($copy['deny']) . '</button>';
     }
+
+    /** The English the frontier cards read when the caller hands no catalog. */
+    private const array FRONTIER_COPY = [
+        'empty' => 'None of the seats you enrolled is waiting on a scope.',
+        'refused' => '%s was refused %s',
+        'plugin' => 'plugin %s',
+        'lacks' => 'It lacks %s',
+        'grant' => 'Grant %s',
+        'open' => 'Open session',
+    ];
 
     /** The English a caller with no catalog reads. */
     private const array COPY = ['run' => 'Run', 'approve' => 'Approve', 'deny' => 'Deny', 'paused_on' => 'paused on %s — answer below'];
