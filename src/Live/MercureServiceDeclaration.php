@@ -19,6 +19,7 @@ use Milpa\Runtime\Config;
 use Milpa\Runtime\Stack\EnvVar;
 use Milpa\Runtime\Stack\PortMapping;
 use Milpa\Runtime\Stack\ServiceDeclaration;
+use Milpa\Runtime\Stack\ServiceSignature;
 
 /**
  * The Mercure hub the Desktop needs, as a stack declaration (greenhouse decisions/0201).
@@ -47,6 +48,19 @@ final class MercureServiceDeclaration
 
     /** The default `cors_origins`: BOTH spellings of the quickstart origin, since a credentialed EventSource needs an exact match. */
     public const DEFAULT_CORS_ORIGINS = 'http://127.0.0.1:8080 http://localhost:8080';
+
+    /**
+     * What only a hub answers on its port: it refuses a subscription without a topic — 400 when it lets
+     * anonymous subscribers in (this declaration's own directives), 401 when it asks for a JWT first (FrankenPHP's
+     * embedded hub as the image variant configures it). Measured on the standalone `dunglas/mercure` and on
+     * FrankenPHP 1.12.7's hub alike: the wording moves between versions (`missing "match" subscription
+     * parameter`, `Missing "topic" parameter.`), the statuses do not. An app that took the port answers
+     * otherwise — a `next-server` on :3000 answered 404 (greenhouse evidence/1037).
+     */
+    public const SIGNATURE_PATH = '/.well-known/mercure';
+
+    /** The statuses a hub answers {@see SIGNATURE_PATH} with, asked without a topic. */
+    public const SIGNATURE_STATUSES = [400, 401];
 
     /** The one-line summary an admin panel shows next to the service. */
     public const SUMMARY = 'The live feed of the Desktop shell and the agent sessions — without it the app falls back to the log feed.';
@@ -77,7 +91,19 @@ final class MercureServiceDeclaration
                 new EnvVar('MERCURE_EXTRA_DIRECTIVES', value: 'cors_origins ' . self::corsOrigins($config) . "\nanonymous"),
             ],
             summary: self::SUMMARY,
+            signature: new ServiceSignature(self::SIGNATURE_PATH, self::SIGNATURE_STATUSES),
         );
+    }
+
+    /**
+     * Whether the app's own server IS the hub — `workspace.mercure.embedded: true`, as FrankenPHP's built-in
+     * Mercure serves it on the app's port (greenhouse decisions/0504). Then there is no container for the host
+     * to run, and declaring one would send the operator to start a second hub on a port nothing publishes to.
+     * Only a literal `true` counts: a string «false» that read as truthy would hide the hub the app needs.
+     */
+    public static function embedded(?Config $config): bool
+    {
+        return WorkspaceKeys::read($config, 'mercure.embedded') === true;
     }
 
     /**

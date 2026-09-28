@@ -44,6 +44,11 @@ final class MercureServiceDeclarationTest extends TestCase
             self::assertSame([], $service->command);
             self::assertSame(MercureServiceDeclaration::SUMMARY, $service->summary);
             self::assertStringContainsString('falls back to the log feed', $service->summary);
+            // What a hub answers and a squatter does not (decisions/0504): it refuses a topic-less subscription.
+            self::assertNotNull($service->signature);
+            self::assertSame('/.well-known/mercure', $service->signature->path);
+            self::assertSame([400, 401], $service->signature->statuses, 'anonymous allowed, or a JWT asked first');
+            self::assertFalse($service->signature->matches(404), 'the next-server that took :3000');
         }
     }
 

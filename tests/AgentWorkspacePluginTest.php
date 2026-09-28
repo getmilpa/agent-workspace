@@ -187,6 +187,27 @@ final class AgentWorkspacePluginTest extends TestCase
         self::assertSame(3010, $services[0]->probePort(), 'the declaration reads the same config the wiring does');
     }
 
+    public function testAnEmbeddedHubIsTheAppsOwnServerAndDeclaresNoContainer(): void
+    {
+        $container = new DIContainer();
+        $container->registerService(Config::class, new Config([
+            'workspace' => ['mercure' => ['hub_url' => 'http://127.0.0.1:8080/.well-known/mercure', 'embedded' => true]],
+        ]));
+        self::assertSame([], (new AgentWorkspacePlugin($container))->services(), 'FrankenPHP serves the hub: nothing for the host to run');
+
+        // POSITIVE CONTROL: the same wiring without the flag — or with a flag that is not literally true — still
+        // declares the container the host must run.
+        foreach ([null, false, 'true', 1] as $flag) {
+            $container = new DIContainer();
+            $container->registerService(Config::class, new Config([
+                'workspace' => ['mercure' => ['hub_url' => 'http://127.0.0.1:8080/.well-known/mercure', 'embedded' => $flag]],
+            ]));
+            $services = (new AgentWorkspacePlugin($container))->services();
+            self::assertCount(1, $services, var_export($flag, true));
+            self::assertSame('dunglas/mercure', $services[0]->image);
+        }
+    }
+
     public function testItExposesItsContainer(): void
     {
         $container = new DIContainer();
