@@ -65,6 +65,7 @@ export const CATALOG = {
   'command.mode.set.auto': 'mode %s — applies from the next turn (a signature or third-party egress still asks)',
   'settings.model.model.saved': 'Model saved',
   'settings.model.model.refused': 'The model was not saved: %s',
+  'settings.model.model.find_refused': 'Could not ask which models it serves: %s',
   'settings.model.model.unreachable': 'The endpoint did not answer',
   'settings.model.model.found': '%s model(s) served',
   // 🚨 THE SECOND DIRECTION OF THE DRIFT, closed by `ClientCopyTest::testEveryKeyAModuleAsksForIsInThe

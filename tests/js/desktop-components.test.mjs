@@ -174,7 +174,7 @@ test('Find models refused by the door says why, not that the endpoint was silent
   await settings.findModels();
 
   assert.equal(p.signal('settings.saved').ok, false);
-  assert.match(p.signal('settings.saved').text, /offers no agent:model/);
+  assert.match(p.signal('settings.saved').text, /^Could not ask which models it serves: .*offers no agent:model/, 'a probe saves nothing, so it never says «not saved»');
 });
 
 test('an empty endpoint asks nothing — a blank field is not a declaration', async () => {

@@ -220,7 +220,7 @@
           }
           self.fill(models);
           self.report(true, tr('settings.model.model.found', models.length));
-        }).catch(function (err) { self.report(false, tr('settings.model.model.refused', d.reason(err))); });
+        }).catch(function (err) { self.report(false, tr('settings.model.model.find_refused', d.reason(err))); });
       },
       /**
        * Put what the provider serves in the select, KEEPING the declared model selected when it is one
