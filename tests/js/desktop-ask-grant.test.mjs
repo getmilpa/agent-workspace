@@ -51,7 +51,7 @@ test('F5 · an option posts the answer to agent:answer\'s own door, and the bubb
   await settle();
 
   assert.equal(calls.length, 1, 'one call, to the operation\'s door');
-  assert.equal(calls[0].url, '/agent/answer');
+  assert.equal(calls[0].url, '/workspace/answer');
   assert.deepEqual(JSON.parse(calls[0].init.body), { session: 'desk-1', answer: 'yes' }, 'the session the turn owns, and the option the agent proposed');
   assert.equal(grant.getAttribute('data-grant-state'), 'answered');
   assert.equal(grant.querySelector('[data-grant-status]').textContent, 'You answered «yes».');

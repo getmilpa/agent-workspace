@@ -13,13 +13,8 @@ declare(strict_types=1);
 
 namespace Milpa\AgentWorkspace\Controllers;
 
-use Milpa\Admin\Http\GovernedAct;
-use Milpa\Console\FileConfirmTokenStore;
 use Milpa\Console\Http\HttpProjector;
-use Milpa\Command\OperationHttpPolicy;
 use Milpa\Interfaces\Di\DIContainerInterface;
-use Milpa\Runtime\Kernel;
-use Nyholm\Psr7\Factory\Psr17Factory;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 
@@ -56,24 +51,12 @@ final class SeatGrantController
     /** Project the request as `identity:grant` and answer what its ceremony answers. */
     public function grant(ServerRequestInterface $request): ResponseInterface
     {
-        $psr17 = new Psr17Factory();
         $operation = $this->operation();
         if ($operation === null || !class_exists(HttpProjector::class)) {
-            return self::json($psr17, 501, ['ok' => false, 'error' => 'This app has no identity:grant to decide a seat\'s frontier — it comes with milpa/app-runtime.']);
+            return PanelDoorController::absent(self::OPERATION, 'milpa/app-runtime');
         }
-        $kernel = $this->container->has(Kernel::class) ? $this->container->get(Kernel::class) : null;
-        $judge = $this->container->has(OperationHttpPolicy::class) ? $this->container->get(OperationHttpPolicy::class) : null;
-        $projector = new HttpProjector(
-            [$operation],
-            $this->container,
-            $psr17,
-            $psr17,
-            // The same store the app's own projector and the admin's buttons use: one confirm ceremony.
-            tokens: $kernel instanceof Kernel ? new FileConfirmTokenStore($kernel->root() . '/storage/confirm-tokens.json') : new \Milpa\Console\ConfirmTokenStore(),
-            policy: $judge instanceof OperationHttpPolicy ? $judge : null,
-        );
 
-        return GovernedAct::run($projector, self::OPERATION, $request, $psr17, 'This app wired no policy to judge who may grant a seat a scope, so the panel cannot run the act.');
+        return PanelDoorController::project($this->container, $operation, $request, 'This app wired no policy to judge who may grant a seat a scope, so the panel cannot run the act.');
     }
 
     private function operation(): ?\Milpa\Command\Operation
@@ -94,13 +77,5 @@ final class SeatGrantController
         }
 
         return null;
-    }
-
-    /** @param array<string, mixed> $body */
-    private static function json(Psr17Factory $psr17, int $status, array $body): ResponseInterface
-    {
-        return $psr17->createResponse($status)
-            ->withHeader('Content-Type', 'application/json')
-            ->withBody($psr17->createStream((string) json_encode($body, \JSON_UNESCAPED_SLASHES | \JSON_UNESCAPED_UNICODE)));
     }
 }

@@ -68,7 +68,7 @@ test('a run walks the confirm gate and a pause shows the answers', async () => {
   await settle();
 
   assert.equal(calls.length, 2, 'the first call met the gate, the second carried the token');
-  assert.equal(calls[0].url, '/sequence/run');
+  assert.equal(calls[0].url, '/workspace/sequence');
   assert.deepEqual(JSON.parse(calls[0].init.body), { sequence: 'deploy', session: 'sequence:deploy' });
   assert.equal(calls[0].init.headers['Confirm-Token'], undefined);
   assert.equal(calls[1].init.headers['Confirm-Token'], 'tok-1');
@@ -92,9 +92,9 @@ test('an approval posts agent:answer and then RESUMES the run through the gate',
   await settle();
 
   assert.equal(calls.length, 3);
-  assert.equal(calls[0].url, '/agent/answer');
+  assert.equal(calls[0].url, '/workspace/answer');
   assert.deepEqual(JSON.parse(calls[0].init.body), { session: 'sequence:deploy', answer: 'sí' });
-  assert.equal(calls[1].url, '/sequence/run');
+  assert.equal(calls[1].url, '/workspace/sequence');
   assert.deepEqual(JSON.parse(calls[1].init.body), { sequence: 'deploy', session: 'sequence:deploy' });
   assert.equal(calls[2].init.headers['Confirm-Token'], 'tok-2');
   assert.equal(card.querySelector('[data-sequence-status]').textContent, 'applied · 2 of 2 steps ran');
@@ -129,6 +129,38 @@ test('the inbox card of a session parked on a sequence approves and resumes the 
   assert.deepEqual(JSON.parse(calls[0].init.body), { session: 'sequence:rollout', answer: 'sí' });
   assert.deepEqual(JSON.parse(calls[1].init.body), { sequence: 'rollout', session: 'sequence:rollout' });
   assert.equal(card.querySelector('[data-decision-status]').textContent, 'applied · 2 of 2 steps ran');
+});
+
+test('a seat\'s parked question is answered through the panel\'s own door, walking the confirm gate (0495)', async () => {
+  // Measured before this: the inbox posted to /agent/answer, which a fresh app never mounts — Deny answered 404
+  // (greenhouse evidence/1026, B1b). The panel's door is /workspace/answer, and answering is irreversible, so
+  // the house may ask first: the same 428 → Confirm-Token flow the other buttons walk.
+  const root = tree();
+  const p = page({ tree: root, catalog: COPY, modules: ['desktop-decisions'] });
+  const calls = stubFetch(p, [response(428, { requires_confirmation: true, confirm_token: 'tok-9' }), response(201, { ok: true, answered: 'intent:target_not_named', granted: null })]);
+  const card = root.querySelector('[data-decision-session="sequence:rollout"]');
+  card.removeAttribute('data-decision-sequence');
+
+  click(p, card.querySelector('[data-agent-answer="no"]'));
+  await settle();
+
+  assert.equal(calls.length, 2, 'the first call met the gate, the second carried the token');
+  assert.equal(calls[0].url, '/workspace/answer');
+  assert.equal(calls[1].url, '/workspace/answer');
+  assert.equal(calls[1].init.headers['Confirm-Token'], 'tok-9');
+  assert.equal(card.querySelector('[data-decision-status]').textContent, 'refused · the run stays paused');
+});
+
+test('a door the app does not offer is painted, not swallowed (501)', async () => {
+  const root = tree();
+  const p = page({ tree: root, catalog: COPY, modules: ['desktop-decisions'] });
+  const card = root.querySelector('[data-decision-session="sequence:rollout"]');
+
+  stubFetch(p, [response(501, { ok: false, error: 'This app offers no agent:answer for the panel to run — it comes with milpa/app-runtime.' })]);
+  click(p, card.querySelector('[data-agent-answer="no"]'));
+  await settle();
+
+  assert.equal(card.querySelector('[data-decision-status]').textContent, 'that answer was refused: This app offers no agent:answer for the panel to run — it comes with milpa/app-runtime.');
 });
 
 test('a door that refuses is painted on the card, and a gate without a token is a failure said aloud', async () => {
