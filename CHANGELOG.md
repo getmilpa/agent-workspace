@@ -3,6 +3,13 @@
 All notable changes to milpa/desktop-app are documented here. This project adheres to
 [Semantic Versioning](https://semver.org/) and [Keep a Changelog](https://keepachangelog.com/).
 
+## [0.80.0](https://github.com/getmilpa/agent-workspace/compare/v0.79.0...v0.80.0) (2026-09-28)
+
+
+### Features
+
+* **panel:** show the seats you enrolled and grant what they were refused ([#93](https://github.com/getmilpa/agent-workspace/issues/93)) ([205a385](https://github.com/getmilpa/agent-workspace/commit/205a385f6c913011283c5ab17300a4986bc1e33b))
+
 ## [0.79.0](https://github.com/getmilpa/agent-workspace/compare/v0.78.0...v0.79.0) (2026-09-16)
 
 
