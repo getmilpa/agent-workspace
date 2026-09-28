@@ -31,6 +31,10 @@
   var SEQUENCE_ROUTE = '/workspace/sequence';
   /** The panel's own door to `identity:grant`, and the ceremony that binds a passkey touch to one call. */
   var GRANT_ROUTE = '/workspace/grant';
+  /** The panel's own door to `identity:seat`: the human gives the resident a seat (greenhouse decisions/0499). */
+  var SEAT_ROUTE = '/workspace/seat';
+  /** The intent session a seat's touch is bound to — there is no agent session yet (app-runtime ResidentSeat). */
+  var SEAT_INTENT_SESSION = 'identity:seat';
   var INTENT_ROUTE = '/webauthn/intent/options';
 
   /** The list the cards live in, and the prototype the server rendered for one. */
@@ -231,19 +235,21 @@
     return card.querySelector('[data-seat-status]') || statusOf(card);
   }
 
-  function grantSeat(card) {
+  function canTouch() {
+    return !!(window.PublicKeyCredential && navigator.credentials && typeof navigator.credentials.get === 'function');
+  }
+
+  /**
+   * The passkey's touch for ONE call: the house mints a challenge bound to `operation` with exactly these
+   * arguments and this intent session, the key signs it, and the assertion comes back ready to travel inside the
+   * call — so the operation knows who decided, and a touch for another call proves nothing.
+   */
+  function touchFor(operation, call, session) {
     var d = desk();
-    var status = seatStatus(card);
-    var call = { session: card.getAttribute('data-seat-session') || '', seq: parseInt(card.getAttribute('data-seat-seq') || '', 10) };
-    if (!window.PublicKeyCredential || !navigator.credentials || typeof navigator.credentials.get !== 'function') {
-      status.textContent = tr('frontier.no_passkey');
-      return Promise.resolve(null);
-    }
-    status.textContent = tr('frontier.granting');
     var ask = fetch(INTENT_ROUTE, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ operation: 'identity:grant', arguments: call, session: call.session }),
+      body: JSON.stringify({ operation: operation, arguments: call, session: session }),
     });
 
     return (d && d.guarded ? ask.then(d.guarded) : ask)
@@ -259,16 +265,27 @@
       })
       .then(function (touch) {
         var r = touch.response;
-        return confirmed(GRANT_ROUTE, {
-          session: call.session,
-          seq: call.seq,
-          assertion: {
-            credentialId: bufToB64u(touch.rawId),
-            clientDataJSON: bufToB64u(r.clientDataJSON),
-            authenticatorData: bufToB64u(r.authenticatorData),
-            signature: bufToB64u(r.signature),
-          },
-        });
+        return {
+          credentialId: bufToB64u(touch.rawId),
+          clientDataJSON: bufToB64u(r.clientDataJSON),
+          authenticatorData: bufToB64u(r.authenticatorData),
+          signature: bufToB64u(r.signature),
+        };
+      });
+  }
+
+  function grantSeat(card) {
+    var status = seatStatus(card);
+    var call = { session: card.getAttribute('data-seat-session') || '', seq: parseInt(card.getAttribute('data-seat-seq') || '', 10) };
+    if (!canTouch()) {
+      status.textContent = tr('frontier.no_passkey');
+      return Promise.resolve(null);
+    }
+    status.textContent = tr('frontier.granting');
+
+    return touchFor('identity:grant', call, call.session)
+      .then(function (assertion) {
+        return confirmed(GRANT_ROUTE, { session: call.session, seq: call.seq, assertion: assertion });
       })
       .then(function (read) {
         if (!read || read.ok === false) { throw new Error((read && (read.error || read.message)) || 'refused'); }
@@ -283,8 +300,40 @@
       });
   }
 
+  // ── your seats: the human gives the resident one, and no file is edited (greenhouse decisions/0499) ──
+  // The touch is bound to `identity:seat {label}`; the answer is the command the resident's OWN key runs to
+  // take the seat — its signature is what proves the key. The form carries a name, never a scope: what a seat
+  // may do is the house's to declare.
+  function giveSeat(form) {
+    var status = form.querySelector('[data-seat-give-status]') || statusOf(form);
+    var command = form.querySelector('[data-seat-command]');
+    var input = form.querySelector('[data-seat-label]');
+    var label = String((input && input.value) || '').trim() || 'resident';
+    if (!canTouch()) {
+      status.textContent = tr('frontier.no_passkey');
+      return Promise.resolve(null);
+    }
+    status.textContent = tr('seats.giving');
+    var call = { label: label };
+
+    return touchFor('identity:seat', call, SEAT_INTENT_SESSION)
+      .then(function (assertion) { return confirmed(SEAT_ROUTE, { label: label, assertion: assertion }); })
+      .then(function (read) {
+        if (!read || read.ok === false) { throw new Error((read && (read.error || read.message)) || 'refused'); }
+        status.textContent = tr('seats.given', String(read.expires_at || ''));
+        if (command) {
+          command.textContent = String(read.command || '');
+          command.removeAttribute('hidden');
+        }
+        return read;
+      })
+      .catch(function (err) {
+        status.textContent = tr('seats.refused', why(err));
+      });
+  }
+
   if (live && live.desktop) {
-    live.desktop.decisions = { parked: parked, subscribe: subscribe, confirmed: confirmed, run: run, answer: answerParked, grant: grantSeat };
+    live.desktop.decisions = { parked: parked, subscribe: subscribe, confirmed: confirmed, run: run, answer: answerParked, grant: grantSeat, giveSeat: giveSeat };
   }
 
   subscribe();
@@ -352,6 +401,15 @@
       if (!seatCard || seatCard.getAttribute('data-granted') !== null) { return; }
       event.preventDefault();
       grantSeat(seatCard);
+      return;
+    }
+
+    var give = target.closest('[data-seat-give]');
+    if (give) {
+      var form = give.closest('[data-seat-give-form]');
+      if (!form) { return; }
+      event.preventDefault();
+      giveSeat(form);
       return;
     }
 
