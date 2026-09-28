@@ -3,6 +3,13 @@
 All notable changes to milpa/desktop-app are documented here. This project adheres to
 [Semantic Versioning](https://semver.org/) and [Keep a Changelog](https://keepachangelog.com/).
 
+## [0.83.0](https://github.com/getmilpa/agent-workspace/compare/v0.82.0...v0.83.0) (2026-09-28)
+
+
+### Features
+
+* **panel:** give the resident a seat from the inbox, and show the seats you answer for (greenhouse 0499) ([#100](https://github.com/getmilpa/agent-workspace/issues/100)) ([f6160a5](https://github.com/getmilpa/agent-workspace/commit/f6160a540b2fe73c9066fe812208ab2659ab1f2e))
+
 ## [0.82.0](https://github.com/getmilpa/agent-workspace/compare/v0.81.0...v0.82.0) (2026-09-28)
 
 
