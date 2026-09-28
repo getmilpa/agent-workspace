@@ -27,8 +27,8 @@
  * A question that arrived with NO options still renders — its question, its reason, and a line saying
  * where it can be answered — because a question nobody can see is worse than one nobody can click.
  *
- * Answering is `POST /agent/answer`: the operation's own door, with the passkey session as principal,
- * the same door the decisions inbox and a terminal take. This module adjudicates nothing.
+ * Answering is `POST /workspace/answer`: the panel's own door to `agent:answer` (greenhouse decisions/0495),
+ * with the passkey session as principal — the operation the decisions inbox and a terminal run. This module adjudicates nothing.
  */
 (function () {
   'use strict';
@@ -43,7 +43,7 @@
   /** The prototype the conversation clones per parked question. */
   var PROTO_ID = 'milpa-ask-grant-proto';
   /** The `agent:answer` operation's own HTTP projection. */
-  var ANSWER_ROUTE = '/agent/answer';
+  var ANSWER_ROUTE = '/workspace/answer';
 
   function desk() { return live.desktop || null; }
   function tr(key) { var d = desk(); return d ? d.tr.apply(null, arguments) : key; }

@@ -35,9 +35,9 @@ use Milpa\Live\ValueObjects\StateSnapshot;
  * `target_not_named`), and the reason is what a projection groups by: the text gets rewritten and
  * translated, the code does not.
  *
- * What this component does NOT do is answer. Answering is `POST /agent/answer` — the operation's own
- * door, taken with the passkey session, walking the house's confirm gate when the door asks for one. The
- * same door the decisions inbox takes, and the same one a terminal takes.
+ * What this component does NOT do is answer. Answering is `POST /workspace/answer` — the panel's own door to
+ * `agent:answer` (greenhouse decisions/0495), taken with the passkey session, walking the house's confirm gate
+ * when the door asks for one. The same door the decisions inbox takes; the same operation a terminal runs.
  */
 final class AskGrantComponent implements ComponentDefinitionInterface
 {

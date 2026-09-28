@@ -23,6 +23,7 @@ use Milpa\AgentWorkspace\Admin\{
 use Milpa\AgentWorkspace\Config\WorkspaceKeys;
 use Milpa\AgentWorkspace\Controllers\{
     AssetsController,
+    PanelDoorController,
     SeatGrantController,
     HubController,
     MutationController,
@@ -213,6 +214,7 @@ final class AgentWorkspacePlugin implements PluginInterface, RouteProviderInterf
         $this->container->registerService(MutationController::class, new MutationController($store));
         $this->container->registerService(AssetsController::class, new AssetsController());
         $this->container->registerService(SeatGrantController::class, new SeatGrantController($this->container));
+        $this->container->registerService(PanelDoorController::class, new PanelDoorController($this->container));
 
         $data = new DesktopData($this->container, $log, $this->sessionsPath(), $store);
         $this->container->registerService(DesktopData::class, $data);
@@ -344,6 +346,11 @@ final class AgentWorkspacePlugin implements PluginInterface, RouteProviderInterf
                 Route::post('/workspace/work', [MutationController::class, 'moveWork'], 'desktop.work.move'),
                 // The seat's frontier, decided from the inbox (greenhouse decisions/0493).
                 Route::post('/workspace/grant', [SeatGrantController::class, 'grant'], SeatGrantController::ROUTE_NAME),
+                // The inbox's other buttons, which posted to paths a fresh app never mounts (greenhouse decisions/0495).
+                ...array_map(
+                    static fn (array $door): Route => Route::post($door['path'], [PanelDoorController::class, $door['method']], $door['route']),
+                    array_values(PanelDoorController::DOORS),
+                ),
             ),
             Route::get(DesktopAssets::BASE . '{file}', [AssetsController::class, 'component'], 'desktop.assets.component'),
         ];

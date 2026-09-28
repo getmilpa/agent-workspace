@@ -22,10 +22,13 @@
 
   var live = window.MilpaLive || null;
 
-  /** The operations' own HTTP projections — the same doors a terminal takes. */
-  var DECIDE_ROUTE = '/graph/decide';
-  var ANSWER_ROUTE = '/agent/answer';
-  var SEQUENCE_ROUTE = '/sequence/run';
+  /**
+   * The panel's own doors to `graph:decide`, `agent:answer` and `sequence:run` — the same operations a terminal
+   * runs. Never the operations' global paths: a fresh app mounts none of them (greenhouse decisions/0495).
+   */
+  var DECIDE_ROUTE = '/workspace/decide';
+  var ANSWER_ROUTE = '/workspace/answer';
+  var SEQUENCE_ROUTE = '/workspace/sequence';
   /** The panel's own door to `identity:grant`, and the ceremony that binds a passkey touch to one call. */
   var GRANT_ROUTE = '/workspace/grant';
   var INTENT_ROUTE = '/webauthn/intent/options';
@@ -75,6 +78,15 @@
     bus.on('decision.parked', function (fact) { parked((fact && fact.question) || ''); });
 
     return true;
+  }
+
+  /**
+   * What a failed call says, for the card: the door's own sentence when it wrote one (a 501 names what the app
+   * lacks, a refusal names why), else the status the guard saw.
+   */
+  function why(err) {
+    if (err && err.body && typeof err.body.error === 'string' && err.body.error !== '') { return err.body.error; }
+    return (err && err.message) || 'unknown';
   }
 
   // ── the confirm gate, as a flow ─────────────────────────────────────────────────────────────────
@@ -155,7 +167,7 @@
 
     return confirmed(SEQUENCE_ROUTE, body)
       .then(function (read) { outcome(card, read); return read; })
-      .catch(function (err) { statusOf(card).textContent = tr('decisions.failed', (err && err.message) || 'unknown'); });
+      .catch(function (err) { statusOf(card).textContent = tr('decisions.failed', why(err)); });
   }
 
   /**
@@ -164,16 +176,13 @@
    * is what lets the step through on the second `sequence:run`.
    */
   function answerParked(card, answer) {
-    var d = desk();
     var session = card.getAttribute('data-decision-session') || card.getAttribute('data-sequence-session') || '';
     var sequence = card.getAttribute('data-decision-sequence') || card.getAttribute('data-sequence') || '';
     var status = statusOf(card);
     status.textContent = tr('decisions.answering');
 
-    var send = fetch(ANSWER_ROUTE, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ session: session, answer: answer }) });
-
-    return (d && d.guarded ? send.then(d.guarded) : send)
-      .then(function (response) { return response.json(); })
+    // Through the confirm gate: answering is irreversible, and the house asks before it records it.
+    return confirmed(ANSWER_ROUTE, { session: session, answer: answer })
       .then(function (read) {
         if (read && read.ok === false) { throw new Error(read.error || 'refused'); }
         if (answer !== 'sí') {
@@ -193,7 +202,7 @@
           .then(function (resumed) { outcome(card, resumed); return resumed; });
       })
       .catch(function (err) {
-        status.textContent = tr('decisions.refused', (err && err.message) || 'unknown');
+        status.textContent = tr('decisions.refused', why(err));
       });
   }
 
@@ -270,7 +279,7 @@
         return read;
       })
       .catch(function (err) {
-        status.textContent = tr('frontier.refused_grant', (err && err.message) || 'unknown');
+        status.textContent = tr('frontier.refused_grant', why(err));
       });
   }
 
@@ -292,30 +301,24 @@
    * what they mean: it sends the one the human pressed and lets the engine refuse anything it should.
    */
   function answer(card, decision) {
-    var d = desk();
     var status = card.querySelector('[data-decision-status]') || card.appendChild(document.createElement('p'));
     status.className = 'decision-card__facts';
     status.setAttribute('data-decision-status', '');
     status.textContent = tr('decisions.answering');
 
-    var body = JSON.stringify({
+    return confirmed(DECIDE_ROUTE, {
       graph: card.getAttribute('data-graph') || '',
       instance: card.getAttribute('data-graph-instance') || '',
       decision: decision,
       principal: card.getAttribute('data-graph-principal') || '',
-    });
-
-    var send = fetch(DECIDE_ROUTE, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: body });
-
-    return (d && d.guardedFlow ? send.then(d.guardedFlow) : send)
-      .then(function (response) { return response.json(); })
+    })
       .then(function (read) {
         if (read && read.ok === false) { throw new Error(read.error || 'refused'); }
         status.textContent = tr('decisions.answered');
         card.setAttribute('data-answered', '');
       })
       .catch(function (err) {
-        status.textContent = tr('decisions.refused', (err && err.message) || 'unknown');
+        status.textContent = tr('decisions.refused', why(err));
       });
   }
 
