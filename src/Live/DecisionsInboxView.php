@@ -255,7 +255,8 @@ final class DecisionsInboxView
     }
 
     /**
-     * The two answers a parked question takes — `sí` and `no` are what `agent:answer` reads, whatever the label says.
+     * The two answers a parked question takes — `yes` and `no` are what `agent:answer` reads, whatever the label says.
+     * The wire speaks the question's language (greenhouse decisions/0518); the label is the catalog's.
      *
      * @param array<string, string> $copy
      */
@@ -263,7 +264,7 @@ final class DecisionsInboxView
     {
         $h = $hidden ? ' hidden' : '';
 
-        return '<button type="button" class="mui-btn mui-btn--sm decision-card__option" data-agent-answer="sí"' . $h . '>' . $this->esc($copy['approve']) . '</button>'
+        return '<button type="button" class="mui-btn mui-btn--sm decision-card__option" data-agent-answer="yes"' . $h . '>' . $this->esc($copy['approve']) . '</button>'
             . '<button type="button" class="mui-btn mui-btn--sm decision-card__option" data-agent-answer="no"' . $h . '>' . $this->esc($copy['deny']) . '</button>';
     }
 

@@ -175,10 +175,18 @@
   }
 
   /**
-   * Answer the question a session parked — `sí` or `no`, what `agent:answer` reads — and, when the session
+   * Answer the question a session parked — `yes` or `no`, what `agent:answer` reads — and, when the session
    * is parked on a SEQUENCE and the answer was yes, resume the run right here: the grant the answer minted
    * is what lets the step through on the second `sequence:run`.
    */
+  /**
+   * Whether an answer means yes — the house's reader (`AffirmativeAnswer`) in this surface. The panel posts `yes`
+   * (greenhouse decisions/0518); a card an older panel rendered still carries `sí`, and it must still resume.
+   */
+  function affirmative(answer) {
+    return ['yes', 'y', 'sí', 'si', 's'].indexOf(String(answer).trim().toLowerCase()) !== -1;
+  }
+
   function answerParked(card, answer) {
     var session = card.getAttribute('data-decision-session') || card.getAttribute('data-sequence-session') || '';
     var sequence = card.getAttribute('data-decision-sequence') || card.getAttribute('data-sequence') || '';
@@ -189,7 +197,7 @@
     return confirmed(ANSWER_ROUTE, { session: session, answer: answer })
       .then(function (read) {
         if (read && read.ok === false) { throw new Error(read.error || 'refused'); }
-        if (answer !== 'sí') {
+        if (!affirmative(answer)) {
           status.textContent = tr('decisions.stays_paused');
           showAnswers(card, false);
           return read;
