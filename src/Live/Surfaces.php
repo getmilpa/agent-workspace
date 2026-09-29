@@ -181,7 +181,7 @@ final class Surfaces
     /** The Work board surface (greenhouse decisions/0189) — moving a card still persists through /desktop/work. */
     private function workBoardOf(): WorkBoard
     {
-        return $this->workBoard ?? new WorkBoard('desktop-work-board-fallback', $this->data, $this->events);
+        return $this->workBoard ?? new WorkBoard('desktop-work-board-fallback', $this->data, $this->events, $this->catalog());
     }
 
     /** The Activity tab surface (greenhouse decisions/0189) — facts arrive live over the hub, prepended to #milpa-activity. */

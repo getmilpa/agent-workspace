@@ -326,6 +326,14 @@
             append('system', { text: tr('conversation.answered', row.answer || '', row.by || '') });
           }
           break;
+        case 'closure':
+          // THE HOUSE'S VERDICT, stamped where the answer it judged is read (greenhouse decisions/0509 §7) — the
+          // same ✓/⚠ a live turn gets. Measured (evidence/1036): a reloaded thread showed «the blog is built,
+          // tested, and live» and not the house's `verified: false` beside it.
+          var closed = row.verified === true;
+          var why = Array.isArray(row.reasons) ? row.reasons.join('; ') : '';
+          if (!verdict(closed, why)) { append('result', { verified: closed, reasons: why }); }
+          break;
         case 'sequence_paused': append('system', { text: tr('conversation.sequence_paused', row.sequence || '') }); break;
         case 'sequence_resumed': append('system', { text: tr('conversation.sequence_resumed', row.sequence || '') }); break;
         default: continue;

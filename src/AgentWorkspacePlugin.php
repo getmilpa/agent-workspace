@@ -237,7 +237,7 @@ final class AgentWorkspacePlugin implements PluginInterface, RouteProviderInterf
         // {@see Surfaces}. Context receives DesktopData directly; contributed panels are additive, never the
         // primary source of context (decisions/0288).
         $tabs = new Tabs($this->liveSecret('signing'), $events, $catalog);
-        $workBoard = new WorkBoard($this->liveSecret('signing'), $data, $events);
+        $workBoard = new WorkBoard($this->liveSecret('signing'), $data, $events, $catalog);
         $activity = new Activity($this->liveSecret('signing'), $data, $events);
         $context = new Context($this->liveSecret('signing'), $events, $data, $catalog);
         $gate = new Gate($this->liveSecret('signing'), $events);
