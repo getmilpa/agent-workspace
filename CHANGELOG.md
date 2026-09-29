@@ -3,6 +3,18 @@
 All notable changes to milpa/desktop-app are documented here. This project adheres to
 [Semantic Versioning](https://semver.org/) and [Keep a Changelog](https://keepachangelog.com/).
 
+## [0.85.0](https://github.com/getmilpa/agent-workspace/compare/v0.84.0...v0.85.0) (2026-09-29)
+
+
+### Features
+
+* **panel:** the house's closure verdict is shown where the work is read ([#105](https://github.com/getmilpa/agent-workspace/issues/105)) ([6ad621a](https://github.com/getmilpa/agent-workspace/commit/6ad621adc5186180aaac204581ff185e4337720d))
+
+
+### Bug Fixes
+
+* **decisions:** the frontier card shows the refused call and what granting opens ([#104](https://github.com/getmilpa/agent-workspace/issues/104)) ([eda84ef](https://github.com/getmilpa/agent-workspace/commit/eda84efc816eb70228cd9f7eb3df79d288cf0b63))
+
 ## [0.84.0](https://github.com/getmilpa/agent-workspace/compare/v0.83.0...v0.84.0) (2026-09-28)
 
 
