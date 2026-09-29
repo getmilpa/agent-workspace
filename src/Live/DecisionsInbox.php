@@ -126,6 +126,12 @@ final class DecisionsInbox
                 'lacks' => $this->plain('frontier.lacks'),
                 'grant' => $this->plain('frontier.grant'),
                 'open' => $this->plain('frontier.open'),
+                'call' => $this->plain('frontier.call'),
+                'opens_new' => $this->plain('frontier.opens_new'),
+                'opens_existing' => $this->plain('frontier.opens_existing'),
+                'unnamed' => $this->plain('frontier.unnamed'),
+                'ack' => $this->plain('frontier.ack'),
+                'grant_existing' => $this->plain('frontier.grant_existing'),
             ])
             // YOUR SEATS (greenhouse decisions/0499): the seats this reader answers for, and the one place a human
             // gives the resident a seat — no file edited, the resident's own key proving itself by signing.

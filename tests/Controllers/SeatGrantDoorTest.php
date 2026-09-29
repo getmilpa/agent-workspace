@@ -79,6 +79,56 @@ final class SeatGrantDoorTest extends TestCase
         self::assertStringContainsString('milpa-frontier-empty', (new DecisionsInboxView())->frontierHtml([]));
     }
 
+    /**
+     * evidence/1036 R3: two cards that looked alike. Now the Blog card reads «create plugin Blog» and keeps its
+     * one-touch button; the HelloPlugin card shows the refused call verbatim, says it opens write over existing
+     * work the task does not name, and offers no plain Grant button — a box to tick and a button that names the
+     * plugin (decisions/0510).
+     */
+    public function testTheCardSaysWhatAGrantOpensAndAnExistingPluginIsNeverOneTouch(): void
+    {
+        $html = (new DecisionsInboxView())->frontierHtml([[
+            'session' => 'camino-1036-blog',
+            'goal' => 'Build the blog',
+            'seat' => 'key:95A3',
+            'refusals' => [
+                ['seq' => 49, 'tool' => 'implement', 'plugin' => 'HelloPlugin', 'permission' => 'plugins.HelloPlugin:write',
+                    'call' => ['plugin' => 'HelloPlugin', 'class' => 'HelloPlugin', 'content' => '', 'mode' => 'reset'],
+                    'target' => 'existing', 'named' => false, 'consent' => 'informed'],
+                ['seq' => 62, 'tool' => 'make', 'plugin' => 'Blog', 'permission' => 'plugins.Blog:write',
+                    'call' => ['what' => 'plugin', 'plugin' => 'Blog', 'name' => 'Blog'],
+                    'target' => 'new', 'named' => true, 'consent' => 'touch'],
+            ],
+        ]]);
+        [$hello, $blog] = array_slice(explode('<li ', $html), 1);
+
+        self::assertStringContainsString('data-seat-existing="HelloPlugin"', $hello);
+        self::assertStringContainsString('<code>implement plugin=HelloPlugin class=HelloPlugin content=&quot;&quot; mode=reset</code>', $hello);
+        self::assertStringContainsString('opens write over the existing plugin HelloPlugin — all of its work, not only this call. The task does not name HelloPlugin.', $hello);
+        self::assertStringContainsString('<input type="checkbox" data-seat-ack>', $hello);
+        self::assertStringContainsString('Grant write over existing HelloPlugin', $hello);
+        self::assertStringNotContainsString('Grant plugins.HelloPlugin:write', $hello, 'no plain one-touch button');
+
+        self::assertStringNotContainsString('data-seat-existing', $blog);
+        self::assertStringNotContainsString('data-seat-ack', $blog);
+        self::assertStringContainsString('Granting lets it create plugin Blog', $blog);
+        self::assertStringContainsString('<code>make what=plugin plugin=Blog name=Blog</code>', $blog);
+        self::assertStringContainsString('>Grant plugins.Blog:write</button>', $blog);
+    }
+
+    public function testANamedExistingPluginIsStillAnInformedCardWithoutTheUnnamedWarning(): void
+    {
+        $html = (new DecisionsInboxView())->frontierHtml([[
+            'session' => 's', 'goal' => '', 'seat' => 'key:95A3',
+            'refusals' => [['seq' => 7, 'tool' => 'edit', 'plugin' => 'HelloPlugin', 'permission' => 'plugins.HelloPlugin:write',
+                'call' => ['plugin' => 'HelloPlugin', 'edits' => [['find' => 'a', 'replace' => 'b c']]], 'target' => 'existing', 'named' => true, 'consent' => 'informed']],
+        ]]);
+
+        self::assertStringContainsString('data-seat-ack', $html);
+        self::assertStringNotContainsString('does not name', $html);
+        self::assertStringContainsString('edits=[{&quot;find&quot;:&quot;a&quot;,&quot;replace&quot;:&quot;b c&quot;}]', $html);
+    }
+
     /** The operation as app-runtime declares it — scoped and confirmed — without needing that runtime here. */
     private static function grant(): Operation
     {

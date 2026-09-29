@@ -277,6 +277,17 @@
   function grantSeat(card) {
     var status = seatStatus(card);
     var call = { session: card.getAttribute('data-seat-session') || '', seq: parseInt(card.getAttribute('data-seat-seq') || '', 10) };
+    // Write over existing work is an informed act, never one touch (greenhouse decisions/0510): the reader
+    // ticks the box that names the plugin, and that name travels inside what the passkey approves.
+    var existing = card.getAttribute('data-seat-existing');
+    if (existing !== null) {
+      var ack = card.querySelector('[data-seat-ack]');
+      if (!ack || !ack.checked) {
+        status.textContent = tr('frontier.ack_first');
+        return Promise.resolve(null);
+      }
+      call.existing = existing;
+    }
     if (!canTouch()) {
       status.textContent = tr('frontier.no_passkey');
       return Promise.resolve(null);
@@ -285,7 +296,9 @@
 
     return touchFor('identity:grant', call, call.session)
       .then(function (assertion) {
-        return confirmed(GRANT_ROUTE, { session: call.session, seq: call.seq, assertion: assertion });
+        var body = { session: call.session, seq: call.seq, assertion: assertion };
+        if (call.existing !== undefined) { body.existing = call.existing; }
+        return confirmed(GRANT_ROUTE, body);
       })
       .then(function (read) {
         if (!read || read.ok === false) { throw new Error((read && (read.error || read.message)) || 'refused'); }
