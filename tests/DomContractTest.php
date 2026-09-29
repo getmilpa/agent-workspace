@@ -142,7 +142,7 @@ final class DomContractTest extends TestCase
             $subject = $payload['decisions'] ?? null;
             if ($subject instanceof ComposerRender) {
                 $subject->props['pending'] = [['session' => 's1', 'goal' => 'g', 'question' => 'may I?', 'operation' => 'capabilities:enable', 'reason' => 'it installs', 'sequence' => 'deploy']];
-                $subject->props['frontier'] = [['session' => 'seat-s', 'goal' => 'Build the blog', 'seat' => 'key:95A3', 'refusals' => [['seq' => 42, 'tool' => 'make', 'plugin' => 'Blog', 'permission' => 'plugins.Blog:write']]]];
+                $subject->props['frontier'] = [['session' => 'seat-s', 'goal' => 'Build the blog', 'seat' => 'key:95A3', 'refusals' => [['seq' => 42, 'tool' => 'make', 'plugin' => 'Blog', 'permission' => 'plugins.Blog:write'], ['seq' => 49, 'tool' => 'implement', 'plugin' => 'HelloPlugin', 'permission' => 'plugins.HelloPlugin:write', 'call' => ['plugin' => 'HelloPlugin', 'mode' => 'reset'], 'target' => 'existing', 'named' => false, 'consent' => 'informed']]]];
                 $subject->props['sequences'] = [['name' => 'deploy', 'steps' => ['plugins:list', 'config:set'], 'session' => 'sequence:deploy', 'paused' => true, 'pending_operation' => 'config:set']];
             }
         });

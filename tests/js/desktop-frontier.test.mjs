@@ -113,3 +113,53 @@ test('a browser without passkeys says so and posts nothing', async () => {
   assert.equal(calls.length, 0);
   assert.equal(card.querySelector('[data-seat-status]').textContent, 'this browser cannot run the passkey ceremony');
 });
+
+/** The HelloPlugin card of evidence/1036, as the server prints it after decisions/0510. */
+function informedTree() {
+  const root = new El('html');
+  const list = root.appendChild(new El('ol', { id: 'milpa-frontier-list' }));
+  const card = list.appendChild(new El('li', { class: 'decision-card decision-card--frontier decision-card--informed', 'data-seat-session': 'camino-1036-blog', 'data-seat-seq': '49', 'data-seat-permission': 'plugins.HelloPlugin:write', 'data-seat-existing': 'HelloPlugin' }));
+  const label = card.appendChild(new El('label'));
+  label.appendChild(new El('input', { type: 'checkbox', 'data-seat-ack': '' }));
+  card.appendChild(new El('p', { class: 'decision-card__facts', 'data-seat-status': '' }));
+  const options = card.appendChild(new El('p', { class: 'decision-card__options' }));
+  options.appendChild(new El('button', { 'data-seat-grant': '', text: 'Grant write over existing HelloPlugin' }));
+
+  return root;
+}
+
+test('a grant over existing work is not one touch: without the box ticked nothing is asked or posted', async () => {
+  const root = informedTree();
+  const p = page({ tree: root, catalog: CATALOG, modules: ['desktop-decisions'] });
+  const signed = withPasskey(p);
+  const calls = stubFetch(p, []);
+  const card = root.querySelector('[data-seat-session]');
+
+  click(p, card.querySelector('[data-seat-grant]'));
+  await settle();
+
+  assert.equal(calls.length, 0, 'no challenge, no grant');
+  assert.equal(signed.length, 0, 'the passkey was never asked');
+  assert.equal(card.querySelector('[data-seat-status]').textContent, 'tick the box first: this grant opens write over existing work');
+  assert.equal(card.getAttribute('data-granted'), null);
+});
+
+test('ticked, the touch is bound to the grant WITH the plugin named, and the grant carries it', async () => {
+  const root = informedTree();
+  const p = page({ tree: root, catalog: CATALOG, modules: ['desktop-decisions'] });
+  const signed = withPasskey(p);
+  const calls = stubFetch(p, [response(200, OPTIONS), response(201, { ok: true, granted: 'plugins.HelloPlugin:write' })]);
+  const card = root.querySelector('[data-seat-session]');
+  card.querySelector('[data-seat-ack]').checked = true;
+
+  click(p, card.querySelector('[data-seat-grant]'));
+  await settle();
+
+  assert.equal(signed.length, 1);
+  assert.deepEqual(JSON.parse(calls[0].init.body), { operation: 'identity:grant', arguments: { session: 'camino-1036-blog', seq: 49, existing: 'HelloPlugin' }, session: 'camino-1036-blog' });
+  const body = JSON.parse(calls[1].init.body);
+  assert.equal(body.existing, 'HelloPlugin');
+  assert.equal(body.seq, 49);
+  assert.ok(!('permission' in body) && !('scope' in body), 'still no scope from the client');
+  assert.equal(card.getAttribute('data-granted'), '');
+});
