@@ -115,7 +115,7 @@ final class DecisionsInbox
         return '<div class="view milpa-decisions" data-view="decisions"'
             . ' data-milpa-component="desktop-decisions" data-milpa-component-id="' . self::COMPONENT_ID . '"' . ScreenVisibility::attr($props) . '>'
             . '<p class="milpa-decisions__intro">' . $this->tr('decisions.intro') . '</p>'
-            . $view->html($pending, $this->plain('decisions.empty'), $graphs, (string) ($props['principal'] ?? ''), $copy)
+            . $view->html($pending, $this->plain('decisions.empty'), $graphs, $copy)
             // THE FRONTIER OF THE SEATS YOU ENROLLED (greenhouse decisions/0493): a seat's missing scope is a
             // refusal, not a question — this is where the human who answers for the seat sees it and decides.
             . '<h3 class="milpa-decisions__heading">' . $this->tr('frontier.heading') . '</h3>'
@@ -152,7 +152,7 @@ final class DecisionsInbox
             // The prototype for a GRAPH card, always printed: the module reaches for these hooks, and a hook
             // no page ever carries is a module talking to itself (this package's DOM contract refuses it).
             . '<template id="milpa-graph-decision-proto">'
-            . '<li class="decision-card decision-card--graph" data-graph data-graph-instance data-graph-principal>'
+            . '<li class="decision-card decision-card--graph" data-graph data-graph-instance>'
             . '<p class="decision-card__goal"></p><p class="decision-card__q"></p>'
             . '<p class="decision-card__options"><button type="button" class="mui-btn mui-btn--sm decision-card__option" data-graph-decide></button></p>'
             . '</li>'

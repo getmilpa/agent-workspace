@@ -243,3 +243,46 @@ test('a run denied at a step, or that failed, says so and shows no answers', asy
   await settle();
   assert.equal(card.querySelector('[data-sequence-status]').textContent, 'did not finish · step 2 threw');
 });
+
+/** A graph's card as `DecisionsInboxView::html()` prints it — here as an OLDER panel printed it, principal included. */
+function graphTree() {
+  const root = new El('html');
+  const inbox = root.appendChild(new El('ol', { id: 'milpa-decisions-list' }));
+  const card = inbox.appendChild(new El('li', { class: 'decision-card decision-card--graph', 'data-graph': 'essay:review', 'data-graph-instance': 'run-1', 'data-graph-principal': 'someone-else' }));
+  const options = card.appendChild(new El('p', { class: 'decision-card__options' }));
+  options.appendChild(new El('button', { 'data-graph-decide': 'publish_as_is', text: 'publish_as_is' }));
+
+  return root;
+}
+
+test('a graph decision posts what was pressed and never who pressed it — the house reads that from the passkey session (0528)', async () => {
+  // Before 0528 the card posted `principal` from the page, and graph:decide judged author ≠ approver against it:
+  // whoever could post to the door could name any approver (greenhouse evidence/1062).
+  const root = graphTree();
+  const p = page({ tree: root, catalog: COPY, modules: ['desktop-decisions'] });
+  const calls = stubFetch(p, [response(428, { requires_confirmation: true, confirm_token: 'tok-1' }), response(201, { instance_id: 'run-1', state: 'publish_done', awaiting: null })]);
+  const card = root.querySelector('[data-graph-instance="run-1"]');
+
+  click(p, card.querySelector('[data-graph-decide]'));
+  await settle();
+
+  assert.equal(calls.length, 2);
+  assert.equal(calls[1].url, '/workspace/decide');
+  const body = JSON.parse(calls[1].init.body);
+  assert.deepEqual(body, { graph: 'essay:review', instance: 'run-1', decision: 'publish_as_is' });
+  assert.equal('principal' in body, false, 'no approver travels from the page');
+  assert.equal(card.querySelector('[data-decision-status]').textContent, 'answered · the run continued');
+});
+
+test('a gate its own opener tries to answer is refused, and the refusal is painted on the card (0528)', async () => {
+  const root = graphTree();
+  const p = page({ tree: root, catalog: COPY, modules: ['desktop-decisions'] });
+  stubFetch(p, [response(201, { ok: false, error: 'actor:agent-7 opened this gate, so it cannot approve it' })]);
+  const card = root.querySelector('[data-graph-instance="run-1"]');
+
+  click(p, card.querySelector('[data-graph-decide]'));
+  await settle();
+
+  assert.match(card.querySelector('[data-decision-status]').textContent, /^that answer was refused: .*cannot approve it/);
+  assert.equal(card.getAttribute('data-answered'), null, 'a refused card can still be answered by someone else');
+});

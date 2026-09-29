@@ -41,12 +41,12 @@ final class DecisionsInboxView
      *                                                                                                                                    question is answered in the conversation of its own session, so its card is a link there; a graph's
      *                                                                                                                                    is answered HERE, so its card carries its options as buttons — and those options are the cases of
      *                                                                                                                                    the enum its routes were declared with, which is why the buttons cannot drift from the machine.
+     *                                                                                                                                    It carries no approver: `graph:decide` reads who answers from the passkey session (decisions/0528).
      */
     public function html(
         array $pending,
         string $empty = 'No decisions to make. When an agent parks a gate, it appears here for you to approve or refuse.',
         array $graphs = [],
-        string $principal = '',
         array $copy = [],
     ): string {
         $copy += self::COPY;
@@ -60,8 +60,7 @@ final class DecisionsInboxView
             }
 
             $cards .= '<li class="decision-card decision-card--graph" data-graph="' . $this->esc($g['graph']) . '"'
-                . ' data-graph-instance="' . $this->esc($g['instance']) . '"'
-                . ' data-graph-principal="' . $this->esc($principal) . '">'
+                . ' data-graph-instance="' . $this->esc($g['instance']) . '">'
                 . '<p class="decision-card__goal">' . $this->esc($g['graph']) . '</p>'
                 . '<p class="decision-card__q">' . $this->esc($g['question']) . '</p>'
                 . ($g['requester'] !== '' ? '<p class="decision-card__facts">started by <strong>' . $this->esc($g['requester']) . '</strong></p>' : '')
