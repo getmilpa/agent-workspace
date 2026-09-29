@@ -440,3 +440,42 @@ test('F11b · THE CONTROL: a decision whose request is not on this page is still
   assert.equal(chat.children.filter((m) => m.classList.contains('msg--system')).length, 1, 'sin burbuja que lo diga, la línea es el registro');
   assert.equal(chat.children[0].textContent, 'Answered «sí» by actor:rod');
 });
+
+// ── the house's verdict in a replayed thread (greenhouse decisions/0509 §7) ─────────────────────────────────
+test('a replayed thread stamps the house verdict on the answer it judged, disputed with its reasons', () => {
+  const html = new El('html');
+  const chat = html.appendChild(new El('section', { id: 'milpa-chat' }));
+  const rows = [
+    { kind: 'user', text: 'Build the blog' },
+    { kind: 'agent', text: 'The blog is built, tested, and live.' },
+    { kind: 'closure', verified: false, reasons: ['artifact Blog has no current verification', 'artifact Post has no current verification'], scope: 'recorded_work' },
+  ];
+  const p = page({ tree: html, elements: { ...prototypeTags(), 'milpa-desktop-transcript': transcriptTag(rows) }, bus: true, modules: ['desktop-conversation', 'desktop-thinking', 'desktop-agent-message', 'desktop-tool-call', 'desktop-result-claim', 'desktop-ask-grant'] });
+  p.mount('desktopConversation', undefined, chat);
+
+  assert.equal(chat.children.length, 2, 'the verdict rides the answer instead of taking a line of its own');
+  const verdict = chat.children[1].querySelector('[data-agent-verdict]');
+  assert.equal(verdict.hidden, false);
+  assert.equal(verdict.getAttribute('data-verified'), '0', 'measured in 1036: «live» on screen while the house said not verified');
+  assert.equal(verdict.querySelector('[data-verdict-tip]').textContent, 'The ledger disputes this turn — artifact Blog has no current verification; artifact Post has no current verification.');
+});
+
+test('a replayed verified close stamps ✓, and with no answer to ride it lands as the result claim', () => {
+  const html = new El('html');
+  const chat = html.appendChild(new El('section', { id: 'milpa-chat' }));
+  const rows = [
+    { kind: 'agent', text: 'Done.' },
+    { kind: 'closure', verified: true, reasons: [], scope: 'recorded_work_and_house_observation' },
+  ];
+  const p = page({ tree: html, elements: { ...prototypeTags(), 'milpa-desktop-transcript': transcriptTag(rows) }, bus: true, modules: ['desktop-conversation', 'desktop-thinking', 'desktop-agent-message', 'desktop-tool-call', 'desktop-result-claim', 'desktop-ask-grant'] });
+  p.mount('desktopConversation', undefined, chat);
+  assert.equal(chat.children[0].querySelector('[data-agent-verdict]').getAttribute('data-verified'), '1');
+
+  const bare = new El('html');
+  const thread2 = bare.appendChild(new El('section', { id: 'milpa-chat' }));
+  const q = page({ tree: bare, elements: { ...prototypeTags(), 'milpa-desktop-transcript': transcriptTag([{ kind: 'closure', verified: false, reasons: ['1 todo open'] }]) }, bus: true, modules: ['desktop-conversation', 'desktop-thinking', 'desktop-agent-message', 'desktop-tool-call', 'desktop-result-claim', 'desktop-ask-grant'] });
+  q.mount('desktopConversation', undefined, thread2);
+  assert.equal(thread2.children.length, 1);
+  assert.ok(thread2.children[0].classList.contains('msg--result'), 'no answer to ride: the standalone result claim');
+  assert.equal(thread2.children[0].getAttribute('data-verified'), '0');
+});

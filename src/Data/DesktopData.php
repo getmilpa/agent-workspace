@@ -102,6 +102,19 @@ final class DesktopData
                 'session.question_answered' => ['kind' => 'answered', 'id' => $this->str($p['id'] ?? null), 'answer' => $this->str($p['answer'] ?? null), 'by' => $this->str(\is_array($p['by'] ?? null) ? ($p['by']['id'] ?? null) : null)],
                 'session.sequence_paused' => ['kind' => 'sequence_paused', 'sequence' => $this->str($p['sequenceId'] ?? null)],
                 'session.sequence_resumed' => ['kind' => 'sequence_resumed', 'sequence' => $this->str($p['sequenceId'] ?? null)],
+                // THE HOUSE'S VERDICT travels with the thread (greenhouse decisions/0509 §7): a reloaded thread
+                // stamps it on the answer it judged, exactly as a live turn does. Measured (evidence/1036): the
+                // final answer said «the blog is built, tested, and live» and the house's `verified: false` was
+                // on no screen at all.
+                'session.closure_derived' => [
+                    'kind' => 'closure',
+                    'verified' => ($p['verified'] ?? null) === true,
+                    'reasons' => array_values(array_filter(
+                        \is_array($p['reasons'] ?? null) ? $p['reasons'] : [],
+                        static fn (mixed $reason): bool => \is_string($reason) && $reason !== '',
+                    )),
+                    'scope' => $this->str($p['scope'] ?? null),
+                ],
                 default => null,
             };
             if ($row !== null) {
@@ -824,6 +837,20 @@ final class DesktopData
             'used_pct' => min(100, (int) round($tokens / $window * 100)),
             'free' => max(0, $window - $tokens),
         ];
+    }
+
+    /**
+     * The house's closure verdict on the current session's last leg, or `null` when it recorded none — or a
+     * later request reopened the work (greenhouse decisions/0509 §7).
+     *
+     * @return array{verified: bool, reasons: list<string>, scope: string, seq: int}|null
+     */
+    public function closure(): ?array
+    {
+        $record = $this->session($this->currentSessionId());
+        $closure = $record['closure'] ?? null;
+
+        return \is_array($closure) ? $closure : null;
     }
 
     /**

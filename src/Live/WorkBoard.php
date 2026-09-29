@@ -16,6 +16,7 @@ namespace Milpa\AgentWorkspace\Live;
 
 use Milpa\AgentWorkspace\Data\DesktopData;
 use Milpa\AgentWorkspace\Event\RenderEvents;
+use Milpa\AgentWorkspace\I18n\Catalog;
 use Milpa\Interfaces\Event\MilpaEventDispatcherInterface;
 use Milpa\Live\Security\HmacStateSigner;
 use Milpa\Live\Security\SignedXhtmlStateTransferCodec;
@@ -48,12 +49,16 @@ final class WorkBoard
 
     private readonly SignedXhtmlStateTransferCodec $codec;
 
+    private readonly Catalog $catalog;
+
     public function __construct(
         string $signingSecret,
         private readonly ?DesktopData $data = null,
         private readonly ?MilpaEventDispatcherInterface $events = null,
+        ?Catalog $catalog = null,
     ) {
         $this->codec = new SignedXhtmlStateTransferCodec(new XhtmlStateTransferCodec(), new HmacStateSigner($signingSecret), null);
+        $this->catalog = $catalog ?? new Catalog();
     }
 
     /**
@@ -73,6 +78,7 @@ final class WorkBoard
         $props = [
             'work' => $this->data?->work() ?? [],
             'sessionId' => $this->data?->currentSessionId() ?? '',
+            'closure' => $this->data?->closure(),
         ];
         $subject = new ComposerRender($props);
         $this->events?->dispatch(self::BEFORE_RENDER, [self::SUBJECT_KEY => $subject]);
@@ -92,9 +98,10 @@ final class WorkBoard
         /** @var list<array{title: string, status: string, origin: string, draggable?: bool}> $work */
         $work = \is_array($props['work'] ?? null) ? $props['work'] : [];
         $wrap = 'data-milpa-component="desktop-work-board" data-milpa-component-id="' . self::COMPONENT_ID . '"';
+        $closure = \is_array($props['closure'] ?? null) ? $this->closure($props['closure']) : '';
 
         if ($work === []) {
-            return '<div class="mui-empty" ' . $wrap . '><p class="mui-empty__title">No work board yet</p>'
+            return $closure . '<div class="mui-empty" ' . $wrap . '><p class="mui-empty__title">No work board yet</p>'
                 . '<p class="mui-empty__desc">A session writes its plan as work items; they appear here by status.</p></div>';
         }
 
@@ -113,7 +120,7 @@ final class WorkBoard
 
         // Every drag event is DELEGATED on the board's own root (greenhouse decisions/0211, D3), so a card
         // or a column painted later is draggable without anything re-wiring listeners onto it.
-        $out = '<div class="work-board" ' . $wrap . ' data-session="' . $session . '"'
+        $out = $closure . '<div class="work-board" ' . $wrap . ' data-session="' . $session . '"'
             . ' x-data="desktopWorkBoard()" @dragstart="onDragStart($event)" @dragend="onDragEnd($event)"'
             . ' @dragover="onDragOver($event)" @dragleave="onDragLeave($event)" @drop="onDrop($event)">';
         foreach (self::COLUMNS as $key => $label) {
@@ -126,6 +133,45 @@ final class WorkBoard
         }
 
         return $out . '</div>';
+    }
+
+    /**
+     * The house's verdict on the work, ABOVE the cards (greenhouse decisions/0509 §7).
+     *
+     * The cards are the session's own claim — its todos, moved to DONE by the session. Measured
+     * (evidence/1036): eight cards in DONE beside «the blog is built, tested, and live», while the house had
+     * written `verified: false` and no screen said so. The line says what the house verified and on what, or
+     * that it did not and why — so DONE never reads as the house's word when it is only the session's.
+     *
+     * @param array<string, mixed> $closure
+     */
+    private function closure(array $closure): string
+    {
+        $verified = ($closure['verified'] ?? null) === true;
+        $scope = \is_string($closure['scope'] ?? null) ? $closure['scope'] : '';
+        $scopeKey = 'work.closure.scope.' . $scope;
+        $scopeText = $this->catalog->tr($scopeKey);
+        $desc = $verified
+            ? ($scopeText !== $scopeKey ? $scopeText : '')
+            : $this->catalog->tr('work.closure.unverified.desc');
+        $reasons = '';
+        if (! $verified) {
+            foreach (\is_array($closure['reasons'] ?? null) ? $closure['reasons'] : [] as $reason) {
+                if (\is_string($reason)) {
+                    $reasons .= '<li>' . htmlspecialchars($reason, ENT_QUOTES) . '</li>';
+                }
+            }
+        }
+
+        return '<div class="mui-alert mui-alert--' . ($verified ? 'success' : 'warning') . ' work-closure"'
+            . ' role="status" data-work-closure data-verified="' . ($verified ? '1' : '0') . '"'
+            . ' data-scope="' . htmlspecialchars($scope, ENT_QUOTES) . '">'
+            . '<span class="mui-alert__icon" aria-hidden="true">' . ($verified ? '✓' : '⚠') . '</span>'
+            . '<div class="mui-alert__content">'
+            . '<p class="mui-alert__title">' . htmlspecialchars($this->catalog->tr($verified ? 'work.closure.verified' : 'work.closure.unverified'), ENT_QUOTES) . '</p>'
+            . ($desc !== '' ? '<p class="mui-alert__desc">' . htmlspecialchars($desc, ENT_QUOTES) . '</p>' : '')
+            . ($reasons !== '' ? '<ul class="mui-alert__desc work-closure__reasons">' . $reasons . '</ul>' : '')
+            . '</div></div>';
     }
 
     private function envelope(StateSnapshot $state): string

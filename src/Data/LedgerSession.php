@@ -30,6 +30,7 @@ namespace Milpa\AgentWorkspace\Data;
  *   tokens · Σ `model_returned.usage.total_tokens`              context_tokens · the LAST call's `prompt_tokens`
  *   tool_calls · `session.tool_called`                          work · the last `todo_changed` per todo
  *   activity · every event, in order                            started_by · the opening event's principal
+ *   closure · the last `session.closure_derived`, until a later user turn reopens the work
  *   state · ended › waiting (a question is open) › paused (a sequence is parked) › working (a user turn
  *           without a later answer or run termination) › idle
  */
@@ -92,6 +93,8 @@ final class LedgerSession
         /** @var array<string, array{title: string, status: string, origin: string}> $todos */
         $todos = [];
         $activity = [];
+        /** @var array{verified: bool, reasons: list<string>, scope: string, seq: int}|null $closure */
+        $closure = null;
 
         foreach ($rows as $event) {
             $type = (string) ($event['type'] ?? '');
@@ -116,7 +119,23 @@ final class LedgerSession
                     } else {
                         ++$turns;
                         $lastUser = $seq;
+                        // A new request reopens the work: the verdict answered the one before it.
+                        $closure = null;
                     }
+                    break;
+                case 'session.closure_derived':
+                    // THE HOUSE'S VERDICT on the leg that just ended (greenhouse decisions/0509 §7): whether it
+                    // verified the work, on what, and why not. The todos are the session's claim; this is the
+                    // house's — a board of DONE cards next to a verdict nobody shows says «done» twice.
+                    $closure = [
+                        'verified' => ($p['verified'] ?? null) === true,
+                        'reasons' => array_values(array_filter(
+                            \is_array($p['reasons'] ?? null) ? $p['reasons'] : [],
+                            static fn (mixed $reason): bool => \is_string($reason) && $reason !== '',
+                        )),
+                        'scope' => self::str($p['scope'] ?? null),
+                        'seq' => $seq,
+                    ];
                     break;
                 case 'session.model_called':
                     ++$steps;
@@ -184,6 +203,7 @@ final class LedgerSession
             'context_tokens' => $contextTokens,
             'tool_calls' => $toolCalls,
             'work' => array_values($todos),
+            'closure' => $closure,
             'activity' => $activity,
             'started_by' => $startedBy,
             'question' => $question,
