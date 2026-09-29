@@ -90,6 +90,7 @@ export const CATALOG = {
   'frontier.granted': 'granted · %s — the seat can continue',
   'frontier.refused_grant': 'the grant was refused: %s',
   'frontier.no_passkey': 'this browser cannot run the passkey ceremony',
+  'frontier.ack_first': 'tick the box first: this grant opens write over existing work',
   'seats.giving': 'touch your key to approve this seat…',
   'seats.given': 'Run this where the resident lives, with its own key, before %s:',
   'seats.refused': 'no seat was given: %s',

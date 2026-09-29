@@ -145,8 +145,14 @@ final class DecisionsInboxView
      * answers for the seat decides it. The button carries the refused call's session and sequence number and
      * never a scope: the house re-derives what is missing from the recorded call when it grants.
      *
-     * @param list<array{session: string, goal: string, seat: string, refusals: list<array{seq: int, tool: string, plugin: ?string, permission: string}>}> $frontier
-     * @param array<string, string>                                                                                                                        $copy     the caller's words, by key
+     * Each card also says what granting OPENS (decisions/0510): the refused call as it was recorded, and
+     * whether the plugin is new to the house or existing work. A grant over an existing plugin is an informed
+     * act, never one touch: its card shows a box the reader ticks knowingly and a button that names the
+     * plugin, and the grant carries that name for the passkey to approve. A runtime older than 0510 sends
+     * none of these facts, and the card reads as it did.
+     *
+     * @param list<array{session: string, goal: string, seat: string, refusals: list<array{seq: int, tool: string, plugin: ?string, permission: string, call?: array<string, mixed>, target?: ?string, named?: bool, consent?: string}>}> $frontier
+     * @param array<string, string>                                                                                                                                                                                                       $copy     the caller's words, by key
      */
     public function frontierHtml(array $frontier, string $empty = self::FRONTIER_COPY['empty'], array $copy = []): string
     {
@@ -154,16 +160,34 @@ final class DecisionsInboxView
         $cards = '';
         foreach ($frontier as $seat) {
             foreach ($seat['refusals'] as $refusal) {
+                $plugin = $refusal['plugin'];
                 $facts = sprintf($copy['refused'], $seat['seat'], $refusal['tool'])
-                    . ($refusal['plugin'] !== null ? ' · ' . sprintf($copy['plugin'], $refusal['plugin']) : '');
-                $cards .= '<li class="decision-card decision-card--frontier" data-seat-session="' . $this->esc($seat['session']) . '"'
-                    . ' data-seat-seq="' . $refusal['seq'] . '" data-seat-permission="' . $this->esc($refusal['permission']) . '">'
+                    . ($plugin !== null ? ' · ' . sprintf($copy['plugin'], $plugin) : '');
+                $informed = ($refusal['consent'] ?? 'touch') === 'informed' && $plugin !== null;
+                $opens = match ($refusal['target'] ?? null) {
+                    'new' => sprintf($copy['opens_new'], (string) $plugin),
+                    'existing' => sprintf($copy['opens_existing'], (string) $plugin)
+                        . (($refusal['named'] ?? true) ? '' : ' ' . sprintf($copy['unnamed'], (string) $plugin)),
+                    default => '',
+                };
+                $call = isset($refusal['call']) ? $this->shownCall($refusal['tool'], $refusal['call']) : '';
+                $cards .= '<li class="decision-card decision-card--frontier' . ($informed ? ' decision-card--informed' : '') . '"'
+                    . ' data-seat-session="' . $this->esc($seat['session']) . '"'
+                    . ' data-seat-seq="' . $refusal['seq'] . '" data-seat-permission="' . $this->esc($refusal['permission']) . '"'
+                    . ($informed ? ' data-seat-existing="' . $this->esc((string) $plugin) . '"' : '') . '>'
                     . ($seat['goal'] !== '' ? '<p class="decision-card__goal">' . $this->esc($seat['goal']) . '</p>' : '')
                     . '<p class="decision-card__q">' . $this->esc(sprintf($copy['lacks'], $refusal['permission'])) . '</p>'
                     . '<p class="decision-card__facts">' . $this->esc($facts) . '</p>'
+                    . ($call !== '' ? '<p class="decision-card__facts" data-seat-call>' . $this->esc($copy['call']) . ' <code>' . $this->esc($call) . '</code></p>' : '')
+                    . ($opens !== '' ? '<p class="decision-card__facts" data-seat-opens>' . $this->esc($opens) . '</p>' : '')
+                    . ($informed
+                        ? '<p class="decision-card__facts"><label><input type="checkbox" data-seat-ack> ' . $this->esc(sprintf($copy['ack'], (string) $plugin)) . '</label></p>'
+                        : '')
                     . '<p class="decision-card__facts" data-seat-status></p>'
                     . '<p class="decision-card__options">'
-                    . '<button type="button" class="mui-btn mui-btn--sm mui-btn--primary" data-seat-grant>' . $this->esc(sprintf($copy['grant'], $refusal['permission'])) . '</button>'
+                    . ($informed
+                        ? '<button type="button" class="mui-btn mui-btn--sm mui-btn--danger" data-seat-grant>' . $this->esc(sprintf($copy['grant_existing'], (string) $plugin)) . '</button>'
+                        : '<button type="button" class="mui-btn mui-btn--sm mui-btn--primary" data-seat-grant>' . $this->esc(sprintf($copy['grant'], $refusal['permission'])) . '</button>')
                     . '<a class="mui-btn mui-btn--sm decision-card__open" href="?session=' . rawurlencode($seat['session']) . '">' . $this->esc($copy['open']) . '</a>'
                     . '</p>'
                     . '</li>';
@@ -172,6 +196,28 @@ final class DecisionsInboxView
 
         return '<ol class="mui-replay__stream" id="milpa-frontier-list">' . $cards . '</ol>'
             . ($cards === '' ? '<div class="mui-empty" id="milpa-frontier-empty"><p class="mui-empty__desc">' . $this->esc($empty) . '</p></div>' : '');
+    }
+
+    /**
+     * A recorded call as a person reads it — `tool name=value …`, an empty or spaced text quoted — shown, never
+     * interpreted: what the call would do is its handler's to say, not its spelling's (decisions/0510).
+     *
+     * @param array<string, mixed> $arguments
+     */
+    private function shownCall(string $tool, array $arguments): string
+    {
+        $parts = [$tool];
+        foreach ($arguments as $name => $value) {
+            $text = match (true) {
+                \is_bool($value) => $value ? 'true' : 'false',
+                $value === null => 'null',
+                \is_scalar($value) => (string) $value,
+                default => (string) json_encode($value, \JSON_UNESCAPED_SLASHES | \JSON_UNESCAPED_UNICODE),
+            };
+            $parts[] = $name . '=' . (\is_string($value) && ($value === '' || preg_match('/\s/u', $value) === 1) ? '"' . $text . '"' : $text);
+        }
+
+        return implode(' ', $parts);
     }
 
     /**
@@ -237,6 +283,12 @@ final class DecisionsInboxView
         'lacks' => 'It lacks %s',
         'grant' => 'Grant %s',
         'open' => 'Open session',
+        'call' => 'The refused call:',
+        'opens_new' => 'Granting lets it create plugin %s — the house does not have it yet.',
+        'opens_existing' => 'Granting opens write over the existing plugin %s — all of its work, not only this call.',
+        'unnamed' => 'The task does not name %s.',
+        'ack' => 'I read the call: grant write over all of %s',
+        'grant_existing' => 'Grant write over existing %s',
     ];
 
     /** The English a caller with no catalog reads. */
