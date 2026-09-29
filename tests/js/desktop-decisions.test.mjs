@@ -39,14 +39,14 @@ function tree() {
   card.appendChild(new El('p', { class: 'decision-card__facts', 'data-sequence-status': '' }));
   const options = card.appendChild(new El('p', { class: 'decision-card__options' }));
   options.appendChild(new El('button', { 'data-sequence-run': '', text: 'Run' }));
-  options.appendChild(new El('button', { 'data-agent-answer': 'sí', hidden: '', text: 'Approve' }));
+  options.appendChild(new El('button', { 'data-agent-answer': 'yes', hidden: '', text: 'Approve' }));
   options.appendChild(new El('button', { 'data-agent-answer': 'no', hidden: '', text: 'Deny' }));
 
   const inbox = root.appendChild(new El('ol', { id: 'milpa-decisions-list' }));
   const parked = inbox.appendChild(new El('li', { class: 'decision-card', 'data-decision-session': 'sequence:rollout', 'data-decision-sequence': 'rollout' }));
   parked.appendChild(new El('p', { class: 'decision-card__facts', 'data-decision-status': '' }));
   const answers = parked.appendChild(new El('p', { class: 'decision-card__options' }));
-  answers.appendChild(new El('button', { 'data-agent-answer': 'sí', text: 'Approve' }));
+  answers.appendChild(new El('button', { 'data-agent-answer': 'yes', text: 'Approve' }));
   answers.appendChild(new El('button', { 'data-agent-answer': 'no', text: 'Deny' }));
 
   return root;
@@ -75,7 +75,7 @@ test('a run walks the confirm gate and a pause shows the answers', async () => {
   assert.equal(calls[1].init.headers['Confirm-Token'], 'tok-1');
   assert.equal(card.querySelector('[data-sequence-status]').textContent, 'paused on config:set — answer below — El agente quiere correr «config:set».');
   assert.equal(card.getAttribute('data-sequence-paused'), '', 'the card says it is parked');
-  assert.equal(card.querySelector('[data-agent-answer="sí"]').getAttribute('hidden'), null, 'the answers appeared');
+  assert.equal(card.querySelector('[data-agent-answer="yes"]').getAttribute('hidden'), null, 'the answers appeared');
 });
 
 test('an approval posts agent:answer and then RESUMES the run through the gate', async () => {
@@ -89,18 +89,18 @@ test('an approval posts agent:answer and then RESUMES the run through the gate',
   const card = root.querySelector('[data-sequence="deploy"]');
   card.setAttribute('data-sequence-paused', '');
 
-  click(p, card.querySelector('[data-agent-answer="sí"]'));
+  click(p, card.querySelector('[data-agent-answer="yes"]'));
   await settle();
 
   assert.equal(calls.length, 3);
   assert.equal(calls[0].url, '/workspace/answer');
-  assert.deepEqual(JSON.parse(calls[0].init.body), { session: 'sequence:deploy', answer: 'sí' });
+  assert.deepEqual(JSON.parse(calls[0].init.body), { session: 'sequence:deploy', answer: 'yes' });
   assert.equal(calls[1].url, '/workspace/sequence');
   assert.deepEqual(JSON.parse(calls[1].init.body), { sequence: 'deploy', session: 'sequence:deploy' });
   assert.equal(calls[2].init.headers['Confirm-Token'], 'tok-2');
   assert.equal(card.querySelector('[data-sequence-status]').textContent, 'applied · 2 of 2 steps ran');
   assert.equal(card.getAttribute('data-sequence-paused'), null, 'no longer parked');
-  assert.equal(card.querySelector('[data-agent-answer="sí"]').getAttribute('hidden'), '', 'the answers went back to waiting');
+  assert.equal(card.querySelector('[data-agent-answer="yes"]').getAttribute('hidden'), '', 'the answers went back to waiting');
 });
 
 test('a refusal answers no and leaves the run parked — nothing is resumed', async () => {
@@ -123,12 +123,28 @@ test('the inbox card of a session parked on a sequence approves and resumes the 
   const calls = stubFetch(p, [response(201, { ok: true }), response(428, { confirm_token: 'tok-3' }), response(201, APPLIED)]);
   const card = root.querySelector('[data-decision-session="sequence:rollout"]');
 
-  click(p, card.querySelector('[data-agent-answer="sí"]'));
+  click(p, card.querySelector('[data-agent-answer="yes"]'));
   await settle();
 
   assert.equal(calls.length, 3);
-  assert.deepEqual(JSON.parse(calls[0].init.body), { session: 'sequence:rollout', answer: 'sí' });
+  assert.deepEqual(JSON.parse(calls[0].init.body), { session: 'sequence:rollout', answer: 'yes' });
   assert.deepEqual(JSON.parse(calls[1].init.body), { sequence: 'rollout', session: 'sequence:rollout' });
+  assert.equal(card.querySelector('[data-decision-status]').textContent, 'applied · 2 of 2 steps ran');
+});
+
+test('a card an older panel rendered still carries «sí», and its approval still resumes (0518 compatibility)', async () => {
+  const root = tree();
+  const p = page({ tree: root, catalog: COPY, modules: ['desktop-decisions'] });
+  const calls = stubFetch(p, [response(201, { ok: true }), response(428, { confirm_token: 'tok-4' }), response(201, APPLIED)]);
+  const card = root.querySelector('[data-decision-session="sequence:rollout"]');
+  const legacy = card.querySelector('[data-agent-answer="yes"]');
+  legacy.setAttribute('data-agent-answer', 'sí');
+
+  click(p, legacy);
+  await settle();
+
+  assert.equal(calls.length, 3, 'the older yes resumes the run like the new one');
+  assert.deepEqual(JSON.parse(calls[0].init.body), { session: 'sequence:rollout', answer: 'sí' }, 'the card posts what it carries; the house reads it');
   assert.equal(card.querySelector('[data-decision-status]').textContent, 'applied · 2 of 2 steps ran');
 });
 
@@ -162,7 +178,7 @@ test('a yes to a parked question says it was RECORDED, not that the run continue
   const card = root.querySelector('[data-decision-session="sequence:rollout"]');
   card.removeAttribute('data-decision-sequence');
 
-  click(p, card.querySelector('[data-agent-answer="sí"]'));
+  click(p, card.querySelector('[data-agent-answer="yes"]'));
   await settle();
 
   const said = card.querySelector('[data-decision-status]').textContent;
@@ -177,7 +193,7 @@ test('a yes without a hint still says only what happened', async () => {
   const card = root.querySelector('[data-decision-session="sequence:rollout"]');
   card.removeAttribute('data-decision-sequence');
 
-  click(p, card.querySelector('[data-agent-answer="sí"]'));
+  click(p, card.querySelector('[data-agent-answer="yes"]'));
   await settle();
 
   assert.equal(card.querySelector('[data-decision-status]').textContent, 'answered · the session reads it on its next turn — nothing resumed yet');
@@ -220,7 +236,7 @@ test('a run denied at a step, or that failed, says so and shows no answers', asy
   click(p, card.querySelector('[data-sequence-run]'));
   await settle();
   assert.equal(card.querySelector('[data-sequence-status]').textContent, 'denied · UNJUDGEABLE: …');
-  assert.equal(card.querySelector('[data-agent-answer="sí"]').getAttribute('hidden'), '');
+  assert.equal(card.querySelector('[data-agent-answer="yes"]').getAttribute('hidden'), '');
 
   stubFetch(p, [response(201, { ok: false, applied: false, paused: false, reason: 'step 2 threw' })]);
   click(p, card.querySelector('[data-sequence-run]'));

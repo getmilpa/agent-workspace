@@ -70,7 +70,7 @@ final class TheWorkspaceViewsRenderTest extends TestCase
         ], copy: ['approve' => 'Aprobar', 'deny' => 'Rechazar']);
 
         self::assertStringContainsString('data-decision-sequence="deploy"', $html);
-        self::assertStringContainsString('data-agent-answer="sí"', $html);
+        self::assertStringContainsString('data-agent-answer="yes"', $html);
         self::assertStringContainsString('data-agent-answer="no"', $html);
         self::assertStringContainsString('>Aprobar<', $html, 'the caller\'s words');
         self::assertStringContainsString('data-decision-status', $html, 'the line the outcome lands in is printed, not invented');
@@ -98,7 +98,7 @@ final class TheWorkspaceViewsRenderTest extends TestCase
         self::assertStringContainsString('data-sequence-session="sequence:deploy"', $html);
         self::assertStringContainsString('plugins:list → config:set', $html, 'the steps, in order');
         self::assertStringContainsString('>Correr<', $html);
-        self::assertStringContainsString('data-agent-answer="sí" hidden', $html, 'no run parked: the answers wait, hidden');
+        self::assertStringContainsString('data-agent-answer="yes" hidden', $html, 'no run parked: the answers wait, hidden');
         self::assertStringContainsString('data-sequence-paused', $html, 'the parked one says so');
         self::assertStringContainsString('pausada en plugins:lock', $html, 'and at which step');
         self::assertStringNotContainsString('milpa-sequences-empty', $html);
