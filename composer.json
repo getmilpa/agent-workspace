@@ -32,7 +32,10 @@
         "phpunit/phpunit": "^11.5"
     },
     "suggest": {
-        "milpa/orchestrator": "Declare agent graphs and answer their decisions from the Desktop inbox (>=0.8)"
+        "milpa/orchestrator": "Declare agent graphs and answer their decisions from the Desktop inbox (>=0.12)"
+    },
+    "conflict": {
+        "milpa/orchestrator": "<0.12"
     },
     "autoload": {
         "psr-4": {

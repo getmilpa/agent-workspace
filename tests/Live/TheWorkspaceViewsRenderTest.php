@@ -111,6 +111,23 @@ final class TheWorkspaceViewsRenderTest extends TestCase
         self::assertStringContainsString('milpa-sequences-empty', $html);
         self::assertStringContainsString('Ninguna secuencia.', $html);
     }
+    /**
+     * A GRAPH'S CARD CARRIES WHAT WAS DECIDED, NEVER WHO DECIDES (greenhouse decisions/0528): `graph:decide` reads the
+     * approver from the passkey session the door carries. A principal printed on the card and posted back was an
+     * approver anyone able to post could name.
+     */
+    public function testAGraphCardCarriesItsOptionsAndNoApprover(): void
+    {
+        $html = (new DecisionsInboxView())->html([], graphs: [
+            ['graph' => 'essay:review', 'instance' => 'run-1', 'question' => 'Publish?', 'options' => ['publish_as_is', 'abandon'], 'requester' => 'actor:agent-7'],
+        ]);
+
+        self::assertStringContainsString('data-graph="essay:review"', $html);
+        self::assertStringContainsString('data-graph-instance="run-1"', $html);
+        self::assertStringContainsString('data-graph-decide="abandon"', $html);
+        self::assertStringContainsString('started by <strong>actor:agent-7</strong>', $html);
+        self::assertStringNotContainsString('data-graph-principal', $html);
+    }
     public function testTheDecisionsInboxShowsAnEmptyStateWhenNothingIsParked(): void
     {
         $html = (new DecisionsInboxView())->html([]);

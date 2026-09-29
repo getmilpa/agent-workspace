@@ -371,6 +371,10 @@
    *
    * The options are the cases of the enum the routes were declared with, so this handler never has to know
    * what they mean: it sends the one the human pressed and lets the engine refuse anything it should.
+   *
+   * It never sends WHO pressed it. The approver is the passkey session the door carries, read by `graph:decide`
+   * from the request itself; a principal posted from the page was an approver anyone able to post could name
+   * (greenhouse decisions/0528).
    */
   function answer(card, decision) {
     var status = card.querySelector('[data-decision-status]') || card.appendChild(document.createElement('p'));
@@ -382,7 +386,6 @@
       graph: card.getAttribute('data-graph') || '',
       instance: card.getAttribute('data-graph-instance') || '',
       decision: decision,
-      principal: card.getAttribute('data-graph-principal') || '',
     })
       .then(function (read) {
         if (read && read.ok === false) { throw new Error(read.error || 'refused'); }
