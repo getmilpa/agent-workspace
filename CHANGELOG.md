@@ -3,6 +3,13 @@
 All notable changes to milpa/desktop-app are documented here. This project adheres to
 [Semantic Versioning](https://semver.org/) and [Keep a Changelog](https://keepachangelog.com/).
 
+## [0.85.2](https://github.com/getmilpa/agent-workspace/compare/v0.85.1...v0.85.2) (2026-09-29)
+
+
+### Bug Fixes
+
+* the panel answers yes/no; a card still carrying sí still resumes ([#109](https://github.com/getmilpa/agent-workspace/issues/109)) ([33da3b6](https://github.com/getmilpa/agent-workspace/commit/33da3b6312c2fca010dbb1a27650b32ada2fdc23))
+
 ## [0.85.1](https://github.com/getmilpa/agent-workspace/compare/v0.85.0...v0.85.1) (2026-09-29)
 
 
