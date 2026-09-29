@@ -84,6 +84,7 @@ export const CATALOG = {
   'decisions.answering': 'answering…',
   'decisions.stays_paused': 'refused · the run stays paused',
   'decisions.answered': 'answered · the run continued',
+  'decisions.answered_parked': 'answered · the session reads it on its next turn — nothing resumed yet',
   'decisions.resuming': 'answered · resuming…',
   'decisions.refused': 'that answer was refused: %s',
   'frontier.granting': 'touch your key to approve this grant…',

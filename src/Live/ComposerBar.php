@@ -141,12 +141,10 @@ final class ComposerBar
         return $catalog->tr(self::MODE_KEYS[$mode] ?? self::MODE_KEYS['ask']);
     }
 
-    /** The permission mode the chip shows: the saved setting, or the mode that asks. */
+    /** The permission mode the chip shows: the open session's, else the saved setting, else the one that asks (decisions/0513 §4). */
     private function mode(): string
     {
-        $settings = $this->data?->settings() ?? [];
-
-        return \is_string($settings['mode'] ?? null) && isset(self::MODE_KEYS[$settings['mode']]) ? (string) $settings['mode'] : 'ask';
+        return $this->data?->mode() ?? 'ask';
     }
 
     /** Format a token count as "9.25K". */
@@ -197,14 +195,14 @@ final class ComposerBar
     private function markup(): string
     {
         $degraded = $this->degradedNotice();
-        $ctx = $this->data?->context() ?? ['tokens' => 0, 'window' => 32768, 'used_pct' => 0, 'free' => 32768];
+        $ctx = $this->data?->context() ?? ['tokens' => 0, 'window' => 0, 'used_pct' => 0, 'free' => 0];
         $c = $this->data?->counters() ?? ['turns' => 0, 'steps' => 0, 'tokens' => 0, 'tool_calls' => 0, 'state' => 'idle'];
         // THE LINE THAT LIED. It printed a hardcoded model name whether or not anything was
         // listening; now it says what the authority says, and says the absence when there is one
         // (greenhouse decisions/0266).
         $model = htmlspecialchars(self::modelLabel($this->data?->model() ?? [], $this->catalog), ENT_QUOTES);
         $tokens = $this->kfmt((int) $ctx['tokens']);
-        $window = $this->kfmt((int) $ctx['window']);
+        $window = (int) $ctx['window'] > 0 ? $this->kfmt((int) $ctx['window']) : '?';
         $free = $this->kfmt((int) $ctx['free']);
         $pct = $ctx['used_pct'];
         $barColor = $pct < 70 ? 'var(--success)' : ($pct < 90 ? 'var(--warning)' : 'var(--danger)');

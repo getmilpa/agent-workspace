@@ -31,12 +31,25 @@ namespace Milpa\AgentWorkspace\Data;
  *   tool_calls · `session.tool_called`                          work · the last `todo_changed` per todo
  *   activity · every event, in order                            started_by · the opening event's principal
  *   closure · the last `session.closure_derived`, until a later user turn reopens the work
+ *   window · the last `session.window_composed` — the context window the run obeyed, or null
  *   state · ended › waiting (a question is open) › paused (a sequence is parked) › working (a user turn
  *           without a later answer or run termination) › idle
+ *
+ * A turn in the HOUSE's voice (`[house] …`, the grant notice of greenhouse decisions/0495) is kept in the activity and
+ * the thread, but it is not the human's: it opens no work, counts as no turn and reopens no verdict (decisions/0513 §2).
  */
 final class LedgerSession
 {
     public const string PREFIX = 'agent-session:';
+
+    /**
+     * How the house's own turns begin — the same test `Milpa\AppRuntime\Agent\SeatFrontier::NOTICE_PREFIX` makes, named
+     * here as a string because this package reads the ledger by its format and requires no runtime.
+     */
+    public const string HOUSE_VOICE = '[house] ';
+
+    /** The event a leg records with the context window it obeys (greenhouse decisions/0513 §5). */
+    public const string WINDOW_COMPOSED = 'session.window_composed';
 
     /**
      * Every session the ledger holds, folded, keyed by id — in the order they first appeared.
@@ -95,6 +108,7 @@ final class LedgerSession
         $activity = [];
         /** @var array{verified: bool, reasons: list<string>, scope: string, seq: int}|null $closure */
         $closure = null;
+        $window = null;
 
         foreach ($rows as $event) {
             $type = (string) ($event['type'] ?? '');
@@ -116,6 +130,8 @@ final class LedgerSession
                 case 'session.turn':
                     if (($p['role'] ?? '') === 'assistant') {
                         $lastAnswer = $seq;
+                    } elseif (\is_string($p['content'] ?? null) && str_starts_with($p['content'], self::HOUSE_VOICE)) {
+                        // The house told the session a fact; nobody asked it to work (greenhouse decisions/0513 §2).
                     } else {
                         ++$turns;
                         $lastUser = $seq;
@@ -139,6 +155,9 @@ final class LedgerSession
                     break;
                 case 'session.model_called':
                     ++$steps;
+                    break;
+                case self::WINDOW_COMPOSED:
+                    $window = \is_int($p['tokens'] ?? null) && $p['tokens'] > 0 ? $p['tokens'] : $window;
                     break;
                 case 'session.run_terminated':
                     // The invocation returned even when no answer was produced. Its reason does not
@@ -201,6 +220,7 @@ final class LedgerSession
             'steps' => $steps,
             'tokens' => $tokens,
             'context_tokens' => $contextTokens,
+            'window' => $window,
             'tool_calls' => $toolCalls,
             'work' => array_values($todos),
             'closure' => $closure,

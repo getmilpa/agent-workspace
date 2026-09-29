@@ -351,7 +351,7 @@ final class DesktopDataTest extends TestCase
         file_put_contents($dir . '/s.json', json_encode(['tokens' => 8192], JSON_THROW_ON_ERROR));
         $kernel = Kernel::boot([
             'root' => sys_get_temp_dir(), 'plugins' => [],
-            'config' => ['agent' => ['context_window' => 32768]],
+            'config' => ['agent' => ['contextTokens' => 32768]],
         ]);
         $kernel->container()->registerService(Kernel::class, $kernel);
 
