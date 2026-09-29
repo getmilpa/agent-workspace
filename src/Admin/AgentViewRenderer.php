@@ -212,6 +212,12 @@ final class AgentViewRenderer implements ComponentRendererInterface, DeclaresCli
 
         if (($state->data['state'] ?? null) !== AgentViewComponent::STATE_SIGNED_OUT) {
             $selection = $this->data?->selectForPanel($request->context) ?? PanelSession::fromContext($request->context);
+            if ($selection->id === null && ($request->context->principal ?? '') === '') {
+                // NOBODY IS SIGNED IN, which is not the same as «not yours» (greenhouse decisions/0513 §1): behind the
+                // loopback gate a lapsed passkey session leaves the page open to nobody, and the task it was reading
+                // said «unavailable for this identity» two hours into the resident's run (evidence/1036).
+                return new RenderResult(output: $this->signedOutOfTask($state, $catalog), state: $state, clientAssets: $assets);
+            }
             if ($selection->id === null) {
                 $html = '<div data-panel-session-unavailable role="alert">'
                     . '<p>' . self::attr($catalog->tr('agent.session.unavailable')) . '</p>'
@@ -456,6 +462,20 @@ final class AgentViewRenderer implements ComponentRendererInterface, DeclaresCli
             . '<span class="mui-alert__content">' . self::attr($catalog->tr('agent.signin')) . '</span> '
             . '<a class="mui-btn mui-btn--primary mui-btn--sm desktop-agent__signin-link" href="' . self::attr($href) . '">' . self::attr($catalog->tr('agent.signin.action')) . '</a>'
             . '</p>'
+            . '</div>';
+    }
+
+    /**
+     * A task was asked for and nobody is signed in: say the sign-in lapsed (or never was) and offer the one door back
+     * to the SAME view — never the «unavailable for this identity» a stranger reads (greenhouse decisions/0513 §1).
+     */
+    private function signedOutOfTask(StateSnapshot $state, Catalog $catalog): string
+    {
+        $href = self::meta($state, 'signin', AgentViewComponent::DEFAULT_SIGNIN) . '?next=' . rawurlencode(self::meta($state, 'next', AgentViewComponent::sectionPath(null)));
+
+        return '<div data-panel-session-signed-out role="alert">'
+            . '<p>' . self::attr($catalog->tr('agent.session.signed_out')) . '</p>'
+            . '<a class="mui-btn mui-btn--primary mui-btn--sm" href="' . self::attr($href) . '">' . self::attr($catalog->tr('agent.session.signin_again')) . '</a>'
             . '</div>';
     }
 

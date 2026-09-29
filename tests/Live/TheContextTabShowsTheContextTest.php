@@ -47,7 +47,7 @@ final class TheContextTabShowsTheContextTest extends TestCase
         $kernel = Kernel::boot([
             'root' => sys_get_temp_dir(),
             'plugins' => [],
-            'config' => ['agent' => ['context_window' => 32768]],
+            'config' => ['agent' => ['contextTokens' => 32768]],
         ]);
         $kernel->container()->registerService(Kernel::class, $kernel);
 

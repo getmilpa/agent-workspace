@@ -142,5 +142,21 @@ final class PanelTaskSelectionTest extends TestCase
             self::assertStringNotContainsString('milpa-desktop-ticket', $html);
         }
         self::assertSame([$b, $a, $b], $seen);
+
+        // NOBODY SIGNED IN is not a stranger (greenhouse decisions/0513 §1, evidence/1036 R4a): behind the loopback gate
+        // a lapsed passkey session asks for the task with no principal. The page says the sign-in lapsed and offers the
+        // way back to THIS task — never «unavailable for this identity», never the conversation.
+        $context = new ComponentContext('agent', principal: null, route: '/milpa/admin', meta: ['query' => ['session' => $a, 'lang' => 'en']]);
+        $html = $renderer->render(new AgentViewComponent(), new RenderRequest($context, props: ['signin' => '/passkey/signin']))->output;
+        self::assertStringContainsString('data-panel-session-signed-out', $html);
+        self::assertStringContainsString('Your sign-in has expired', $html);
+        self::assertStringContainsString('href="/passkey/signin?next=' . rawurlencode('/milpa/admin/s/agent?session=' . $a . '&lang=en') . '"', $html, 'back to the same task');
+        self::assertStringNotContainsString('data-panel-session-unavailable', $html);
+        self::assertStringNotContainsString('Task A transcript', $html);
+        self::assertStringNotContainsString('milpa-desktop-ticket', $html);
+
+        // …and nobody asking for no task still gets the region's own default, as before.
+        $html = $renderer->render(new AgentViewComponent(), new RenderRequest(new ComponentContext('agent', principal: null)))->output;
+        self::assertStringNotContainsString('data-panel-session-signed-out', $html);
     }
 }

@@ -26,6 +26,7 @@ const COPY = {
   'decisions.resuming': 'answered · resuming…',
   'decisions.stays_paused': 'refused · the run stays paused',
   'decisions.answered': 'answered · the run continued',
+  'decisions.answered_parked': 'answered · the session reads it on its next turn — nothing resumed yet',
   'decisions.refused': 'that answer was refused: %s',
   'cap.no_token': 'the house issued no confirm token',
 };
@@ -149,6 +150,37 @@ test('a seat\'s parked question is answered through the panel\'s own door, walki
   assert.equal(calls[1].url, '/workspace/answer');
   assert.equal(calls[1].init.headers['Confirm-Token'], 'tok-9');
   assert.equal(card.querySelector('[data-decision-status]').textContent, 'refused · the run stays paused');
+});
+
+test('a yes to a parked question says it was RECORDED, not that the run continued (0513 §6)', async () => {
+  // Measured in greenhouse evidence/1036 (and 1028): the card read «the run continued» while nothing ran until the
+  // resident's next leg. agent:answer records the answer and resumes nothing; its hint says how to take the next turn.
+  const root = tree();
+  const p = page({ tree: root, catalog: COPY, modules: ['desktop-decisions'] });
+  const hint = 'pick it up with `php bin/coa agent "continue" --session=camino-1036-blog`';
+  stubFetch(p, [response(201, { ok: true, session: 'camino-1036-blog', answered: 'intent-d49f98f0185d', granted: null, hint: hint })]);
+  const card = root.querySelector('[data-decision-session="sequence:rollout"]');
+  card.removeAttribute('data-decision-sequence');
+
+  click(p, card.querySelector('[data-agent-answer="sí"]'));
+  await settle();
+
+  const said = card.querySelector('[data-decision-status]').textContent;
+  assert.equal(said, 'answered · the session reads it on its next turn — nothing resumed yet — ' + hint);
+  assert.doesNotMatch(said, /continued/, 'nothing continued, so the card does not say so');
+});
+
+test('a yes without a hint still says only what happened', async () => {
+  const root = tree();
+  const p = page({ tree: root, catalog: COPY, modules: ['desktop-decisions'] });
+  stubFetch(p, [response(201, { ok: true, answered: 'intent:x', granted: null })]);
+  const card = root.querySelector('[data-decision-session="sequence:rollout"]');
+  card.removeAttribute('data-decision-sequence');
+
+  click(p, card.querySelector('[data-agent-answer="sí"]'));
+  await settle();
+
+  assert.equal(card.querySelector('[data-decision-status]').textContent, 'answered · the session reads it on its next turn — nothing resumed yet');
 });
 
 test('a door the app does not offer is painted, not swallowed (501)', async () => {

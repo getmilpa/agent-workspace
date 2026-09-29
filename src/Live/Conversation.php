@@ -95,10 +95,21 @@ final class Conversation
         return $subject->html;
     }
 
-    /** Whether the session this page opened on was left mid-run. Empty data is a settled session. */
+    /**
+     * Whether the session this page opened on was left mid-run. Empty data is a settled session.
+     *
+     * The process is asked, not the stream (greenhouse decisions/0513 §3): `interrupted` is a turn no run holds, and a
+     * run that holds its lease is WORKING, not interrupted — the resident's two-hour run read as dead on every load in
+     * greenhouse evidence/1036. Only a house whose runtime keeps no lease falls back to reading the stream alone.
+     */
     private function interrupted(): bool
     {
-        return \in_array(strtolower($this->data?->counters()['state'] ?? ''), self::RUNNING, true);
+        $state = strtolower($this->data?->counters()['state'] ?? '');
+        if ($state === 'interrupted') {
+            return true;
+        }
+
+        return \in_array($state, self::RUNNING, true) && $this->data?->running($this->data->currentSessionId()) === null;
     }
 
     /** @param array<string, mixed> $props */

@@ -195,7 +195,9 @@
           return read;
         }
         if (sequence === '') {
-          status.textContent = tr('decisions.answered');
+          // RECORDED, NOT RESUMED (greenhouse decisions/0513 §6): `agent:answer` writes the answer and runs nothing —
+          // the session reads it on its next turn, and the door says how to take one when it can.
+          status.textContent = tr('decisions.answered_parked') + (read && typeof read.hint === 'string' && read.hint !== '' ? ' — ' + read.hint : '');
           card.setAttribute('data-answered', '');
           showAnswers(card, false);
           return read;

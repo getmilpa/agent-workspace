@@ -158,10 +158,14 @@ final class Context
         //
         // Both strings are already safe: `tr()` escapes the copy and `compact()` yields digits with a
         // suffix. Escaping them AGAIN would double-encode any entity a locale puts in the message.
-        $value = self::compact($tokens) . ' / ' . self::compact($window);
-        $meta = $tokens === 0
-            ? $this->tr('context.window.undeclared')
-            : sprintf($this->tr('context.window.meta'), $pct, self::compact((int) $ctx['free']));
+        // A window nobody recorded or declared is SAID unknown — never divided by a number of the panel's own
+        // (greenhouse decisions/0513 §5: the 32.77K of evidence/1036 was that number).
+        $value = self::compact($tokens) . ' / ' . ($window > 0 ? self::compact($window) : '?');
+        $meta = match (true) {
+            $tokens === 0 => $this->tr('context.window.undeclared'),
+            $window <= 0 => $this->tr('context.window.unknown'),
+            default => sprintf($this->tr('context.window.meta'), $pct, self::compact((int) $ctx['free'])),
+        };
 
         return '<section class="mui-card ctx-card"><div class="mui-card__body">'
             . '<p class="mui-stat__label">' . $this->tr('context.window.title') . '</p>'

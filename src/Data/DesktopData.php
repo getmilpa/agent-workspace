@@ -32,6 +32,15 @@ use Milpa\Runtime\Kernel;
  */
 final class DesktopData
 {
+    /** Named as a string: milpa/app-runtime owns the run's lease, and this package does not require it. */
+    public const string RUN_LEASE = 'Milpa\\AppRuntime\\Agent\\RunLease';
+
+    /** Who answers {@see running()} — the runtime's lease, or a test's stand-in with the same static `held()`. */
+    private static string $runLease = self::RUN_LEASE;
+
+    /** The permission modes a turn carries (greenhouse decisions/0202). */
+    private const array MODES = ['ask', 'acknowledge', 'auto'];
+
     public function __construct(
         private readonly DIContainerInterface $container,
         private readonly ?ShellEventLog $log = null,
@@ -791,18 +800,24 @@ final class DesktopData
     /**
      * The current session's counters (turns, steps, tokens, tool calls) — from the session, else derived.
      *
+     * The ledger's `working` is split by asking the process (greenhouse decisions/0513 §3): `working` while a run
+     * holds the session's lease, `interrupted` when nobody does. A house whose runtime keeps no lease stays `working`.
+     *
      * @return array{turns: int, steps: int, tokens: int, tool_calls: int, state: string}
      */
     public function counters(): array
     {
-        $record = $this->session($this->currentSessionId());
+        $id = $this->currentSessionId();
+        $record = $this->session($id);
         if ($record !== null) {
+            $state = (string) $record['state'];
+
             return [
                 'turns' => (int) $record['turns'],
                 'steps' => (int) $record['steps'],
                 'tokens' => (int) $record['tokens'],
                 'tool_calls' => (int) $record['tool_calls'],
-                'state' => (string) $record['state'],
+                'state' => $state === 'working' && $this->running($id) === false ? 'interrupted' : $state,
             ];
         }
         $s = $this->currentSession();
@@ -817,7 +832,53 @@ final class DesktopData
     }
 
     /**
+     * Whether a process is running session `$id` right now: its lease, asked of `milpa/app-runtime`'s `RunLease`
+     * (greenhouse decisions/0513 §3) — or null when this house's runtime keeps no lease and nothing can be said.
+     */
+    public function running(string $id): ?bool
+    {
+        $kernel = $this->container->has(Kernel::class) ? $this->container->get(Kernel::class) : null;
+        $held = [self::$runLease, 'held'];
+        if ($id === '' || !$kernel instanceof Kernel || !\is_callable($held)) {
+            return null;
+        }
+
+        return (bool) $held($kernel->root(), $id);
+    }
+
+    /**
+     * Name the class that answers whether a session's run is alive — null restores the runtime's.
+     *
+     * @internal a seam for tests: the lease is the runtime's, and a suite must be able to hold one without it
+     */
+    public static function useRunLease(?string $class): void
+    {
+        self::$runLease = $class ?? self::RUN_LEASE;
+    }
+
+    /**
+     * The mode the composer's next turn carries (greenhouse decisions/0513 §4): the one the open session recorded —
+     * `session.started`, then `session.mode_changed` — else the saved setting, else the mode that asks.
+     */
+    public function mode(): string
+    {
+        $record = $this->session($this->currentSessionId());
+        $recorded = $record !== null ? (string) $record['mode'] : '';
+        if (\in_array($recorded, self::MODES, true)) {
+            return $recorded;
+        }
+        $saved = $this->settings()['mode'] ?? null;
+
+        return \is_string($saved) && \in_array($saved, self::MODES, true) ? $saved : 'ask';
+    }
+
+    /**
      * The context window usage (wireframe 3a): tokens used, the window size, and derived percent/free.
+     *
+     * The window is the one the run OBEYED — the last `session.window_composed` its legs recorded (greenhouse
+     * decisions/0513 §5) — else what a human declared, by the key the runtime reads (`agent.contextTokens`, then
+     * `MILPA_AGENT_CONTEXT_TOKENS`). Nothing else: `0` means unknown, and no percentage is computed over a number
+     * nobody said. Painting never asks the provider (decisions/0266).
      *
      * @return array{tokens: int, window: int, used_pct: int, free: int}
      */
@@ -827,16 +888,31 @@ final class DesktopData
         // total spend; the store's file never knew the difference.
         $record = $this->session($this->currentSessionId());
         $tokens = $record !== null ? (int) $record['context_tokens'] : $this->counters()['tokens'];
-        $config = $this->container->has(Config::class) ? $this->container->get(Config::class) : null;
-        $configured = $config instanceof Config ? $config->get('agent.context_window') : null;
-        $window = is_int($configured) && $configured > 0 ? $configured : 32768;
+        $recorded = $record !== null && \is_int($record['window'] ?? null) ? $record['window'] : 0;
+        $window = $recorded > 0 ? $recorded : $this->declaredWindow();
 
         return [
             'tokens' => $tokens,
             'window' => $window,
-            'used_pct' => min(100, (int) round($tokens / $window * 100)),
+            'used_pct' => $window > 0 ? min(100, (int) round($tokens / $window * 100)) : 0,
             'free' => max(0, $window - $tokens),
         ];
+    }
+
+    /** The window a human declared, as the runtime reads it — or 0 when nobody did. */
+    private function declaredWindow(): int
+    {
+        $config = $this->container->has(Config::class) ? $this->container->get(Config::class) : null;
+        $declared = $config instanceof Config ? $config->get('agent.contextTokens') : null;
+        if (\is_string($declared) && ctype_digit($declared)) {
+            $declared = (int) $declared;
+        }
+        if (\is_int($declared) && $declared > 0) {
+            return $declared;
+        }
+        $environment = getenv('MILPA_AGENT_CONTEXT_TOKENS');
+
+        return \is_string($environment) && ctype_digit($environment) ? (int) $environment : 0;
     }
 
     /**

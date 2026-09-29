@@ -122,6 +122,13 @@ final class AgentViewComponent implements ComponentDefinitionInterface
         $meta = \is_array($context->meta[self::META_QUERY] ?? null) ? $context->meta[self::META_QUERY] : [];
         $query = $meta !== [] || !\is_array($props['query'] ?? null) ? $meta : $props['query'];
         $lang = $query['lang'] ?? null;
+        // The way back keeps the TASK being read, not only the language (greenhouse decisions/0513 §1): a sign-in that
+        // lapsed mid-run returns to the same session's view. Only a well-formed id rides; the view re-judges it.
+        $session = $query['session'] ?? null;
+        $back = array_filter([
+            'session' => \is_string($session) && preg_match('/^[0-9A-Za-z][0-9A-Za-z_:.-]{0,63}$/', $session) === 1 ? $session : null,
+            'lang' => \is_string($lang) && $lang !== '' ? $lang : null,
+        ], static fn (?string $value): bool => $value !== null);
 
         return new StateSnapshot(
             $context->componentId,
@@ -131,7 +138,7 @@ final class AgentViewComponent implements ComponentDefinitionInterface
             [
                 'gate' => $gate,
                 'signin' => self::string($props, 'signin', self::DEFAULT_SIGNIN),
-                'next' => self::sectionPath($context->route) . (\is_string($lang) && $lang !== '' ? '?lang=' . rawurlencode($lang) : ''),
+                'next' => self::sectionPath($context->route) . ($back !== [] ? '?' . http_build_query($back, '', '&', \PHP_QUERY_RFC3986) : ''),
                 'locale' => $context->locale,
                 'principal' => $context->principal ?? '',
             ],

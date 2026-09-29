@@ -49,9 +49,11 @@ final class ShellSignals
     {
         $settings = $data?->settings() ?? [];
         $model = $data?->model() ?? [];
-        $modeKey = \is_string($settings['mode'] ?? null) && isset(ComposerBar::MODE_KEYS[$settings['mode']]) ? (string) $settings['mode'] : 'ask';
+        // The OPEN session's mode, else the saved setting (greenhouse decisions/0513 §4): the chip says what the next
+        // turn of the session being read would carry, not the default for sessions nobody opened yet.
+        $modeKey = $data?->mode() ?? (\is_string($settings['mode'] ?? null) && isset(ComposerBar::MODE_KEYS[$settings['mode']]) ? (string) $settings['mode'] : 'ask');
         $counters = $data?->counters();
-        $ctx = $data?->context() ?? ['tokens' => 0, 'window' => 32768];
+        $ctx = $data?->context() ?? ['tokens' => 0, 'window' => 0];
         // The session's state as a WORD is copy, so it is the catalog's — the same key the turn's module
         // writes when it starts and ends a turn. Seeded and written from one place, in one language.
         $state = strtolower(\is_array($counters) ? (string) $counters['state'] : 'idle');
@@ -96,6 +98,7 @@ final class ShellSignals
                 $state === 'waiting' => 'session.state.waiting',
                 $state === 'paused' => 'session.state.paused',
                 $state === 'ended' => 'session.state.ended',
+                $state === 'interrupted' => 'session.state.interrupted',
                 default => 'session.state.idle',
             }),
             'session.turns' => \is_array($counters) ? (int) $counters['turns'] : 0,
@@ -103,7 +106,8 @@ final class ShellSignals
             'session.tokens' => \is_array($counters) ? (int) $counters['tokens'] : 0,
             'session.tool_calls' => \is_array($counters) ? (int) $counters['tool_calls'] : 0,
             'context.used' => self::kfmt((int) $ctx['tokens']),
-            'context.window' => self::kfmt((int) $ctx['window']),
+            // No window known is said as unknown, never as a number (greenhouse decisions/0513 §5).
+            'context.window' => (int) $ctx['window'] > 0 ? self::kfmt((int) $ctx['window']) : '?',
             'desktop.nav' => 'sessions',
             'desktop.tab' => 'chat',
             'desktop.gate.open' => false,
