@@ -3,6 +3,17 @@
 All notable changes to milpa/desktop-app are documented here. This project adheres to
 [Semantic Versioning](https://semver.org/) and [Keep a Changelog](https://keepachangelog.com/).
 
+## [0.86.0](https://github.com/getmilpa/agent-workspace/compare/v0.85.2...v0.86.0) (2026-09-29)
+
+
+### ⚠ BREAKING CHANGES
+
+* DecisionsInboxView::html() no longer takes $principal, and this package conflicts with milpa/orchestrator < 0.12, whose graph:decide still requires the principal the panel no longer sends.
+
+### Bug Fixes
+
+* the panel stops posting who answers a graph decision ([#111](https://github.com/getmilpa/agent-workspace/issues/111)) ([99b144a](https://github.com/getmilpa/agent-workspace/commit/99b144a5ad5dbe5126ca858b08b0188aa2edfb6c))
+
 ## [0.85.2](https://github.com/getmilpa/agent-workspace/compare/v0.85.1...v0.85.2) (2026-09-29)
 
 
