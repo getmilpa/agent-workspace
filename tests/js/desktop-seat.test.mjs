@@ -15,9 +15,9 @@ import assert from 'node:assert/strict';
 import { El, page, response, settle, stubFetch, CATALOG } from './support/page.mjs';
 
 /** The give-a-seat form, as the server prints it. */
-function tree(label = 'resident') {
+function tree(label = 'resident', taken = []) {
   const root = new El('html');
-  const form = root.appendChild(new El('div', { class: 'decision-card decision-card--give-seat', 'data-seat-give-form': '' }));
+  const form = root.appendChild(new El('div', { class: 'decision-card decision-card--give-seat', 'data-seat-give-form': '', 'data-seat-taken': JSON.stringify(taken) }));
   const options = form.appendChild(new El('p', { class: 'decision-card__options' }));
   const input = options.appendChild(new El('input', { 'data-seat-label': '' }));
   input.value = label;
@@ -123,4 +123,34 @@ test('a browser without passkeys says so and posts nothing', async () => {
 
   assert.equal(calls.length, 0);
   assert.equal(root.querySelector('[data-seat-give-status]').textContent, 'this browser cannot run the passkey ceremony');
+});
+
+// ── one seat per name (greenhouse decisions/0536, evidence/1069 §C3) ─────────────────────────────────────────
+test('a name a seat already carries costs no touch and no request: the module says so', async () => {
+  for (const [typed, said] of [['Resident', '«Resident» already has a seat — give the new one another name.'], ['', 'name the new seat first']]) {
+    const root = tree(typed, ['resident']);
+    const p = page({ tree: root, catalog: CATALOG, modules: ['desktop-decisions'] });
+    const signed = withPasskey(p);
+    const calls = stubFetch(p, []);
+
+    click(p, root.querySelector('[data-seat-give]'));
+    await settle();
+
+    assert.equal(signed.length, 0, 'no passkey touch for a name the judge would refuse');
+    assert.equal(calls.length, 0, 'no request either');
+    assert.equal(root.querySelector('[data-seat-give-status]').textContent, said);
+  }
+});
+
+test('another name, with the resident seated, still gives a seat', async () => {
+  const root = tree('reviewer', ['resident']);
+  const p = page({ tree: root, catalog: CATALOG, modules: ['desktop-decisions'] });
+  withPasskey(p);
+  const calls = stubFetch(p, [response(200, OPTIONS), response(428, { requires_confirmation: true, confirm_token: 'tok-1' }), response(201, { ...MINTED, label: 'reviewer' })]);
+
+  click(p, root.querySelector('[data-seat-give]'));
+  await settle();
+
+  assert.equal(calls.length, 3);
+  assert.equal(JSON.parse(calls[2].init.body).label, 'reviewer');
 });

@@ -70,6 +70,25 @@ test('the thread the server printed is replayed on load, each row with the proto
   assert.equal(p.desktop().conversation.replay(), 0, 'a second replay paints nothing — once, like the subscriptions');
 });
 
+test('a run that failed on its endpoint says so in the thread, with the endpoint (greenhouse decisions/0536)', () => {
+  const html = new El('html');
+  const chat = html.appendChild(new El('section', { id: 'milpa-chat' }));
+  const rows = [
+    { kind: 'run_failed', cause: 'provider_refused', status: 404, endpoint: 'http://llama.test:11438/v1/v1/chat/completions' },
+    { kind: 'run_failed', cause: 'provider_unreachable', status: null, endpoint: 'http://down.test:1/v1/chat/completions' },
+    { kind: 'run_failed', cause: '', status: null, endpoint: '' },
+  ];
+  const p = page({ tree: html, elements: { ...prototypeTags(), 'milpa-desktop-transcript': transcriptTag(rows) }, bus: true, modules: ['desktop-conversation'] });
+  p.mount('desktopConversation', undefined, chat);
+
+  const text = (m) => (m.getAttribute('data-system-body') !== null ? m : m.querySelector('[data-system-body]')).textContent;
+  assert.deepEqual(chat.children.map(text), [
+    'The run failed: the model endpoint answered HTTP 404 at http://llama.test:11438/v1/v1/chat/completions. Check the endpoint in Settings.',
+    'The run failed: the model endpoint could not be reached at http://down.test:1/v1/chat/completions. Check the endpoint in Settings.',
+    'The run failed before it finished.',
+  ]);
+});
+
 test('a page with no transcript tag, or an empty one, replays nothing and the thread stays empty', () => {
   const html = new El('html');
   const chat = html.appendChild(new El('section', { id: 'milpa-chat' }));

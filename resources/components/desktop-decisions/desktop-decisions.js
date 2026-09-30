@@ -331,7 +331,15 @@
     var status = form.querySelector('[data-seat-give-status]') || statusOf(form);
     var command = form.querySelector('[data-seat-command]');
     var input = form.querySelector('[data-seat-label]');
-    var label = String((input && input.value) || '').trim() || 'resident';
+    var typed = String((input && input.value) || '').trim();
+    var label = typed || 'resident';
+    // One seat per name (greenhouse decisions/0536): `identity:seat` refuses a name a seat already carries, so a
+    // taken one is refused here before it costs a passkey touch.
+    var taken = takenNames(form);
+    if (taken.indexOf(label.toLowerCase()) !== -1) {
+      status.textContent = typed === '' ? tr('seats.name_first') : tr('seats.taken', label);
+      return Promise.resolve(null);
+    }
     if (!canTouch()) {
       status.textContent = tr('frontier.no_passkey');
       return Promise.resolve(null);
@@ -353,6 +361,13 @@
       .catch(function (err) {
         status.textContent = tr('seats.refused', why(err));
       });
+  }
+
+  /** The names the seats already carry, lower-cased, as the server printed them on the form. */
+  function takenNames(form) {
+    var names;
+    try { names = JSON.parse(form.getAttribute('data-seat-taken') || '[]'); } catch (e) { names = []; }
+    return Array.isArray(names) ? names.map(function (n) { return String(n).toLowerCase(); }) : [];
   }
 
   if (live && live.desktop) {

@@ -109,6 +109,10 @@ final class DesktopData
                 // later has to be able to close the request it is replaying, or it paints live buttons for
                 // something decided days ago.
                 'session.question_answered' => ['kind' => 'answered', 'id' => $this->str($p['id'] ?? null), 'answer' => $this->str($p['answer'] ?? null), 'by' => $this->str(\is_array($p['by'] ?? null) ? ($p['by']['id'] ?? null) : null)],
+                // A RUN THAT FAILED is a row, with its endpoint's cause when the ledger has one (greenhouse
+                // decisions/0536). Measured (evidence/1069 §C1): the leg died on a 404 from `/v1/v1/chat/completions`
+                // and the thread showed nothing — the error lived only in the terminal that ran it.
+                'session.run_terminated' => ($p['reason'] ?? null) === 'failed' ? self::runFailed($p['cause'] ?? null) : null,
                 'session.sequence_paused' => ['kind' => 'sequence_paused', 'sequence' => $this->str($p['sequenceId'] ?? null)],
                 'session.sequence_resumed' => ['kind' => 'sequence_resumed', 'sequence' => $this->str($p['sequenceId'] ?? null)],
                 // THE HOUSE'S VERDICT travels with the thread (greenhouse decisions/0509 §7): a reloaded thread
@@ -132,6 +136,27 @@ final class DesktopData
         }
 
         return $out;
+    }
+
+    /**
+     * A failed run's row: the endpoint's cause as milpa/ai-gateway records it (`provider_refused` with its status,
+     * `provider_unreachable`), or an empty cause — a failure the thread still shows, without inventing why.
+     *
+     * @return array{kind: 'run_failed', cause: string, status: int|null, endpoint: string}
+     */
+    private static function runFailed(mixed $cause): array
+    {
+        $kind = \is_array($cause) ? ($cause['kind'] ?? null) : null;
+        if (!\is_array($cause) || !\in_array($kind, ['provider_refused', 'provider_unreachable'], true)) {
+            return ['kind' => 'run_failed', 'cause' => '', 'status' => null, 'endpoint' => ''];
+        }
+
+        return [
+            'kind' => 'run_failed',
+            'cause' => $kind,
+            'status' => $kind === 'provider_refused' && \is_int($cause['status'] ?? null) ? $cause['status'] : null,
+            'endpoint' => \is_string($cause['endpoint'] ?? null) ? $cause['endpoint'] : '',
+        ];
     }
 
     /** @var array<string, array<string, mixed>>|null every session the ledger holds, folded once per request */

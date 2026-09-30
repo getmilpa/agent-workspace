@@ -232,6 +232,7 @@ final class DecisionsInboxView
     {
         $copy += self::SEATS_COPY;
         $rows = '';
+        $taken = [];
         foreach ($seats as $seat) {
             $rows .= '<li class="decision-card decision-card--seat" data-seat-key="' . $this->esc($seat['fingerprint']) . '">'
                 . '<p class="decision-card__goal">' . $this->esc($seat['label'] ?? $seat['fingerprint']) . '</p>'
@@ -239,15 +240,39 @@ final class DecisionsInboxView
                 . '<p class="decision-card__facts">' . $this->esc(implode(' ', $seat['scopes'])) . '</p>'
                 . '<p class="decision-card__facts">' . $this->esc(sprintf($copy['enrolled_by'], $seat['authorized_by'])) . '</p>'
                 . '</li>';
+            $name = mb_strtolower(trim((string) ($seat['label'] ?? '')));
+            if ($name !== '' && !\in_array($name, $taken, true)) {
+                $taken[] = $name;
+            }
         }
+
+        // ONE SEAT PER NAME (greenhouse decisions/0536). The fourth rehearsal found «Give the resident a seat» still
+        // the primary button with the resident seated, and pressing it minted another invitation for another touch
+        // (evidence/1069 §C3). The judge is `identity:seat`, which refuses a name that holds a seat; this only stops
+        // offering what it would refuse. The names travel to the module so a taken one costs no touch either.
+        $held = null;
+        foreach ($seats as $seat) {
+            if (mb_strtolower(trim((string) ($seat['label'] ?? ''))) === self::DEFAULT_SEAT) {
+                $held = trim((string) $seat['label']);
+                break;
+            }
+        }
+        $label = $this->esc($copy['label']);
+        $field = static fn (string $value, string $button, string $class): string => '<p class="decision-card__options">'
+            . '<label>' . $label . ' <input type="text" class="mui-input" value="' . $value . '" data-seat-label></label> '
+            . '<button type="button" class="mui-btn mui-btn--sm' . $class . '" data-seat-give>' . $button . '</button>'
+            . '</p>';
+        $offer = $held === null
+            ? $field(self::DEFAULT_SEAT, $this->esc($copy['give']), ' mui-btn--primary')
+            : '<p class="decision-card__facts" data-seat-held>' . $this->esc(sprintf($copy['held'], $held)) . '</p>'
+                . '<details data-seat-another><summary>' . $this->esc($copy['another']) . '</summary>'
+                . $field('', $this->esc($copy['give_another']), '')
+                . '</details>';
 
         return '<ol class="mui-replay__stream" id="milpa-seats-list">' . $rows . '</ol>'
             . ($rows === '' ? '<div class="mui-empty" id="milpa-seats-empty"><p class="mui-empty__desc">' . $this->esc($copy['empty']) . '</p></div>' : '')
-            . '<div class="decision-card decision-card--give-seat" data-seat-give-form>'
-            . '<p class="decision-card__options">'
-            . '<label>' . $this->esc($copy['label']) . ' <input type="text" class="mui-input" value="resident" data-seat-label></label> '
-            . '<button type="button" class="mui-btn mui-btn--sm mui-btn--primary" data-seat-give>' . $this->esc($copy['give']) . '</button>'
-            . '</p>'
+            . '<div class="decision-card decision-card--give-seat" data-seat-give-form data-seat-taken="' . $this->esc((string) json_encode($taken, \JSON_UNESCAPED_UNICODE)) . '">'
+            . $offer
             . '<p class="decision-card__facts" data-seat-give-status></p>'
             . '<pre class="decision-card__command" data-seat-command hidden></pre>'
             . '</div>';
@@ -267,12 +292,18 @@ final class DecisionsInboxView
             . '<button type="button" class="mui-btn mui-btn--sm decision-card__option" data-agent-answer="no"' . $h . '>' . $this->esc($copy['deny']) . '</button>';
     }
 
+    /** The name the form offers first: the real resident is one (greenhouse decisions/0536). */
+    private const string DEFAULT_SEAT = 'resident';
+
     /** The English «Your seats» reads when the caller hands no catalog. */
     private const array SEATS_COPY = [
         'empty' => 'You answer for no seat yet.',
         'enrolled_by' => 'enrolled by %s',
         'label' => 'Seat name',
         'give' => 'Give the resident a seat',
+        'held' => '«%s» has its seat. A name holds one seat: to give it to another key, revoke that key first.',
+        'another' => 'Give a seat to another resident',
+        'give_another' => 'Give this seat',
     ];
 
     /** The English the frontier cards read when the caller hands no catalog. */
