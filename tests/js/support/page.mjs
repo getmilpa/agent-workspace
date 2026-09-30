@@ -180,7 +180,7 @@ export const CATALOG = {
   'conversation.sequence_paused': 'Sequence «%s» paused — answer it in Decisions',
   'conversation.sequence_resumed': 'Sequence «%s» resumed',
   'conversation.run_failed': 'The run failed before it finished.',
-  'conversation.run_failed.refused': 'The run failed: the model endpoint answered HTTP %s at %s. Check the endpoint in Settings.',
+  'conversation.run_failed.refused': 'The run failed: the model endpoint answered HTTP %s at %s. Check the endpoint and its key in Settings.',
   'conversation.run_failed.unreachable': 'The run failed: the model endpoint could not be reached at %s. Check the endpoint in Settings.',
 };
 

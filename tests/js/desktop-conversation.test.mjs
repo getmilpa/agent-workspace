@@ -83,7 +83,7 @@ test('a run that failed on its endpoint says so in the thread, with the endpoint
 
   const text = (m) => (m.getAttribute('data-system-body') !== null ? m : m.querySelector('[data-system-body]')).textContent;
   assert.deepEqual(chat.children.map(text), [
-    'The run failed: the model endpoint answered HTTP 404 at http://llama.test:11438/v1/v1/chat/completions. Check the endpoint in Settings.',
+    'The run failed: the model endpoint answered HTTP 404 at http://llama.test:11438/v1/v1/chat/completions. Check the endpoint and its key in Settings.',
     'The run failed: the model endpoint could not be reached at http://down.test:1/v1/chat/completions. Check the endpoint in Settings.',
     'The run failed before it finished.',
   ]);
