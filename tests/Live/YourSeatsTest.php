@@ -52,6 +52,50 @@ final class YourSeatsTest extends TestCase
         self::assertStringNotContainsString('scope', strtolower(strip_tags($html)), 'what a seat may do is the house\'s to declare');
     }
 
+    /**
+     * The fourth rehearsal (greenhouse evidence/1069 §C3): with the resident listed, «Give the resident a seat» was
+     * still the primary button, and pressing it minted another invitation for another touch. A name holds one seat
+     * (greenhouse decisions/0536): with the resident seated, the panel says so and offers only another name.
+     */
+    public function testASeatedResidentIsNotOfferedASecondSeat(): void
+    {
+        $html = (new DecisionsInboxView())->seatsHtml([[
+            'fingerprint' => '95A3AC7B96F8BC6AA7044F2C09082971DEBAAA50',
+            'label' => 'Resident',
+            'scopes' => ['agent:run'],
+            'authorized_by' => 'passkey:QM1L',
+        ]]);
+
+        self::assertStringNotContainsString('Give the resident a seat', $html);
+        self::assertStringNotContainsString('mui-btn--primary', $html, 'nothing here is the next step any more');
+        self::assertStringContainsString('data-seat-held', $html);
+        self::assertStringContainsString('«Resident» has its seat.', $html);
+        self::assertStringContainsString('<details data-seat-another><summary>Give a seat to another resident</summary>', $html);
+        self::assertStringContainsString('value="" data-seat-label', $html, 'the name is the person\'s to choose, not «resident» again');
+        self::assertStringContainsString('data-seat-taken="[&quot;resident&quot;]"', $html, 'the module refuses a taken name before any touch');
+        self::assertStringNotContainsString('scope', strtolower(strip_tags($html)));
+    }
+
+    public function testAnotherSeatLeavesTheResidentsOfferAsItWas(): void
+    {
+        $html = (new DecisionsInboxView())->seatsHtml([[
+            'fingerprint' => 'ABCDEF0123456789ABCDEF0123456789ABCDEF01',
+            'label' => 'reviewer',
+            'scopes' => ['agent:read'],
+            'authorized_by' => 'passkey:QM1L',
+        ], [
+            'fingerprint' => 'ABCDEF0123456789ABCDEF0123456789ABCDEF02',
+            'label' => null,
+            'scopes' => ['agent:read'],
+            'authorized_by' => 'passkey:QM1L',
+        ]]);
+
+        self::assertStringContainsString('value="resident" data-seat-label', $html);
+        self::assertStringContainsString('mui-btn--primary" data-seat-give>Give the resident a seat</button>', $html);
+        self::assertStringNotContainsString('data-seat-held', $html);
+        self::assertStringContainsString('data-seat-taken="[&quot;reviewer&quot;]"', $html);
+    }
+
     public function testTheSeatDoorIsMountedAsAPost(): void
     {
         self::assertSame('/workspace/seat', PanelDoorController::DOORS[PanelDoorController::SEAT]['path']);

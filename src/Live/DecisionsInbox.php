@@ -142,6 +142,9 @@ final class DecisionsInbox
                 'enrolled_by' => $this->plain('seats.enrolled_by'),
                 'label' => $this->plain('seats.label'),
                 'give' => $this->plain('seats.give'),
+                'held' => $this->plain('seats.held'),
+                'another' => $this->plain('seats.another'),
+                'give_another' => $this->plain('seats.give_another'),
             ])
             // THE SEQUENCES THIS APP DECLARED, to run from here (greenhouse decisions/0223, F4): a deployment
             // is a list, and the place a human authorizes everything else is where its run starts and where
