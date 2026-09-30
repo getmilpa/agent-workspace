@@ -277,6 +277,10 @@ final class SettingsScreen
             . '<label class="mui-field__label" for="set-model">' . $this->t('settings.model.model') . '</label>'
             . '<span class="mui-select-wrap"><select id="set-model" class="mui-select" @change="declareModel()">' . $option . '</select></span>'
             . '<span class="mui-field__hint">' . $this->t('settings.model.model_hint') . '</span>'
+            // THE ACT THAT EXISTS WHEN THERE IS NOTHING TO CHANGE (greenhouse decisions/0542): with one model served,
+            // «Find models» leaves it as the only option, already selected, and `change` can never fire.
+            . '<button type="button" class="mui-btn mui-btn--sm milpa-settings__key-save" data-declare-model'
+            . ' @click="declareModel()">' . $this->t('settings.model.model.save') . '</button>'
             . '<button type="button" class="mui-btn mui-btn--sm milpa-settings__key-save" data-find-models'
             . ' @click="findModels()">' . $this->t('settings.model.model.find') . '</button>'
             . '</div>';

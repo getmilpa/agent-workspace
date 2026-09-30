@@ -185,7 +185,7 @@
           'settings.model.endpoint.refused',
         );
       },
-      /** The model, written the same governed way — the select's change IS the intent. */
+      /** The model, written the same governed way — by the select's change, or by «Use this model» when there is nothing to change to (greenhouse decisions/0542). */
       declareModel: function () {
         var select = document.getElementById('set-model');
 
