@@ -3,6 +3,14 @@
 All notable changes to milpa/desktop-app are documented here. This project adheres to
 [Semantic Versioning](https://semver.org/) and [Keep a Changelog](https://keepachangelog.com/).
 
+## [0.86.1](https://github.com/getmilpa/agent-workspace/compare/v0.86.0...v0.86.1) (2026-09-30)
+
+
+### Bug Fixes
+
+* **panel:** a seated resident is not offered a second seat, and a failed run says why in the thread ([#113](https://github.com/getmilpa/agent-workspace/issues/113)) ([c4ad145](https://github.com/getmilpa/agent-workspace/commit/c4ad145a806d49a73686ec5f3e7c48d8e0439b9b))
+* **settings:** «Use this model» saves the model when there is nothing to change to ([#114](https://github.com/getmilpa/agent-workspace/issues/114)) ([2a931c5](https://github.com/getmilpa/agent-workspace/commit/2a931c579f115ddcfa03638c90d49e3b11171de7))
+
 ## [0.86.0](https://github.com/getmilpa/agent-workspace/compare/v0.85.2...v0.86.0) (2026-09-29)
 
 
