@@ -334,6 +334,14 @@
           var why = Array.isArray(row.reasons) ? row.reasons.join('; ') : '';
           if (!verdict(closed, why)) { append('result', { verified: closed, reasons: why }); }
           break;
+        case 'run_failed':
+          // A RUN THAT FAILED says so where it is read, with its endpoint's answer when the ledger has one
+          // (greenhouse decisions/0536). Measured (evidence/1069 §C1): a 404 from the model endpoint lived only in
+          // the terminal that ran the leg.
+          append('system', { text: row.cause === 'provider_refused'
+            ? tr('conversation.run_failed.refused', String(row.status || ''), row.endpoint || '')
+            : (row.cause === 'provider_unreachable' ? tr('conversation.run_failed.unreachable', row.endpoint || '') : tr('conversation.run_failed')) });
+          break;
         case 'sequence_paused': append('system', { text: tr('conversation.sequence_paused', row.sequence || '') }); break;
         case 'sequence_resumed': append('system', { text: tr('conversation.sequence_resumed', row.sequence || '') }); break;
         default: continue;
