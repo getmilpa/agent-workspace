@@ -16,6 +16,7 @@ namespace Milpa\AgentWorkspace\Live;
 
 use Milpa\AgentWorkspace\Data\DesktopData;
 use Milpa\AgentWorkspace\Event\RenderEvents;
+use Milpa\AgentWorkspace\HouseCli;
 use Milpa\AgentWorkspace\I18n\Catalog;
 use Milpa\Interfaces\Event\MilpaEventDispatcherInterface;
 use Milpa\Live\Security\HmacStateSigner;
@@ -335,14 +336,16 @@ final class SettingsScreen
     private function cannotWrite(string $state, string $label, string $blocker): string
     {
         $why = $blocker === self::NO_DOOR ? 'settings.write.no_door' : 'settings.write.no_policy';
-        $how = $blocker === self::NO_DOOR ? 'settings.write.no_door_command' : 'settings.write.no_policy_command';
+        // The way out of NO_POLICY is a command to type, so it starts the way this house is reached
+        // (greenhouse decisions/0560); the way out of NO_DOOR is a config key, which is not typed anywhere.
+        $how = $blocker === self::NO_DOOR ? $this->t('settings.write.no_door_command') : htmlspecialchars(HouseCli::reached($this->catalog->tr('settings.write.no_policy_command')), ENT_QUOTES);
 
         return '<div class="mui-field milpa-settings__' . $state . '" data-' . $state . '-state="unjudgeable" data-blocked-by="' . $blocker . '">'
             . '<span class="mui-field__label">' . $this->t($label) . '</span>'
             . '<div class="mui-alert mui-alert--warning" role="note">'
             . '<span class="mui-alert__icon" aria-hidden="true">⚠</span>'
             . '<div class="mui-alert__content"><p class="mui-alert__desc">' . $this->t($why) . '</p>'
-            . '<p class="mui-alert__desc"><code>' . $this->t($how) . '</code></p></div>'
+            . '<p class="mui-alert__desc"><code>' . $how . '</code></p></div>'
             . '</div></div>';
     }
 
