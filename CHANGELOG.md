@@ -3,6 +3,13 @@
 All notable changes to milpa/desktop-app are documented here. This project adheres to
 [Semantic Versioning](https://semver.org/) and [Keep a Changelog](https://keepachangelog.com/).
 
+## [0.86.2](https://github.com/getmilpa/agent-workspace/compare/v0.86.1...v0.86.2) (2026-10-03)
+
+
+### Bug Fixes
+
+* **hub:** a session the terminal named reaches the hub, and a closed stream is renewed ([#116](https://github.com/getmilpa/agent-workspace/issues/116)) ([ec45634](https://github.com/getmilpa/agent-workspace/commit/ec456348c73454ce3644c2d202bf301b09bbef04))
+
 ## [0.86.1](https://github.com/getmilpa/agent-workspace/compare/v0.86.0...v0.86.1) (2026-09-30)
 
 
