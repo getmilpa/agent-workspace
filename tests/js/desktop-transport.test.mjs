@@ -16,7 +16,7 @@ import assert from 'node:assert/strict';
 // deep-equal would compare prototypes and fail on values that are identical. The loose one is the right
 // instrument for a fact that crossed the boundary — the strict one stays for everything else.
 import { deepEqual as sameShape } from 'node:assert';
-import { El, page } from './support/page.mjs';
+import { El, page, response, settle, stubFetch } from './support/page.mjs';
 
 /** A page with the real bus and the real connector, and the hub tag the server would have written. */
 function transport({ url = '', tree = null, modules = [] } = {}) {
@@ -176,4 +176,64 @@ test('the stream is opened on DOMContentLoaded — after every deferred module h
   assert.deepEqual(opened, [], 'loading the module opens nothing');
   p.listeners['DOMContentLoaded'].forEach((fn) => fn());
   assert.deepEqual(opened, ['https://hub.example/x']);
+});
+
+/**
+ * A HUB THAT CLOSES THE STREAM IS ASKED AGAIN (greenhouse evidence/1091, E4). The subscriber JWT the door sets lives
+ * five minutes (milpa/mercure), and a resident's turn lasts longer: in the real Desktop the hub dropped the stream after
+ * ~4.5 minutes, the browser reconnected with the same cookie until it expired, got 401 and closed for good — and «live
+ * hub not connected» came back for the rest of the turn. A CLOSED stream (readyState 2) is the browser giving up; the
+ * page asks the door again, with its ticket, exactly as it did the first time. A stream the browser is still
+ * reconnecting (readyState 0) is left to the browser.
+ */
+test('a panel stream the hub closed is renewed through the door, with the ticket, a bounded number of times', async () => {
+  const p = transport();
+  const tag = new El('script', { id: 'milpa-desktop-ticket', text: JSON.stringify({ ticket: 'sealed.ticket' }) });
+  p.sandbox.document.getElementById = ((get) => (id) => (id === 'milpa-desktop-ticket' ? tag : get(id)))(p.sandbox.document.getElementById.bind(p.sandbox.document));
+  const timers = [];
+  p.sandbox.setTimeout = (fn, ms) => { timers.push(ms); fn(); };
+  const opened = [];
+  p.sandbox.EventSource = function (url) { this.url = url; this.readyState = 1; opened.push(this); };
+  const asks = stubFetch(p, Array.from({ length: 8 }, (_, i) => response(200, { url: 'https://hub.example/sub?n=' + i })));
+
+  p.desktop().hub.open();
+  await settle();
+  assert.equal(opened.length, 1);
+  assert.equal(asks[0].init.headers['X-Milpa-Session-Ticket'], 'sealed.ticket');
+
+  // the browser is still reconnecting: nothing to ask
+  opened[0].readyState = 0; opened[0].onerror();
+  await settle();
+  assert.equal(asks.length, 1, 'a reconnecting stream is the browser\'s to retry');
+  assert.equal(p.signal('conn.state'), 'offline');
+
+  // the hub refused the cookie and the browser gave up: ask the door again and open on what it answers
+  opened[0].readyState = 2; opened[0].onerror();
+  await settle();
+  assert.equal(asks.length, 2, 'the door is asked again');
+  assert.equal(asks[1].url, '/workspace/hub');
+  assert.equal(asks[1].init.headers['X-Milpa-Session-Ticket'], 'sealed.ticket', 'with the same sealed ticket');
+  assert.equal(opened.length, 2);
+  assert.equal(opened[1].url, 'https://hub.example/sub?n=1');
+  opened[1].onopen();
+  assert.equal(p.signal('conn.state'), 'live', 'and the bar is live again');
+
+  // a hub that keeps refusing is not asked forever
+  for (let i = 1; i < 8; i++) { const s = opened[opened.length - 1]; s.readyState = 2; s.onerror(); await settle(); }
+  assert.ok(asks.length <= 2 + 5, 'at most five renewals in a row without a stream that opens: ' + asks.length);
+  assert.equal(p.signal('conn.state'), 'offline');
+});
+
+test('a stream whose URL the page carried inline is not renewed through the door — it has no ticket to ask with', async () => {
+  const p = transport({ url: 'https://hub.example/x' });
+  p.sandbox.setTimeout = (fn) => fn();
+  const opened = [];
+  p.sandbox.EventSource = function (url) { this.url = url; this.readyState = 1; opened.push(this); };
+  const asks = stubFetch(p, [response(200, { url: 'https://hub.example/y' })]);
+
+  p.desktop().hub.open();
+  opened[0].readyState = 2; opened[0].onerror();
+  await settle();
+  assert.equal(asks.length, 0);
+  assert.equal(opened.length, 1);
 });
