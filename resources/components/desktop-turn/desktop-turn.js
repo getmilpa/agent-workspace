@@ -247,6 +247,8 @@
    * delivered to nobody.
    */
   var subscribed = false;
+  /** The session's figures, re-seeded as signals — a region the page carries no markup for. */
+  var SIGNALS_REGION = 'signals';
 
   function subscribe() {
     var shell = window.MilpaShell;
@@ -260,6 +262,13 @@
       var conv = conversation();
       if (conv && !(fact && fact.state === 'working')) { conv.endReasoning(); }
       working(!!(fact && fact.state === 'working'));
+    });
+    // THE SESSION'S FIGURES ARE THE HOUSE'S, read off the stream (greenhouse decisions/0563): how many turns
+    // and tools, how full the window is. A run that ended elsewhere — a terminal, another device — moved
+    // them, and the page kept the previous run's (greenhouse evidence/1095) until a reload.
+    shell.on('run.ended', function () {
+      var d = desk();
+      if (d && d.regions) { d.regions.reread([SIGNALS_REGION]); }
     });
 
     return true;

@@ -94,10 +94,12 @@ final class DecisionsInboxView
         // (greenhouse decisions/0211, phase D4): a question parked while the page is open has a list to
         // land in, and the empty line steps aside by CSS the moment a card does — so the live inbox never
         // has to build an `<ol>` out of a JavaScript string.
-        return '<ol class="mui-replay__stream" id="milpa-decisions-list" aria-live="polite">' . $cards . '</ol>'
+        // ONE REGION (greenhouse decisions/0563): a card here carries the session it answers and its two
+        // buttons, which a pushed fact does not — so the page re-reads this from the house, list and empty line.
+        return LiveRegion::of(LiveRegion::DECISIONS_PENDING, '<ol class="mui-replay__stream" id="milpa-decisions-list" aria-live="polite">' . $cards . '</ol>'
             . ($pending === []
                 ? '<div class="mui-empty" id="milpa-decisions-empty"><p class="mui-empty__desc">' . $this->esc($empty) . '</p></div>'
-                : '');
+                : ''));
     }
 
     /**
@@ -193,8 +195,10 @@ final class DecisionsInboxView
             }
         }
 
-        return '<ol class="mui-replay__stream" id="milpa-frontier-list">' . $cards . '</ol>'
-            . ($cards === '' ? '<div class="mui-empty" id="milpa-frontier-empty"><p class="mui-empty__desc">' . $this->esc($empty) . '</p></div>' : '');
+        // ONE REGION (greenhouse decisions/0563): the frontier is derived from the refused calls, the ledger
+        // and the policy — the page re-reads it from the house instead of deriving it again from a push.
+        return LiveRegion::of(LiveRegion::DECISIONS_FRONTIER, '<ol class="mui-replay__stream" id="milpa-frontier-list">' . $cards . '</ol>'
+            . ($cards === '' ? '<div class="mui-empty" id="milpa-frontier-empty"><p class="mui-empty__desc">' . $this->esc($empty) . '</p></div>' : ''));
     }
 
     /**

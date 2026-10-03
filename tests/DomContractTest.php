@@ -69,6 +69,8 @@ final class DomContractTest extends TestCase
     private const array WRITTEN_BY_A_MODULE = [
         'data-answered' => 'desktop-decisions.js stamps it on a graph card once its decision came back accepted',
         'data-granted' => 'desktop-decisions.js stamps it on a frontier card once identity:grant came back ok (greenhouse decisions/0493)',
+        'data-busy' => 'desktop-decisions.js stamps it on a card while its ceremony is in flight; desktop-regions.js will not swap a region holding one (greenhouse decisions/0563)',
+        'data-live-stale' => 'desktop-regions.js stamps it on a region the house did not print when asked again (greenhouse decisions/0563)',
     ];
 
     /**

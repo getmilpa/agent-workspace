@@ -352,8 +352,8 @@ module. The page **composes** them and emits **one** runtime.
   silence. A name no renderer declares is a 404, never a guess at a path.
 - **One emitter.** The page hand-writes **no** runtime `<script>` tag. `LiveBoot::html()` emits, in this
   order and each URL once: every declared **stylesheet**, the **boot** payload, `milpa-live.js`,
-  `milpa-live-remote.js`, the five modules the **page** declares (`desktop-guard.js`,
-  `desktop-shell-bus.js`, `desktop-hub.js`, `desktop-turn.js`, `desktop-commands.js`), every declared
+  `milpa-live-remote.js`, the six modules the **page** declares (`desktop-guard.js`,
+  `desktop-shell-bus.js`, `desktop-regions.js`, `desktop-hub.js`, `desktop-turn.js`, `desktop-commands.js`), every declared
   **component module** in the order its surface was painted, and **Alpine** last — each `defer`. The three
   seeds the local runtime reads (`milpa-live-signals`, `milpa-live-persist`, `milpa-live-computed`) are
   emitted once, next to the boot, by the same helper.
@@ -441,7 +441,8 @@ renders them:
 |---|---|---|
 | `desktop-guard.js` | `MilpaLive.desktop` | the copy (`tr`), the fetch discipline (`guarded` / `guardedFlow` / `failed`), the `desktop.notice` signal, the one document click listener (`onDismiss`) |
 | `desktop-shell-bus.js` | `window.MilpaShell` (and `MilpaLive.desktop.bus`) | `on` / `onAny` / `emit`, `onStatus` / `status` (which writes `conn.state` and `conn.label`), `panel(id)`. It is its **own** module because the bus is the Desktop's published extension point — five shipped modules and every plugin panel reach for it — not a private channel between two of them |
-| `desktop-hub.js` | `MilpaLive.desktop.hub` | the ONE `EventSource`, opened on `DOMContentLoaded` (after every deferred module has subscribed) from the URL in `#milpa-desktop-hub`, and `translate(env)` — a `ShellEvent` republished unchanged, a governed turn's `kind` projection mapped to the facts the shell already renders, and a parked question turned into a notice **plus** `decision.parked` |
+| `desktop-regions.js` | `MilpaLive.desktop.regions` | `reread(names)` — what the house **derives** (a seat's frontier, a parked question's card, the work board and the verdict on it, the session's figures) is re-read from the page the window is on and swapped into the elements the server marked `data-live-region` (`Live\LiveRegion`); asks made together are one request, a region a human is acting in (`[data-busy]`) is deferred until `resume()`, and a page that does not print the region leaves what is shown, marked `data-live-stale`. With no hub it re-reads on a slow poll; when the hub returns it catches up once. `keep(name, fn)` lets a surface carry something into the fresh region — the inbox keeps the receipt of what the human just granted or answered |
+| `desktop-hub.js` | `MilpaLive.desktop.hub` | the ONE `EventSource`, opened on `DOMContentLoaded` (after every deferred module has subscribed) from the URL in `#milpa-desktop-hub`, and `translate(env)` — a `ShellEvent` republished unchanged, a governed turn's `kind` projection mapped to the facts the shell already renders, a parked question turned into a notice **plus** `decision.parked`, and what the house decides said as facts of its own: `house.closure` (its verdict), `house.notice` (its own turn in the session — a grant), `tool.failed`, `work.changed` and `run.ended`. The surfaces that show what the house derives consume them and re-read themselves; the transport builds no card |
 | `desktop-turn.js` | `MilpaLive.desktop.turn` | `run(text)` — the ONE `POST /agent` — `regenerate()`, `stop()`, the `session.working` signal (**set by the turn itself**, so a Desktop with no hub still shows one running), the pause a parked turn reports, and the counters the turn reports (`session.turns/steps/tokens`, `context.used`) |
 | `desktop-commands.js` | `MilpaLive.desktop.commands` | `parse()` / `run()` for `/goal`, `/mode`, `/help` and every user-invocable skill, `call()` over the op's http projection, the failure line, and the completion popup with its keyboard |
 

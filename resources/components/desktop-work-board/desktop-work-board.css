@@ -24,3 +24,8 @@
 /* The card being carried. */
 .work-card--carried { opacity: .5; cursor: grabbing; }
 .work-card__title { margin: 0 0 var(--space-3); font-size: var(--text-sm); }
+
+/* A region the page re-reads from the house (greenhouse decisions/0563): the wrapper is not a box, so what
+   is inside keeps the layout it had. A region that could not be re-read says so by dimming. */
+.milpa-live-region { display: contents; }
+.milpa-live-region[data-live-stale] > * { opacity: 0.6; }

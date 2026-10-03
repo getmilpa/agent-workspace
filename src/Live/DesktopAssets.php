@@ -51,6 +51,13 @@ final class DesktopAssets
     public const string BUS = 'desktop-shell-bus';
 
     /**
+     * The region reader (greenhouse decisions/0563). What the house derives — a seat's frontier, the verdict,
+     * a parked question's card — is re-read from the page a reload would get when a pushed fact says it moved,
+     * and on a slow poll when there is no hub. A mechanism, not a surface.
+     */
+    public const string REGIONS = 'desktop-regions';
+
+    /**
      * The Mercure connector (greenhouse decisions/0211, D1). It opens the ONE `EventSource`, reading the
      * hub's URL from a JSON data tag, and translates hub envelopes into the bus's facts and the shared
      * signals. A transport is not a surface either.
@@ -72,15 +79,16 @@ final class DesktopAssets
 
     /**
      * The modules the PAGE declares — every component module is declared by the renderer that paints it,
-     * and these five have no surface to be painted. Emitted first, in this order: the guard creates
-     * `MilpaLive.desktop`, the bus creates `window.MilpaShell`, the hub subscribes the transport to it,
-     * and the turn and the commands hang off the guard.
+     * and these six have no surface to be painted. Emitted first, in this order: the guard creates
+     * `MilpaLive.desktop`, the bus creates `window.MilpaShell`, the region reader listens to the bus's
+     * connection state, the hub subscribes the transport to it, and the turn and the commands hang off the
+     * guard.
      *
      * @return list<string>
      */
     public static function runtimeModules(): array
     {
-        return [self::GUARD, self::BUS, self::HUB, self::TURN, self::COMMANDS];
+        return [self::GUARD, self::BUS, self::REGIONS, self::HUB, self::TURN, self::COMMANDS];
     }
 
     /**
@@ -128,6 +136,7 @@ final class DesktopAssets
         'desktop-agent' => ['css'],
         self::GUARD => ['js'],
         self::BUS => ['js'],
+        self::REGIONS => ['js'],
         self::HUB => ['js'],
         self::TURN => ['js'],
         self::COMMANDS => ['js'],
