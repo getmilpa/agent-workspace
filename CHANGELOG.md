@@ -3,6 +3,13 @@
 All notable changes to milpa/desktop-app are documented here. This project adheres to
 [Semantic Versioning](https://semver.org/) and [Keep a Changelog](https://keepachangelog.com/).
 
+## [0.88.0](https://github.com/getmilpa/agent-workspace/compare/v0.87.0...v0.88.0) (2026-10-03)
+
+
+### Features
+
+* what the house decides reaches the panel by push, and by a poll when there is no hub (greenhouse decisions/0563) ([#120](https://github.com/getmilpa/agent-workspace/issues/120)) ([928ea16](https://github.com/getmilpa/agent-workspace/commit/928ea1613a69e3015de7d7377963bd7e0d4c6901))
+
 ## [0.87.0](https://github.com/getmilpa/agent-workspace/compare/v0.86.2...v0.87.0) (2026-10-03)
 
 
