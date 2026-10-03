@@ -36,3 +36,8 @@
 .sequence-card[data-sequence-paused] { border-color: var(--warning-border, var(--border)); }
 .decision-card__options [hidden] { display: none; }
 .decision-card[data-answered] .decision-card__options { display: none; }
+
+/* A region the page re-reads from the house (greenhouse decisions/0563): the wrapper is not a box, so what
+   is inside keeps the layout it had. A region that could not be re-read says so by dimming. */
+.milpa-live-region { display: contents; }
+.milpa-live-region[data-live-stale] > * { opacity: 0.6; }

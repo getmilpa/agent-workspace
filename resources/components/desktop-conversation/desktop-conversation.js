@@ -273,11 +273,27 @@
     shell.on('agent.parked', function (fact) { append('ask-grant', parked(fact)); });
     // The window compacted. `session.compacted` has been declared in milpa/agent all along and painted
     // by nobody; it reaches the bus through the transport's generic `event` envelope.
+    // WHAT THE HOUSE DECIDES IS PAINTED WHEN IT DECIDES IT (greenhouse decisions/0563), with the same two
+    // functions a reloaded thread uses — so a pushed verdict and a replayed one are one markup.
+    shell.on('house.closure', function (fact) { closure(fact || {}); });
+    shell.on('house.notice', function (fact) { append('system', { text: (fact && fact.text) || '' }); });
     shell.on('session.compacted', function (fact) {
       append('compacted', { through: (fact && fact.through) || 0, summary: (fact && fact.summary) || '' });
     });
 
     return true;
+  }
+
+  /**
+   * THE HOUSE'S VERDICT, stamped where the answer it judged is read (greenhouse decisions/0509 §7) — the same
+   * ✓/⚠ whether it was pushed or replayed. Measured (evidence/1036): a reloaded thread showed «the blog is
+   * built, tested, and live» and not the house's `verified: false` beside it; measured again (evidence/1095):
+   * a pushed thread showed the answer and no verdict at all until a reload.
+   */
+  function closure(fact) {
+    var closed = fact.verified === true;
+    var why = Array.isArray(fact.reasons) ? fact.reasons.join('; ') : '';
+    if (!verdict(closed, why)) { append('result', { verified: closed, reasons: why }); }
   }
 
   /**
@@ -326,14 +342,10 @@
             append('system', { text: tr('conversation.answered', row.answer || '', row.by || '') });
           }
           break;
-        case 'closure':
-          // THE HOUSE'S VERDICT, stamped where the answer it judged is read (greenhouse decisions/0509 §7) — the
-          // same ✓/⚠ a live turn gets. Measured (evidence/1036): a reloaded thread showed «the blog is built,
-          // tested, and live» and not the house's `verified: false` beside it.
-          var closed = row.verified === true;
-          var why = Array.isArray(row.reasons) ? row.reasons.join('; ') : '';
-          if (!verdict(closed, why)) { append('result', { verified: closed, reasons: why }); }
-          break;
+        case 'closure': closure(row); break;
+        // The house's own turn in the session — a grant's notice (greenhouse decisions/0495) — is a notice,
+        // never a bubble in the reader's voice: nobody typed it.
+        case 'notice': append('system', { text: row.text || '' }); break;
         case 'run_failed':
           // A RUN THAT FAILED says so where it is read, with its endpoint's answer when the ledger has one
           // (greenhouse decisions/0536). Measured (evidence/1069 §C1): a 404 from the model endpoint lived only in

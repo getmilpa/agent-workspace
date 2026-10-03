@@ -73,6 +73,33 @@
     }).then(d.guarded).catch(function (err) { d.failed(err, tr('guard.unreachable')); });
   }
 
+  /**
+   * THE BOARD ASKS THE HOUSE AGAIN (greenhouse decisions/0563). The cards are the session's own record and
+   * the line above them is the house's verdict on it; both are read off the stream on the server. The hub
+   * delivered every todo, plan, evidence and run end, and nothing here listened — measured (greenhouse
+   * evidence/1095): «Verified by the house» appeared only after a reload.
+   */
+  var WORK_REGION = 'work';
+  var subscribed = false;
+
+  function subscribe() {
+    var bus = window.MilpaShell;
+    if (subscribed || !bus || typeof bus.on !== 'function') { return false; }
+    subscribed = true;
+    var reread = function () {
+      var d = desk();
+      if (d && d.regions) { d.regions.reread([WORK_REGION]); }
+    };
+    bus.on('work.changed', reread);
+    bus.on('house.closure', reread);
+    bus.on('run.ended', reread);
+
+    return true;
+  }
+
+  subscribe();
+  document.addEventListener('DOMContentLoaded', subscribe);
+
   live.register('desktopWorkBoard', function () {
     return {
       /** Pick a card up. */

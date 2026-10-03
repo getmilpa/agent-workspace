@@ -83,9 +83,14 @@ final class DesktopData
         foreach ($rows as $event) {
             $p = \is_array($event['payload'] ?? null) ? $event['payload'] : [];
             $row = match ($event['type'] ?? '') {
-                'session.turn' => ($p['role'] ?? '') === 'assistant'
-                    ? ['kind' => 'agent', 'text' => $this->str($p['content'] ?? null)]
-                    : ['kind' => 'user', 'text' => $this->str($p['content'] ?? null)],
+                // THE HOUSE'S OWN TURN IS A NOTICE (greenhouse decisions/0495, 0563): it is recorded as a turn
+                // because the model must read it, and nobody typed it — painted in the reader's own voice it
+                // read as something they had said.
+                'session.turn' => match (true) {
+                    ($p['role'] ?? '') === 'assistant' => ['kind' => 'agent', 'text' => $this->str($p['content'] ?? null)],
+                    str_starts_with($this->str($p['content'] ?? null), LedgerSession::HOUSE_VOICE) => ['kind' => 'notice', 'text' => $this->str($p['content'] ?? null)],
+                    default => ['kind' => 'user', 'text' => $this->str($p['content'] ?? null)],
+                },
                 'session.tool_called' => ['kind' => 'tool', 'name' => $this->str($p['tool'] ?? null) ?: 'tool', 'result' => $this->str($p['result'] ?? null)],
                 // The parked question carries its OPTIONS and its why (greenhouse decisions/0254): a
                 // reloaded thread renders the request with the same buttons a live one has, so a question

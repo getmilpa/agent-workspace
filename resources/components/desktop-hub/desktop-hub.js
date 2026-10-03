@@ -14,7 +14,11 @@
  *   - a desktop `ShellEvent` carries `event` + `data` → published as that fact, unchanged;
  *   - a governed turn's projection carries `kind` (activity / message / reasoning / waiting,
  *     greenhouse decisions/0190) → mapped to the facts the conversation, the turn and the Activity tab
- *     already listen for, so ONE set of subscribers renders both streams.
+ *     already listen for, so ONE set of subscribers renders both streams;
+ *   - what the house decides (greenhouse decisions/0563) is said too: its verdict (`house.closure`), its own
+ *     notice in the session (`house.notice`), a call that did not go through (`tool.failed`), the session's record moving
+ *     (`work.changed`) and the end of every run (`run.ended`). The surfaces that show what the house derives
+ *     consume them and re-read themselves from the house — the transport builds no card.
  *
  * Nothing here touches the DOM. A parked question becomes two facts — a system notice and
  * `decision.parked` — and the surfaces that own the inbox card and the sidebar's badge consume them.
@@ -89,11 +93,29 @@
     if (b && typeof b.emit === 'function') { b.emit(type, data); }
   }
 
+  /**
+   * How the house's own turns begin (app-runtime `SeatFrontier::NOTICE_PREFIX`, greenhouse decisions/0495): a
+   * fact the house recorded in the session — a grant, today — never a person asking for work.
+   */
+  var HOUSE_VOICE = '[house] ';
+
   /** A governed turn's `activity` projection (greenhouse decisions/0190). */
   function activity(env) {
     var detail = env.activity || {};
     var state = detail.state || '';
-    if (state === 'thinking') { say('session.state', { state: 'working' }); return; }
+    if (state === 'thinking') {
+      // THE HOUSE TOLD THE SESSION A FACT; NOBODY ASKED IT TO WORK (greenhouse decisions/0513 §2, 0563). It
+      // arrives as a turn because the model must read it, and it used to be read here as any turn: the page
+      // said «Working» with nothing running and painted nothing of what the house had just said.
+      if (detail.role === 'user' && typeof detail.text === 'string' && detail.text.indexOf(HOUSE_VOICE) === 0) {
+        say('house.notice', { text: detail.text });
+
+        return;
+      }
+      say('session.state', { state: 'working' });
+
+      return;
+    }
     if (state === 'ready') {
       say('session.state', { state: 'idle' });
       // THE ANSWER REACHES EVERY SURFACE, not only the one that asked (greenhouse decisions/0258).
@@ -108,6 +130,10 @@
       // A tool ran: show it in the conversation and count it into the shared tool_calls signal.
       say('tool.call', { name: detail.detail || 'tool', result: detail.result || '' });
       signal('session.tool_calls', (parseInt(signal('session.tool_calls'), 10) || 0) + 1);
+      // A call that did NOT go through — refused for a scope, or simply failed; the push cannot tell which. A
+      // refusal is what a seat's frontier is made of (greenhouse decisions/0493), and whether this one is a
+      // refusal a person can decide is the house's to derive — so this only says the call failed.
+      if (detail.ok === false) { say('tool.failed', { name: detail.detail || 'tool' }); }
     }
   }
 
@@ -134,6 +160,32 @@
         by: (decided.by && decided.by.id) || '',
         executor: decided.executor || '',
       });
+
+      return 'session';
+    }
+    // THE HOUSE'S VERDICT on the leg that just ended (greenhouse decisions/0509 §7, 0563): whether it verified
+    // the work, why not, and on what. Only a literal `true` is a verification.
+    if (env.kind === 'closure') {
+      var closure = env.closure || {};
+      say('house.closure', {
+        verified: closure.verified === true,
+        reasons: (closure.reasons && closure.reasons.length) ? closure.reasons : [],
+        scope: closure.scope || '',
+      });
+
+      return 'session';
+    }
+    // The session's own record of its work moved: a todo, its plan, a piece of evidence.
+    if (env.kind === 'card' || env.kind === 'plan' || env.kind === 'evidence') {
+      say('work.changed', { kind: env.kind });
+
+      return 'session';
+    }
+    // THE LAST RING OF EVERY RUN (greenhouse decisions/0514): a run that ends without a final answer writes
+    // no assistant turn, so nothing else tells the page it is over.
+    if (env.kind === 'run_ended') {
+      say('session.state', { state: 'idle' });
+      say('run.ended', { reason: (env.run && env.run.reason) || '' });
 
       return 'session';
     }

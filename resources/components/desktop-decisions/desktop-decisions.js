@@ -72,14 +72,91 @@
     return card;
   }
 
-  /** Subscribe to the transport's fact, ONCE. */
+  // ── the inbox asks the house again (greenhouse decisions/0563) ──────────────────────────────────
+  // Every card here is DERIVED on the server: a frontier card is a refused call read against the enrollment
+  // ledger and the authoring policy; a question's card carries the session it answers and its two buttons. A
+  // pushed fact is narrower than either, so the inbox does not build a card from it — it re-reads its two
+  // regions from the house. Measured (greenhouse evidence/1095): with 1,209 pushes received, the frontier
+  // card and the question's card appeared only after a reload the window does not have.
+  var PENDING_REGION = 'decisions.pending';
+  var FRONTIER_REGION = 'decisions.frontier';
+
+  function regions() { var d = desk(); return (d && d.regions) || null; }
+
+  function reread() {
+    var r = regions();
+
+    return r ? r.reread([PENDING_REGION, FRONTIER_REGION]) : null;
+  }
+
+  /** While a ceremony is in flight its card must not be swapped away; when it ends the inbox catches up. */
+  function busy(card, promise) {
+    card.setAttribute('data-busy', '');
+    var settle = function (value) {
+      card.removeAttribute('data-busy');
+      var r = regions();
+      if (r) { r.resume(); }
+
+      return value;
+    };
+
+    return promise.then(settle, settle);
+  }
+
+  /** Whether two cards are the same decision: the same refused call, or the same session's question. */
+  function same(a, b) {
+    if (a.hasAttribute('data-seat-session')) {
+      return a.getAttribute('data-seat-session') === b.getAttribute('data-seat-session')
+        && a.getAttribute('data-seat-seq') === b.getAttribute('data-seat-seq');
+    }
+
+    return a.hasAttribute('data-decision-session')
+      && a.getAttribute('data-decision-session') === b.getAttribute('data-decision-session');
+  }
+
+  /**
+   * WHAT THE HUMAN SETTLED ON THIS PAGE STAYS AS ITS RECEIPT. A grant's card says «granted · … — the seat can
+   * continue» and an answer's says what the door answered; the house no longer prints either, and a re-read
+   * that dropped them would take the only word the human got. So a settled card is carried into the fresh
+   * list, first — unless the house still prints that same decision, and then the house wins: a receipt never
+   * hides something that is open.
+   */
+  function carrySettled(old, fresh) {
+    var list = fresh.querySelector('ol');
+    var shown = old.querySelectorAll('.decision-card');
+    var settled = [];
+    for (var s = 0; s < shown.length; s++) {
+      if (shown[s].hasAttribute('data-granted') || shown[s].hasAttribute('data-answered')) { settled.push(shown[s]); }
+    }
+    if (!list || settled.length === 0) { return; }
+    var open = list.querySelectorAll('.decision-card');
+    for (var i = settled.length - 1; i >= 0; i--) {
+      var printed = false;
+      for (var j = 0; j < open.length; j++) { if (same(settled[i], open[j])) { printed = true; break; } }
+      if (!printed) { list.insertBefore(settled[i], list.firstChild); }
+    }
+  }
+
+  /** Subscribe to the transport's facts, ONCE. */
   var subscribed = false;
 
   function subscribe() {
     var bus = window.MilpaShell;
     if (subscribed || !bus || typeof bus.on !== 'function') { return false; }
     subscribed = true;
-    bus.on('decision.parked', function (fact) { parked((fact && fact.question) || ''); });
+    // The clone is the question's text at once; the re-read replaces it with the card that can be answered.
+    bus.on('decision.parked', function (fact) { parked((fact && fact.question) || ''); reread(); });
+    bus.on('agent.answered', reread);
+    // A call that did not go through may be a refusal that opens a frontier card, the end of a run may expire one (greenhouse decisions/0510),
+    // and the house's notice is a grant having closed one.
+    bus.on('tool.failed', reread);
+    bus.on('run.ended', reread);
+    bus.on('house.notice', reread);
+    var r = regions();
+    if (r) {
+      r.keep(PENDING_REGION, carrySettled);
+      r.keep(FRONTIER_REGION, carrySettled);
+    }
 
     return true;
   }
@@ -194,7 +271,7 @@
     status.textContent = tr('decisions.answering');
 
     // Through the confirm gate: answering is irreversible, and the house asks before it records it.
-    return confirmed(ANSWER_ROUTE, { session: session, answer: answer })
+    return busy(card, confirmed(ANSWER_ROUTE, { session: session, answer: answer })
       .then(function (read) {
         if (read && read.ok === false) { throw new Error(read.error || 'refused'); }
         if (!affirmative(answer)) {
@@ -217,7 +294,7 @@
       })
       .catch(function (err) {
         status.textContent = tr('decisions.refused', why(err));
-      });
+      }));
   }
 
   // ── a seat's frontier: the human who enrolled it grants the scope a refusal names ────────────────
@@ -304,7 +381,7 @@
     }
     status.textContent = tr('frontier.granting');
 
-    return touchFor('identity:grant', call, call.session)
+    return busy(card, touchFor('identity:grant', call, call.session)
       .then(function (assertion) {
         var body = { session: call.session, seq: call.seq, assertion: assertion };
         if (call.existing !== undefined) { body.existing = call.existing; }
@@ -320,7 +397,7 @@
       })
       .catch(function (err) {
         status.textContent = tr('frontier.refused_grant', why(err));
-      });
+      }));
   }
 
   // ── your seats: the human gives the resident one, and no file is edited (greenhouse decisions/0499) ──

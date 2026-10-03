@@ -85,7 +85,9 @@ final class WorkBoard
 
         $context = new ComponentContext(componentId: self::COMPONENT_ID);
         $state = $component->mount($subject->props, $context);
-        $subject->html = $this->markup($subject->props) . $this->envelope($state);
+        // ONE REGION, the envelope outside it (greenhouse decisions/0563): the verdict and the cards are re-read
+        // from the house when a pushed fact moves them; the signed state was signed for the page that was served.
+        $subject->html = LiveRegion::of(LiveRegion::WORK, $this->markup($subject->props)) . $this->envelope($state);
 
         $this->events?->dispatch(self::AFTER_RENDER, [self::SUBJECT_KEY => $subject]);
 
