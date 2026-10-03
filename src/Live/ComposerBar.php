@@ -16,6 +16,7 @@ namespace Milpa\AgentWorkspace\Live;
 
 use Milpa\AgentWorkspace\Data\DesktopData;
 use Milpa\AgentWorkspace\Event\RenderEvents;
+use Milpa\AgentWorkspace\HouseCli;
 use Milpa\AgentWorkspace\I18n\Catalog;
 use Milpa\Interfaces\Event\MilpaEventDispatcherInterface;
 use Milpa\Live\Security\HmacStateSigner;
@@ -186,7 +187,7 @@ final class ComposerBar
         $where = $this->tr('conn.degraded.where');
         if ($this->stackUrl === '') {
             return $said . ' ' . $this->tr('conn.degraded.how')
-                . ' <code class="composer-degraded__cmd">' . $this->tr('conn.degraded.command') . '</code>';
+                . ' <code class="composer-degraded__cmd">' . htmlspecialchars(HouseCli::reached($this->catalog->tr('conn.degraded.command')), ENT_QUOTES) . '</code>';
         }
 
         return $said . ' <a class="composer-degraded__link" href="' . htmlspecialchars($this->stackUrl, ENT_QUOTES) . '">' . $where . '</a>';
