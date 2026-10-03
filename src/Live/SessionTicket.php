@@ -49,6 +49,9 @@ final readonly class SessionTicket
     /** Where the page carries the ticket the server issued it. */
     public const string TAG = 'milpa-desktop-ticket';
 
+    /** A session id, as a selection takes it — the Desktop store's `desk-…`, a sequence's `sequence:…`, a terminal's name. */
+    private const string SESSION_ID = '/^[0-9A-Za-z][0-9A-Za-z_:.-]{0,63}$/';
+
     private function __construct(
         public string $sessionId,
         public string $principal,
@@ -89,8 +92,13 @@ final readonly class SessionTicket
         if (!hash_equals(hash_hmac('sha256', $claim, $secret, true), (string) self::unb64($signature))) {
             return null;
         }
+        // WHO MAY READ THE SESSION WAS JUDGED WHERE THE TICKET WAS SEALED (greenhouse decisions/0493): the panel admits
+        // the seats a principal enrolled, and their sessions are named in a terminal (`--session=camino-rod-blog`), not
+        // minted by the Desktop's store. Matching only `desk-…` here refused what the house had already admitted, and
+        // the panel stayed «live hub not connected» through a resident's whole turn (evidence/1091, E4). What is left
+        // to check is the shape: one session id, the grammar a selection takes (`DesktopData::select()`).
         $lines = explode("\n", $claim);
-        if (\count($lines) !== 2 || preg_match('/^desk-[0-9a-z-]{1,64}$/', $lines[0]) !== 1) {
+        if (\count($lines) !== 2 || preg_match(self::SESSION_ID, $lines[0]) !== 1) {
             return null;
         }
 

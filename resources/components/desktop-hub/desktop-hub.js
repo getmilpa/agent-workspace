@@ -32,6 +32,11 @@
   var HUB_TAG = 'milpa-desktop-hub';
   /** Where a surface that could not write the payload asks for it (greenhouse decisions/0253). */
   var ASK = '/workspace/hub';
+  /** Renewals in a row without a stream that opened, before the page settles on offline. */
+  var RENEWALS = 5;
+  var renewals = 0;
+  /** Whether this page got its URL by asking the door — only then is there a door to ask again. */
+  var asked = false;
   /** Where the server sealed WHICH SESSION this surface inhabits (greenhouse decisions/0256). */
   var TICKET_TAG = 'milpa-desktop-ticket';
 
@@ -169,8 +174,18 @@
       return null;
     }
     var stream = new EventSource(url, { withCredentials: true });
-    stream.onopen = function () { if (b && typeof b.status === 'function') { b.status('live'); } };
-    stream.onerror = function () { if (b && typeof b.status === 'function') { b.status('offline'); } };
+    stream.onopen = function () { renewals = 0; if (b && typeof b.status === 'function') { b.status('live'); } };
+    stream.onerror = function () {
+      if (b && typeof b.status === 'function') { b.status('offline'); }
+      // A CLOSED stream is the browser giving up, and on the panel that is the hub refusing the cookie: the subscriber
+      // JWT the door sets lives five minutes (milpa/mercure) and a resident's turn lasts longer (greenhouse evidence/1091,
+      // E4). The page asks the door again with its ticket, as it did the first time — a few times, never forever. A
+      // stream the browser is still reconnecting is the browser's to retry.
+      if (stream.readyState === 2 && asked && renewals < RENEWALS) {
+        renewals += 1;
+        window.setTimeout(ask, 1000 * renewals);
+      }
+    };
     stream.onmessage = function (message) {
       var env;
       try { env = JSON.parse(message.data); } catch (e) { return; }
@@ -195,7 +210,14 @@
   function open() {
     if (URL !== '') { return openOn(URL); }
     if (typeof window.fetch !== 'function') { return openOn(''); }
+    asked = true;
+    ask();
 
+    return null;
+  }
+
+  /** Ask the door for the URL and a fresh cookie, and open the stream on what it answers. */
+  function ask() {
     fetch(ASK, { credentials: 'same-origin', headers: { Accept: 'application/json', 'X-Milpa-Session-Ticket': ticket() } })
       .then(function (r) { return r.ok ? r.json() : {}; })
       .then(function (payload) {
@@ -203,8 +225,6 @@
         openOn(URL);
       })
       .catch(function () { openOn(''); });
-
-    return null;
   }
 
   if (live && live.desktop) {
