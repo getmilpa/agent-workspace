@@ -3,6 +3,13 @@
 All notable changes to milpa/desktop-app are documented here. This project adheres to
 [Semantic Versioning](https://semver.org/) and [Keep a Changelog](https://keepachangelog.com/).
 
+## [0.87.0](https://github.com/getmilpa/agent-workspace/compare/v0.86.2...v0.87.0) (2026-10-03)
+
+
+### Features
+
+* a command the workspace prints carries the way to reach the house (greenhouse decisions/0560) ([#118](https://github.com/getmilpa/agent-workspace/issues/118)) ([d9896f3](https://github.com/getmilpa/agent-workspace/commit/d9896f3794df1ce08afb10e1b18e4749339dd287))
+
 ## [0.86.2](https://github.com/getmilpa/agent-workspace/compare/v0.86.1...v0.86.2) (2026-10-03)
 
 
