@@ -3,6 +3,13 @@
 All notable changes to milpa/desktop-app are documented here. This project adheres to
 [Semantic Versioning](https://semver.org/) and [Keep a Changelog](https://keepachangelog.com/).
 
+## [0.88.1](https://github.com/getmilpa/agent-workspace/compare/v0.88.0...v0.88.1) (2026-10-05)
+
+
+### Bug Fixes
+
+* the workspace's signing secret fails closed, like the live wire ([#122](https://github.com/getmilpa/agent-workspace/issues/122)) ([88e80df](https://github.com/getmilpa/agent-workspace/commit/88e80df2ffc4690fb91176ef729159b73d997bfb))
+
 ## [0.88.0](https://github.com/getmilpa/agent-workspace/compare/v0.87.0...v0.88.0) (2026-10-03)
 
 
