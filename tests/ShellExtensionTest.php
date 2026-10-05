@@ -43,6 +43,7 @@ final class ShellExtensionTest extends TestCase
         $kernel = Kernel::boot([
             'root' => sys_get_temp_dir(),
             'plugins' => [AgentWorkspacePlugin::class, DemoSectionPlugin::class],
+            'config' => ['live' => ['secret' => 'a-test-secret-long-enough-to-sign-with']],
         ]);
 
         $body = self::region($kernel);
@@ -59,6 +60,7 @@ final class ShellExtensionTest extends TestCase
         $kernel = Kernel::boot([
             'root' => sys_get_temp_dir(),
             'plugins' => [AgentWorkspacePlugin::class],
+            'config' => ['live' => ['secret' => 'a-test-secret-long-enough-to-sign-with']],
         ]);
 
         $body = self::region($kernel);

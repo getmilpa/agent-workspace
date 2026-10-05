@@ -57,7 +57,7 @@ final class AgentWorkspacePluginTest extends TestCase
 
     public function testItMountsTheShellEventsAndAssetRoutes(): void
     {
-        $plugin = new AgentWorkspacePlugin(new DIContainer());
+        $plugin = self::withConfig([]);
 
         $routes = $plugin->routes();
         self::assertCount(16, $routes);
@@ -79,7 +79,7 @@ final class AgentWorkspacePluginTest extends TestCase
         // greenhouse decisions/0497: «Find models» and a skill are reads the panel asks by GET; every other door
         // is a POST. A door mounted with the wrong verb is the same silent refusal as no door at all.
         $verbs = [];
-        foreach ((new AgentWorkspacePlugin(new DIContainer()))->routes() as $route) {
+        foreach (self::withConfig([])->routes() as $route) {
             $verbs[$route->path] = array_map(static fn (\Milpa\Http\HttpMethod $m): string => $m->value, $route->methods);
         }
         foreach (\Milpa\AgentWorkspace\Controllers\PanelDoorController::DOORS as $door) {
@@ -92,7 +92,7 @@ final class AgentWorkspacePluginTest extends TestCase
 
     public function testEveryRouteButTheAssetsCarriesTheDoorLoopbackOnlyByDefault(): void
     {
-        $plugin = new AgentWorkspacePlugin(new DIContainer());
+        $plugin = self::withConfig([]);
 
         self::assertSame([LoopbackOnlyMiddleware::class], $plugin->settings()->effectiveMiddleware());
         self::assertSame(['/workspace/hub', '/workspace/settings', '/workspace/sessions', '/workspace/work', '/workspace/grant', '/workspace/answer', '/workspace/sequence', '/workspace/decide', '/workspace/turn', '/workspace/goal', '/workspace/skill', '/workspace/config', '/workspace/provider', '/workspace/model', '/workspace/seat'], self::gatedPaths($plugin->routes()));
@@ -138,6 +138,8 @@ final class AgentWorkspacePluginTest extends TestCase
     {
         $container = new DIContainer();
         $container->registerService(MilpaEventDispatcherInterface::class, new EventDispatcher(new NullLogger()));
+        // A signing secret so boot() does not fail closed (greenhouse decisions/0569); this case is about the gate.
+        $container->registerService(Config::class, new Config(['live' => ['secret' => 'a-test-secret-long-enough-to-sign-with']]));
         $own = new LoopbackOnlyMiddleware(new Catalog('es'));
         $container->registerService(LoopbackOnlyMiddleware::class, $own);
         (new AgentWorkspacePlugin($container))->boot();
@@ -145,7 +147,7 @@ final class AgentWorkspacePluginTest extends TestCase
 
         $container = new DIContainer();
         $container->registerService(MilpaEventDispatcherInterface::class, new EventDispatcher(new NullLogger()));
-        $container->registerService(Config::class, new Config(['workspace' => ['locale' => 'es']]));
+        $container->registerService(Config::class, new Config(['workspace' => ['locale' => 'es'], 'live' => ['secret' => 'a-test-secret-long-enough-to-sign-with']]));
         $plugin = new AgentWorkspacePlugin($container);
         $plugin->boot();
         self::assertSame('es', $plugin->settings()->locale);
@@ -219,7 +221,7 @@ final class AgentWorkspacePluginTest extends TestCase
         // The Desktop as the admin's guest (greenhouse decisions/0210, 0211): the plugin class carries the
         // admin's contract through the AdminGuest bridge — the admin, installed here, finds it by instanceof
         // — and declares ONE section, which since slice 3 declares a whole VIEW instead of one component.
-        $plugin = new AgentWorkspacePlugin(new DIContainer());
+        $plugin = self::withConfig([]);
         self::assertInstanceOf(AdminGuest::class, $plugin);
         self::assertInstanceOf(\Milpa\Admin\Section\AdminSectionProvider::class, $plugin);
 
@@ -262,15 +264,21 @@ final class AgentWorkspacePluginTest extends TestCase
      */
     public function testAnUnbootedPluginStillDeclaresTheSection(): void
     {
-        $view = (new AgentWorkspacePlugin(new DIContainer()))->adminSections()[0]->view;
+        // WITH A SECRET, an unbooted plugin still declares a well-formed section — the registry it reads from
+        // the container is not there, so the view carries the region's root and nothing else.
+        $view = self::withConfig([])->adminSections()[0]->view;
 
         self::assertInstanceOf(\Milpa\Admin\Section\DeclaredView::class, $view);
         self::assertSame(['desktop-agent'], $view->names(), 'no shell surfaces: nothing declared them');
+
+        // WITHOUT a secret it fails closed (greenhouse decisions/0569): the panel signs its envelopes, so with no
+        // key there is no section at all — not one signed with a guessable, path-derived key.
+        self::assertSame([], (new AgentWorkspacePlugin(new DIContainer()))->adminSections());
     }
 
     public function testLifecycleHooksAreInert(): void
     {
-        $plugin = new AgentWorkspacePlugin(new DIContainer());
+        $plugin = self::withConfig([]);
 
         // Installing the plugin IS the activation; there is no persistent state to create or remove.
         $plugin->install();
@@ -288,6 +296,9 @@ final class AgentWorkspacePluginTest extends TestCase
      */
     private static function withConfig(array $config): AgentWorkspacePlugin
     {
+        // The live surface fails closed without a signing secret (greenhouse decisions/0569); these route and
+        // locale tests are about other things, so they declare one unless the case set its own.
+        $config['live']['secret'] ??= 'a-test-secret-long-enough-to-sign-with';
         $container = new DIContainer();
         $container->registerService(Config::class, new Config($config));
 
