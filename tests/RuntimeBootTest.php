@@ -52,7 +52,9 @@ final class RuntimeBootTest extends TestCase
     {
         // The door, through the real pipeline (greenhouse decisions/0209): the router resolves the gate the
         // plugin registered, and a LAN address is refused — a page for a browser, JSON for the shell's calls.
-        $kernel = Kernel::boot(['root' => sys_get_temp_dir(), 'plugins' => [AgentWorkspacePlugin::class]]);
+        // A declared secret so the live surface mounts at all (greenhouse decisions/0569); this case is about the
+        // door, not the secret.
+        $kernel = Kernel::boot(['root' => sys_get_temp_dir(), 'plugins' => [AgentWorkspacePlugin::class], 'config' => ['live' => ['secret' => 'a-test-secret-long-enough-to-sign-with']]]);
 
         $page = self::dispatch($kernel, 'GET', '/workspace/hub', '203.0.113.9', ['Accept' => 'text/html']);
         self::assertSame(403, $page->getStatusCode());
@@ -89,7 +91,7 @@ final class RuntimeBootTest extends TestCase
         $kernel = Kernel::boot([
             'root' => sys_get_temp_dir(),
             'plugins' => [AgentWorkspacePlugin::class],
-            'config' => ['workspace' => ['middleware' => []]],
+            'config' => ['workspace' => ['middleware' => []], 'live' => ['secret' => 'a-test-secret-long-enough-to-sign-with']],
         ]);
 
         $response = self::dispatch($kernel, 'GET', '/workspace/hub', '203.0.113.9', ['Accept' => 'text/html']);
@@ -102,7 +104,7 @@ final class RuntimeBootTest extends TestCase
         $kernel = Kernel::boot([
             'root' => sys_get_temp_dir(),
             'plugins' => [AgentWorkspacePlugin::class],
-            'config' => ['workspace' => ['middleware' => ['Acme\\Nope']]],
+            'config' => ['workspace' => ['middleware' => ['Acme\\Nope']], 'live' => ['secret' => 'a-test-secret-long-enough-to-sign-with']],
         ]);
 
         self::assertSame(403, self::dispatch($kernel, 'GET', '/workspace/hub', '203.0.113.9')->getStatusCode(), 'the LAN is refused, not served by a half-loaded gate');

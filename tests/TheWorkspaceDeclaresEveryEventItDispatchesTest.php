@@ -92,6 +92,8 @@ final class TheWorkspaceDeclaresEveryEventItDispatchesTest extends TestCase
         $container = new DIContainer();
         // The kernel registers the dispatcher before any plugin boots; the plugin declares where it receives it.
         $container->registerService(MilpaEventDispatcherInterface::class, $spy);
+        // A signing secret so boot() does not fail closed (greenhouse decisions/0569).
+        $container->registerService(\Milpa\Runtime\Config::class, new \Milpa\Runtime\Config(['live' => ['secret' => 'a-test-secret-long-enough-to-sign-with']]));
         $plugin = new AgentWorkspacePlugin($container);
         $plugin->boot();
 
@@ -149,6 +151,8 @@ final class TheWorkspaceDeclaresEveryEventItDispatchesTest extends TestCase
         $spy = self::spy();
         $container = new DIContainer();
         $container->registerService(MilpaEventDispatcherInterface::class, $spy);
+        // A signing secret so boot() does not fail closed (greenhouse decisions/0569).
+        $container->registerService(\Milpa\Runtime\Config::class, new \Milpa\Runtime\Config(['live' => ['secret' => 'a-test-secret-long-enough-to-sign-with']]));
         $plugin = new AgentWorkspacePlugin($container);
         $plugin->boot();
 
@@ -199,6 +203,8 @@ final class TheWorkspaceDeclaresEveryEventItDispatchesTest extends TestCase
 
         $container = new DIContainer();
         $container->registerService(MilpaEventDispatcherInterface::class, $plain);
+        // A signing secret so boot() does not fail closed (greenhouse decisions/0569).
+        $container->registerService(\Milpa\Runtime\Config::class, new \Milpa\Runtime\Config(['live' => ['secret' => 'a-test-secret-long-enough-to-sign-with']]));
         $plugin = new AgentWorkspacePlugin($container);
         $plugin->boot();
 

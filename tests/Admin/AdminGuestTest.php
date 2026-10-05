@@ -443,6 +443,9 @@ final class AdminGuestTest extends TestCase
     private static function boot(array $plugins, array $config = [], ?DIContainer $container = null): array
     {
         $container ??= new DIContainer();
+        // The workspace fails closed without a signing secret (greenhouse decisions/0569); these tests exercise
+        // the rendered, signed panel, so they declare one unless the case set its own.
+        $config['live']['secret'] ??= 'a-test-secret-long-enough-to-sign-with';
         $kernel = Kernel::boot(['root' => sys_get_temp_dir(), 'plugins' => $plugins, 'config' => $config, 'container' => $container]);
         // The admin reads the booted plugins from the kernel in the container, as an app's public/index.php registers it.
         $container->registerService(Kernel::class, $kernel);

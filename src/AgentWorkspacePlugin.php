@@ -187,6 +187,14 @@ final class AgentWorkspacePlugin implements PluginInterface, RouteProviderInterf
         // is registered, so the error reaches whoever wrote `config/app.php` (greenhouse decisions/0279, 0284).
         WorkspaceKeys::refuseLegacy($this->configBag());
 
+        // FAIL CLOSED WITHOUT A SECRET (greenhouse decisions/0569), like LivePlugin: every component this boot
+        // builds signs its state envelope and CSRF with the house's secret, and HubController signs the hub
+        // ticket with it. With none declared there is no safe key to sign with — the old derived fallback was
+        // guessable — so nothing live is registered and the routes below mount nothing.
+        if (!$this->hasLiveSecret()) {
+            return;
+        }
+
         $events = $this->container->get(MilpaEventDispatcherInterface::class);
         assert($events instanceof MilpaEventDispatcherInterface);
 
@@ -337,6 +345,12 @@ final class AgentWorkspacePlugin implements PluginInterface, RouteProviderInterf
      */
     public function routes(): array
     {
+        // No signing secret, no live surface (greenhouse decisions/0569): the hub route signs its ticket with
+        // the secret and the per-component assets serve a panel that cannot render without one. Fail closed.
+        if (!$this->hasLiveSecret()) {
+            return [];
+        }
+
         return [
             ...Route::behind(
                 $this->settings()->effectiveMiddleware(),
@@ -371,6 +385,13 @@ final class AgentWorkspacePlugin implements PluginInterface, RouteProviderInterf
      */
     public function adminSections(): array
     {
+        // No signing secret, no panel (greenhouse decisions/0569): the agent view renders components that sign
+        // their envelopes with the house's secret, and there is no safe key to sign with when none is declared.
+        // Fail closed — the admin simply shows no agent section, rather than one signed with a guessable key.
+        if (!$this->hasLiveSecret()) {
+            return [];
+        }
+
         $settings = $this->settings();
         $catalog = $settings->catalog();
         // Asked of the UNDERLYING container: neither can be auto-wired, and a plugin whose boot() never ran must
@@ -526,18 +547,23 @@ final class AgentWorkspacePlugin implements PluginInterface, RouteProviderInterf
     }
 
     /**
-     * The HMAC secret every workspace component signs its state envelope and its CSRF token with.
+     * The HMAC secret every workspace component signs its state envelope and its CSRF token with — or
+     * null when the house declared none.
      *
      * ONE signing key per page (greenhouse decisions/0211): `workspace.live.<kind>_secret` wins when declared,
-     * else the house's own `live.secret` — the key every other milpa/live endpoint verifies with — and only
-     * when the house declares neither, a stable per-install value derived from this package's path, which is
-     * a default and not a secret.
+     * else the house's own `live.secret` — the key every other milpa/live endpoint verifies with.
+     *
+     * THERE IS NO DERIVED FALLBACK (greenhouse decisions/0569). It used to return
+     * `hash('sha256', __DIR__ . '|milpa-live|' . $kind)` when nothing was declared — a value anyone with the
+     * package can compute for a house at a known install path, so it could forge the panel's envelopes and
+     * `HubController`'s ticket with no leak at all. A secret nobody chose is a secret nobody can rotate, so
+     * «nothing declared» is `null`, and the surface fails closed — the same posture `LivePlugin` takes.
      */
-    private function liveSecret(string $kind): string
+    private function liveSecretOrNull(string $kind): ?string
     {
         $config = $this->configBag();
         if ($config === null) {
-            return hash('sha256', __DIR__ . '|milpa-live|' . $kind);
+            return null;
         }
 
         $configured = WorkspaceKeys::read($config, 'live.' . $kind . '_secret');
@@ -546,11 +572,33 @@ final class AgentWorkspacePlugin implements PluginInterface, RouteProviderInterf
         }
 
         $house = $config->get('live.secret');
-        if (is_string($house) && $house !== '') {
-            return $house;
+
+        return is_string($house) && $house !== '' ? $house : null;
+    }
+
+    /**
+     * The signing secret, required. Callers reach this only past {@see self::hasLiveSecret()} — the public
+     * entrypoints ({@see self::boot()}, {@see self::routes()}, {@see self::adminSections()}) fail closed
+     * before a single signing component is built — so a throw here means a caller skipped that gate.
+     */
+    private function liveSecret(string $kind): string
+    {
+        $secret = $this->liveSecretOrNull($kind);
+        if ($secret === null) {
+            throw new \LogicException(
+                'the workspace live wire has no secret: a signing component was built without one. '
+                . "Declare 'live' => ['secret' => '…'] (or workspace.live.{$kind}_secret), or let the "
+                . 'container mint a per-house live.secret (greenhouse decisions/0569).',
+            );
         }
 
-        return hash('sha256', __DIR__ . '|milpa-live|' . $kind);
+        return $secret;
+    }
+
+    /** Whether the house declared a signing secret — the one question the live surface fails closed on. */
+    private function hasLiveSecret(): bool
+    {
+        return $this->liveSecretOrNull('signing') !== null;
     }
 
     /** Where the shared event log lives: `workspace.events.log` in config, else a per-app temp file. */
