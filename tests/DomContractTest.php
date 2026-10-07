@@ -70,6 +70,7 @@ final class DomContractTest extends TestCase
         'data-answered' => 'desktop-decisions.js stamps it on a graph card once its decision came back accepted',
         'data-granted' => 'desktop-decisions.js stamps it on a frontier card once identity:grant came back ok (greenhouse decisions/0493)',
         'data-busy' => 'desktop-decisions.js stamps it on a card while its ceremony is in flight; desktop-regions.js will not swap a region holding one (greenhouse decisions/0563)',
+        'data-withdrawn' => 'desktop-decisions.js stamps it on an «Admitted: …» line once identity:withdraw came back ok (greenhouse decisions/0590, rule 12)',
         'data-live-stale' => 'desktop-regions.js stamps it on a region the house did not print when asked again (greenhouse decisions/0563)',
     ];
 
@@ -148,7 +149,7 @@ final class DomContractTest extends TestCase
                 // A built verb waiting for a person's admission, from a refusal and with none (greenhouse decisions/0590, 0597).
                 $contract = ['capability' => 'Prestamos', 'permission' => 'herramientas:write', 'scope' => 'herramientas:write', 'contract' => 'sha256:' . str_repeat('a', 64), 'not_admissible' => null, 'opens' => [['verb' => 'herramientas.prestar', 'description' => 'Lend a tool', 'mutating' => true, 'effects' => ['mutation' => 'persistent'], 'state' => ['paths' => ['var/herramientas.json'], 'source' => 'entities'], 'runs' => ['how' => 'house', 'pre_image' => true], 'standing' => 'never']]];
                 $subject->props['frontier'][0]['admissions'] = [['seq' => 57, 'tool' => 'herramientas_prestar', 'call' => ['id' => 1]] + $contract];
-                $subject->props['seats'] = [['fingerprint' => '95A3AC7B96F8BC6AA7044F2C09082971DEBAAA50', 'label' => 'resident', 'scopes' => ['agent:run'], 'authorized_by' => 'passkey:QM1L', 'admitted' => [], 'unadmitted' => [['ran_before' => true, 'verbs' => ['herramientas.prestar']] + $contract]]];
+                $subject->props['seats'] = [['fingerprint' => '95A3AC7B96F8BC6AA7044F2C09082971DEBAAA50', 'label' => 'resident', 'scopes' => ['agent:run'], 'authorized_by' => 'passkey:QM1L', 'admitted' => [['capability' => 'Prestamos', 'scope' => 'herramientas:read', 'key' => 'herramientas:read', 'admitted_by' => 'passkey:QM1L', 'at' => '2026-10-07T18:00:00Z', 'verbs' => ['herramientas.listar' => 'admitted']]], 'unadmitted' => [['ran_before' => true, 'verbs' => ['herramientas.prestar']] + $contract]]];
                 $subject->props['sequences'] = [['name' => 'deploy', 'steps' => ['plugins:list', 'config:set'], 'session' => 'sequence:deploy', 'paused' => true, 'pending_operation' => 'config:set']];
             }
         });

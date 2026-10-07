@@ -265,6 +265,7 @@ final class DecisionsInboxView
         return '<li class="decision-card decision-card--frontier decision-card--informed decision-card--admission"' . $bound
             . ($offered ? ' data-seat-admits="' . $this->esc($contract) . '"' : '') . ' data-seat-permission="' . $this->esc($permission) . '">'
             . $head
+            . $this->tookBack($card, $copy)
             . '<p class="decision-card__facts" data-admit-opens>' . $this->esc($copy['admit_opens']) . '</p>'
             . $this->contractHtml(\is_array($card['opens'] ?? null) ? $card['opens'] : [], $copy)
             . '<p class="decision-card__facts">' . $this->esc(sprintf($copy['not_opened'], $capability)) . ' ' . $this->esc($copy['house_limit']) . '</p>'
@@ -279,6 +280,26 @@ final class DecisionsInboxView
             . $more
             . '</p>'
             . '</li>';
+    }
+
+    /**
+     * That a person took this scope back from the seat, by whom and when (greenhouse decisions/0590, rule 12) — so
+     * the reader knows this is not something nobody decided. The house says it; a card it says nothing about, and
+     * a runtime that does not know withdrawals, print nothing.
+     *
+     * @param array<string, mixed>  $card
+     * @param array<string, string> $copy
+     */
+    private function tookBack(array $card, array $copy): string
+    {
+        $withdrawn = \is_array($card['withdrawn'] ?? null) ? $card['withdrawn'] : null;
+        if ($withdrawn === null || !\is_string($withdrawn['by'] ?? null)) {
+            return '';
+        }
+
+        return '<p class="decision-card__facts" data-admit-withdrawn>'
+            . $this->esc(sprintf($copy['admit_withdrawn'], $withdrawn['by'], \is_string($withdrawn['at'] ?? null) ? $withdrawn['at'] : ''))
+            . '</p>';
     }
 
     /**
@@ -309,6 +330,7 @@ final class DecisionsInboxView
                 'admitted' => $copy['standing_admitted'],
                 'changed' => $copy['standing_changed'],
                 'added' => $copy['standing_added'],
+                'withdrawn' => $copy['standing_withdrawn'],
                 default => '',
             };
             $effects = \is_array($verb['effects'] ?? null) ? $verb['effects'] : [];
@@ -443,6 +465,11 @@ final class DecisionsInboxView
      * with the same contract a refusal's card shows, bound to THIS seat. A runtime that hands neither prints
      * nothing, and the seat reads as it did.
      *
+     * EACH ADMISSION CARRIES THE BUTTON THAT TAKES IT BACK (decisions/0590, rule 12). It only removes authority, so
+     * there is no box to tick: the passkey's touch is the act, and it is bound to what the line says — this seat,
+     * this capability, this scope, as the house keeps it (`key`). A runtime that does not say that key cannot
+     * withdraw, and no button is offered. What persons took back is listed under it, with who and when.
+     *
      * @param array<string, mixed>  $seat
      * @param array<string, string> $copy
      */
@@ -461,10 +488,29 @@ final class DecisionsInboxView
                     default => '',
                 };
             }
-            $html .= '<p class="decision-card__facts" data-seat-admitted>'
+            $key = \is_string($admitted['key'] ?? null) ? $admitted['key'] : '';
+            $html .= '<p class="decision-card__facts" data-seat-admitted'
+                . ($key !== ''
+                    ? ' data-withdraw-seat="' . $this->esc((string) $seat['fingerprint']) . '" data-withdraw-capability="' . $this->esc((string) ($admitted['capability'] ?? '')) . '" data-withdraw-scope="' . $this->esc($key) . '"'
+                    : '')
+                . '>'
                 . $this->esc(sprintf($copy['admitted'], (string) ($admitted['scope'] ?? ''), (string) ($admitted['capability'] ?? '')))
                 . ' · ' . $this->esc(implode('; ', $verbs))
                 . ' · ' . $this->esc(sprintf($copy['admitted_by'], (string) ($admitted['admitted_by'] ?? ''), (string) ($admitted['at'] ?? '')))
+                . ($key !== ''
+                    ? ' <button type="button" class="mui-btn mui-btn--sm" title="' . $this->esc($copy['withdraw_hint']) . '" data-seat-withdraw>' . $this->esc($copy['withdraw']) . '</button>'
+                        . ' <span data-seat-status></span>'
+                    : '')
+                . '</p>';
+        }
+        foreach (\is_array($seat['withdrawn'] ?? null) ? $seat['withdrawn'] : [] as $line) {
+            if (!\is_array($line)) {
+                continue;
+            }
+            $html .= '<p class="decision-card__facts" data-seat-withdrawn>'
+                . $this->esc(sprintf($copy['withdrawn'], (string) ($line['scope'] ?? ''), (string) ($line['capability'] ?? '')))
+                . ' · ' . $this->esc(implode('; ', array_filter(\is_array($line['verbs'] ?? null) ? $line['verbs'] : [], '\is_string')))
+                . ' · ' . $this->esc(sprintf($copy['admitted_by'], (string) ($line['withdrawn_by'] ?? ''), (string) ($line['at'] ?? '')))
                 . '</p>';
         }
         $waiting = '';
@@ -501,10 +547,10 @@ final class DecisionsInboxView
     }
 
     /** The keys of the admission card's words, as the catalog names them under `frontier.` (decisions/0590). */
-    public const array ADMISSION_WORDS = ['admit_q', 'admit_asked', 'admit_opens', 'col_verb', 'col_does', 'col_effects', 'col_state', 'col_runs', 'does_reads', 'does_writes', 'does_confirms', 'does_names', 'standing_admitted', 'standing_changed', 'standing_added', 'state_none', 'state_entities', 'state_declared', 'runs_reads', 'runs_trial', 'runs_house', 'runs_pre', 'runs_nopre', 'runs_asks', 'runs_refused', 'words', 'not_opened', 'house_limit', 'digest', 'blocked', 'admit_ack', 'admit'];
+    public const array ADMISSION_WORDS = ['admit_q', 'admit_asked', 'admit_opens', 'col_verb', 'col_does', 'col_effects', 'col_state', 'col_runs', 'does_reads', 'does_writes', 'does_confirms', 'does_names', 'standing_admitted', 'standing_changed', 'standing_added', 'standing_withdrawn', 'admit_withdrawn', 'state_none', 'state_entities', 'state_declared', 'runs_reads', 'runs_trial', 'runs_house', 'runs_pre', 'runs_nopre', 'runs_asks', 'runs_refused', 'words', 'not_opened', 'house_limit', 'digest', 'blocked', 'admit_ack', 'admit'];
 
     /** The keys of what «Your seats» says each seat holds, as the catalog names them under `seats.` (decisions/0597). */
-    public const array HOLDING_WORDS = ['admitted', 'admitted_by', 'held_changed', 'held_gone', 'waiting', 'uncovered', 'ran_before'];
+    public const array HOLDING_WORDS = ['admitted', 'admitted_by', 'held_changed', 'held_gone', 'waiting', 'uncovered', 'ran_before', 'withdraw', 'withdraw_hint', 'withdrawn'];
 
     /** The name the form offers first: the real resident is one (greenhouse decisions/0536). */
     private const string DEFAULT_SEAT = 'resident';
@@ -525,6 +571,9 @@ final class DecisionsInboxView
         'waiting' => 'Built verbs no admission covers',
         'uncovered' => 'No admission covers %1$s of the capability %2$s',
         'ran_before' => 'It ran these before, by a word it holds. Nothing was migrated: a word carried no contract anybody saw.',
+        'withdraw' => 'Withdraw',
+        'withdraw_hint' => 'It only takes authority away: the seat\'s next call to these verbs is refused. Its scopes and its other admissions stay.',
+        'withdrawn' => 'Withdrawn: %1$s of %2$s',
     ];
 
     /** The English the frontier cards read when the caller hands no catalog. */
@@ -557,6 +606,8 @@ final class DecisionsInboxView
         'standing_admitted' => 'you already admitted it',
         'standing_changed' => 'its contract changed since you admitted it',
         'standing_added' => 'added after you admitted this scope',
+        'standing_withdrawn' => 'its admission was withdrawn',
+        'admit_withdrawn' => 'Its admission was withdrawn by %1$s, %2$s.',
         'state_none' => 'it keeps none',
         'state_entities' => 'the store of its entities',
         'state_declared' => 'declared by the capability',

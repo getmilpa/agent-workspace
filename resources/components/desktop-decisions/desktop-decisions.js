@@ -38,6 +38,9 @@
   /** The panel's own door to `identity:admit`, and the intent session its touch is bound to (greenhouse decisions/0597). */
   var ADMIT_ROUTE = '/workspace/admit';
   var ADMIT_INTENT_SESSION = 'identity:admit';
+  /** The panel's own door to `identity:withdraw`, and the intent session its touch is bound to (greenhouse decisions/0590, rule 12). */
+  var WITHDRAW_ROUTE = '/workspace/withdraw';
+  var WITHDRAW_INTENT_SESSION = 'identity:withdraw';
   var INTENT_ROUTE = '/webauthn/intent/options';
 
   /** The list the cards live in, and the prototype the server rendered for one. */
@@ -459,6 +462,41 @@
       }));
   }
 
+  // ── taking one admission back (greenhouse decisions/0590, rule 12) ─────────────────────────────────────────
+  // Beside each «Admitted: …» line. It only removes authority, so there is no box to tick: the passkey's touch IS
+  // the act, bound to `identity:withdraw {seat, capability, scope}` — exactly what the line says, and nothing a
+  // person types. The seat's next call to those verbs is refused; its scopes and its other admissions stay.
+  function withdrawAdmission(line) {
+    var status = seatStatus(line);
+    var call = {
+      seat: line.getAttribute('data-withdraw-seat') || '',
+      capability: line.getAttribute('data-withdraw-capability') || '',
+      scope: line.getAttribute('data-withdraw-scope') || ''
+    };
+    if (call.seat === '' || call.capability === '' || call.scope === '') { return Promise.resolve(null); }
+    if (!canTouch()) {
+      status.textContent = tr('frontier.no_passkey');
+      return Promise.resolve(null);
+    }
+    status.textContent = tr('seats.withdrawing');
+
+    return busy(line, touchFor('identity:withdraw', call, WITHDRAW_INTENT_SESSION)
+      .then(function (assertion) {
+        return confirmed(WITHDRAW_ROUTE, { seat: call.seat, capability: call.capability, scope: call.scope, assertion: assertion });
+      })
+      .then(function (read) {
+        if (!read || read.ok === false) { throw new Error((read && (read.error || read.message)) || 'refused'); }
+        status.textContent = tr('seats.withdrawn_done', String(read.withdrawn || ''), String(read.capability || ''));
+        line.setAttribute('data-withdrawn', '');
+        var button = line.querySelector('[data-seat-withdraw]');
+        if (button) { button.setAttribute('hidden', ''); }
+        return read;
+      })
+      .catch(function (err) {
+        status.textContent = tr('seats.refused_withdraw', why(err));
+      }));
+  }
+
   // ── your seats: the human gives the resident one, and no file is edited (greenhouse decisions/0499) ──
   // The touch is bound to `identity:seat {label}`; the answer is the command the resident's OWN key runs to
   // take the seat — its signature is what proves the key. The form carries a name, never a scope: what a seat
@@ -507,7 +545,7 @@
   }
 
   if (live && live.desktop) {
-    live.desktop.decisions = { parked: parked, subscribe: subscribe, confirmed: confirmed, run: run, answer: answerParked, grant: grantSeat, giveSeat: giveSeat };
+    live.desktop.decisions = { parked: parked, subscribe: subscribe, confirmed: confirmed, run: run, answer: answerParked, grant: grantSeat, giveSeat: giveSeat, withdraw: withdrawAdmission };
   }
 
   subscribe();
@@ -587,6 +625,15 @@
       if (!admitCard || admitCard.getAttribute('data-granted') !== null) { return; }
       event.preventDefault();
       admitSeat(admitCard);
+      return;
+    }
+
+    var withdraw = target.closest('[data-seat-withdraw]');
+    if (withdraw) {
+      var held = withdraw.closest('[data-withdraw-seat]');
+      if (!held || held.getAttribute('data-withdrawn') !== null || held.getAttribute('data-busy') !== null) { return; }
+      event.preventDefault();
+      withdrawAdmission(held);
       return;
     }
 

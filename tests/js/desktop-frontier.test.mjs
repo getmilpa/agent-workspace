@@ -265,3 +265,71 @@ test('an admission the house refuses is painted with its sentence, and the card 
   assert.equal(card.querySelector('[data-seat-status]').textContent, 'nothing was admitted: its contract moved since it was read; read it again');
   assert.equal(card.getAttribute('data-granted'), null);
 });
+
+// ── taking one admission back (greenhouse decisions/0590, rule 12) ──────────────────────────────────────────────────
+
+/** One admitted line of «Your seats», as the server prints it. */
+function admittedTree() {
+  const root = new El('html');
+  const list = root.appendChild(new El('ol', { id: 'milpa-seats-list' }));
+  const seat = list.appendChild(new El('li', { class: 'decision-card decision-card--seat', 'data-seat-key': SEAT }));
+  const line = seat.appendChild(new El('p', { class: 'decision-card__facts', 'data-seat-admitted': '', 'data-withdraw-seat': SEAT, 'data-withdraw-capability': 'Prestamos', 'data-withdraw-scope': 'herramientas:write' }));
+  line.appendChild(new El('button', { 'data-seat-withdraw': '', text: 'Withdraw' }));
+  line.appendChild(new El('span', { 'data-seat-status': '' }));
+
+  return root;
+}
+
+const WITHDRAWN = { ok: true, fingerprint: SEAT, capability: 'Prestamos', withdrawn: 'herramientas:write', verbs: ['herramientas.prestar'] };
+
+test('withdrawing binds the touch to THIS seat, capability and scope, asks for no box, and says what it did', async () => {
+  const root = admittedTree();
+  const p = page({ tree: root, catalog: CATALOG, modules: ['desktop-decisions'] });
+  const signed = withPasskey(p);
+  const calls = stubFetch(p, [response(200, OPTIONS), response(428, { requires_confirmation: true, confirm_token: 'tok-w' }), response(201, WITHDRAWN)]);
+  const line = root.querySelector('[data-withdraw-seat]');
+
+  click(p, line.querySelector('[data-seat-withdraw]'));
+  await settle();
+
+  assert.equal(signed.length, 1, 'the passkey was asked once: the touch is the act');
+  assert.deepEqual(JSON.parse(calls[0].init.body), { operation: 'identity:withdraw', arguments: { seat: SEAT, capability: 'Prestamos', scope: 'herramientas:write' }, session: 'identity:withdraw' });
+  assert.equal(calls[1].url, '/workspace/withdraw');
+  const body = JSON.parse(calls[1].init.body);
+  assert.deepEqual(Object.keys(body).sort(), ['assertion', 'capability', 'scope', 'seat']);
+  assert.equal(calls[2].init.headers['Confirm-Token'], 'tok-w');
+  assert.equal(line.querySelector('[data-seat-status]').textContent, 'withdrawn · herramientas:write of Prestamos — the seat\'s next call to it is refused');
+  assert.equal(line.getAttribute('data-withdrawn'), '');
+  assert.equal(line.querySelector('[data-seat-withdraw]').getAttribute('hidden'), '', 'the button steps aside once withdrawn');
+
+  click(p, line.querySelector('[data-seat-withdraw]'));
+  await settle();
+  assert.equal(calls.length, 3, 'what was withdrawn is not withdrawn twice');
+});
+
+test('a withdrawal the house refuses is painted with its sentence, and the line stays', async () => {
+  const root = admittedTree();
+  const p = page({ tree: root, catalog: CATALOG, modules: ['desktop-decisions'] });
+  withPasskey(p);
+  stubFetch(p, [response(200, OPTIONS), response(409, { ok: false, error: 'you do not answer for that seat' })]);
+  const line = root.querySelector('[data-withdraw-seat]');
+
+  click(p, line.querySelector('[data-seat-withdraw]'));
+  await settle();
+
+  assert.equal(line.querySelector('[data-seat-status]').textContent, 'nothing was withdrawn: you do not answer for that seat');
+  assert.equal(line.getAttribute('data-withdrawn'), null);
+});
+
+test('without a passkey a withdrawal says so and posts nothing', async () => {
+  const root = admittedTree();
+  const p = page({ tree: root, catalog: CATALOG, modules: ['desktop-decisions'] });
+  const calls = stubFetch(p, []);
+  const line = root.querySelector('[data-withdraw-seat]');
+
+  click(p, line.querySelector('[data-seat-withdraw]'));
+  await settle();
+
+  assert.equal(calls.length, 0);
+  assert.equal(line.querySelector('[data-seat-status]').textContent, 'this browser cannot run the passkey ceremony');
+});
