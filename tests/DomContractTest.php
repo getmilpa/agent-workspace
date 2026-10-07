@@ -145,6 +145,10 @@ final class DomContractTest extends TestCase
             if ($subject instanceof ComposerRender) {
                 $subject->props['pending'] = [['session' => 's1', 'goal' => 'g', 'question' => 'may I?', 'operation' => 'capabilities:enable', 'reason' => 'it installs', 'sequence' => 'deploy']];
                 $subject->props['frontier'] = [['session' => 'seat-s', 'goal' => 'Build the blog', 'seat' => 'key:95A3', 'refusals' => [['seq' => 42, 'tool' => 'make', 'plugin' => 'Blog', 'permission' => 'plugins.Blog:write'], ['seq' => 49, 'tool' => 'implement', 'plugin' => 'HelloPlugin', 'permission' => 'plugins.HelloPlugin:write', 'call' => ['plugin' => 'HelloPlugin', 'mode' => 'reset'], 'target' => 'existing', 'named' => false, 'consent' => 'informed']]]];
+                // A built verb waiting for a person's admission, from a refusal and with none (greenhouse decisions/0590, 0597).
+                $contract = ['capability' => 'Prestamos', 'permission' => 'herramientas:write', 'scope' => 'herramientas:write', 'contract' => 'sha256:' . str_repeat('a', 64), 'not_admissible' => null, 'opens' => [['verb' => 'herramientas.prestar', 'description' => 'Lend a tool', 'mutating' => true, 'effects' => ['mutation' => 'persistent'], 'state' => ['paths' => ['var/herramientas.json'], 'source' => 'entities'], 'runs' => ['how' => 'house', 'pre_image' => true], 'standing' => 'never']]];
+                $subject->props['frontier'][0]['admissions'] = [['seq' => 57, 'tool' => 'herramientas_prestar', 'call' => ['id' => 1]] + $contract];
+                $subject->props['seats'] = [['fingerprint' => '95A3AC7B96F8BC6AA7044F2C09082971DEBAAA50', 'label' => 'resident', 'scopes' => ['agent:run'], 'authorized_by' => 'passkey:QM1L', 'admitted' => [], 'unadmitted' => [['ran_before' => true, 'verbs' => ['herramientas.prestar']] + $contract]]];
                 $subject->props['sequences'] = [['name' => 'deploy', 'steps' => ['plugins:list', 'config:set'], 'session' => 'sequence:deploy', 'paused' => true, 'pending_operation' => 'config:set']];
             }
         });

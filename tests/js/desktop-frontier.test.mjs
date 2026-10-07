@@ -163,3 +163,105 @@ test('ticked, the touch is bound to the grant WITH the plugin named, and the gra
   assert.ok(!('permission' in body) && !('scope' in body), 'still no scope from the client');
   assert.equal(card.getAttribute('data-granted'), '');
 });
+
+// ── the admission of a built verb (greenhouse decisions/0590, 0597) ─────────────────────────────────────────────────
+
+const DIGEST = 'sha256:12b7c568802279593b0f78fc2462543fab5b37a0f108c494305e70bea67bbee7';
+const SEAT = 'BD93ED040122235995977BA235799583EC8050B5';
+const ADMITTED = { ok: true, fingerprint: SEAT, granted: 'herramientas:write', capability: 'Prestamos', admitted: ['herramientas.agregar'], contract: DIGEST };
+
+/** An admission card as the server prints it: bound to a refused call, or — with no refusal — to a seat. */
+function admissionTree(bound, hook) {
+  const root = new El('html');
+  const list = root.appendChild(new El('ol', { id: 'milpa-frontier-list' }));
+  const card = list.appendChild(new El('li', { class: 'decision-card decision-card--frontier decision-card--admission', 'data-seat-admits': DIGEST, 'data-seat-permission': 'herramientas:write', ...bound }));
+  const label = card.appendChild(new El('label'));
+  label.appendChild(new El('input', { type: 'checkbox', 'data-seat-ack': '' }));
+  card.appendChild(new El('p', { class: 'decision-card__facts', 'data-seat-status': '' }));
+  const options = card.appendChild(new El('p', { class: 'decision-card__options' }));
+  options.appendChild(new El('button', { [hook]: '', text: 'Admit herramientas:write of Prestamos' }));
+
+  return root;
+}
+
+const fromARefusal = () => admissionTree({ 'data-seat-session': 'taller', 'data-seat-seq': '57' }, 'data-seat-grant');
+const withNoRefusal = () => admissionTree({ 'data-admit-seat': SEAT }, 'data-seat-admit');
+
+test('an admission is never one touch: without the box ticked nothing is asked or posted', async () => {
+  for (const [tree, hook] of [[fromARefusal(), 'data-seat-grant'], [withNoRefusal(), 'data-seat-admit']]) {
+    const p = page({ tree, catalog: CATALOG, modules: ['desktop-decisions'] });
+    const signed = withPasskey(p);
+    const calls = stubFetch(p, []);
+    const card = tree.querySelector('[data-seat-admits]');
+
+    click(p, card.querySelector('[' + hook + ']'));
+    await settle();
+
+    assert.equal(calls.length, 0, 'no challenge, no admission');
+    assert.equal(signed.length, 0, 'the passkey was never asked');
+    assert.equal(card.querySelector('[data-seat-status]').textContent, 'tick the box first: an admission is approved knowingly, with its contract read');
+    assert.equal(card.getAttribute('data-granted'), null);
+  }
+});
+
+test('from a refusal, the touch is bound to the grant WITH the digest of what the card showed, and the grant carries it', async () => {
+  const root = fromARefusal();
+  const p = page({ tree: root, catalog: CATALOG, modules: ['desktop-decisions'] });
+  const signed = withPasskey(p);
+  const calls = stubFetch(p, [response(200, OPTIONS), response(201, ADMITTED)]);
+  const card = root.querySelector('[data-seat-session]');
+  card.querySelector('[data-seat-ack]').checked = true;
+
+  click(p, card.querySelector('[data-seat-grant]'));
+  await settle();
+
+  assert.equal(signed.length, 1);
+  assert.deepEqual(JSON.parse(calls[0].init.body), { operation: 'identity:grant', arguments: { session: 'taller', seq: 57, admits: DIGEST }, session: 'taller' });
+  assert.equal(calls[1].url, '/workspace/grant');
+  const body = JSON.parse(calls[1].init.body);
+  assert.equal(body.admits, DIGEST);
+  assert.equal(body.seq, 57);
+  assert.ok(!('existing' in body), 'this is not write over a plugin');
+  assert.ok(!('permission' in body) && !('scope' in body) && !('capability' in body), 'the client names no scope and no capability');
+  assert.equal(card.querySelector('[data-seat-status]').textContent, 'admitted · herramientas:write of Prestamos — the seat can call it now');
+  assert.equal(card.getAttribute('data-granted'), '');
+});
+
+test('with no refusal, the touch is bound to identity:admit for THIS seat and THIS digest, and nothing else is sent', async () => {
+  const root = withNoRefusal();
+  const p = page({ tree: root, catalog: CATALOG, modules: ['desktop-decisions'] });
+  const signed = withPasskey(p);
+  const calls = stubFetch(p, [response(200, OPTIONS), response(428, { requires_confirmation: true, confirm_token: 'tok-9' }), response(201, ADMITTED)]);
+  const card = root.querySelector('[data-admit-seat]');
+  card.querySelector('[data-seat-ack]').checked = true;
+
+  click(p, card.querySelector('[data-seat-admit]'));
+  await settle();
+
+  assert.equal(signed.length, 1, 'the passkey was asked once');
+  assert.deepEqual(JSON.parse(calls[0].init.body), { operation: 'identity:admit', arguments: { seat: SEAT, admits: DIGEST }, session: 'identity:admit' });
+  assert.equal(calls[1].url, '/workspace/admit');
+  const body = JSON.parse(calls[1].init.body);
+  assert.deepEqual(Object.keys(body).sort(), ['admits', 'assertion', 'seat'], 'a seat, a digest and the touch: no capability, no scope');
+  assert.equal(body.seat, SEAT);
+  assert.equal(body.admits, DIGEST);
+  assert.equal(calls[2].init.headers['Confirm-Token'], 'tok-9', 'it walks the confirm gate like every act a person decides');
+  assert.equal(card.querySelector('[data-seat-status]').textContent, 'admitted · herramientas:write of Prestamos — the seat can call it now');
+  assert.equal(card.getAttribute('data-granted'), '');
+  assert.equal(card.querySelector('[data-seat-admit]').getAttribute('hidden'), '', 'the button steps aside once admitted');
+});
+
+test('an admission the house refuses is painted with its sentence, and the card stays open', async () => {
+  const root = withNoRefusal();
+  const p = page({ tree: root, catalog: CATALOG, modules: ['desktop-decisions'] });
+  withPasskey(p);
+  stubFetch(p, [response(200, OPTIONS), response(409, { ok: false, error: 'its contract moved since it was read; read it again' })]);
+  const card = root.querySelector('[data-admit-seat]');
+  card.querySelector('[data-seat-ack]').checked = true;
+
+  click(p, card.querySelector('[data-seat-admit]'));
+  await settle();
+
+  assert.equal(card.querySelector('[data-seat-status]').textContent, 'nothing was admitted: its contract moved since it was read; read it again');
+  assert.equal(card.getAttribute('data-granted'), null);
+});
