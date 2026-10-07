@@ -43,6 +43,24 @@ final class APersonWithdrawsAnAdmissionFromThePanelTest extends TestCase
         self::assertStringNotContainsString('data-seat-ack', $html, 'taking authority away asks for no box: the touch is the act');
     }
 
+    /**
+     * Measured through the real panel (greenhouse evidence/1142): once withdrawn, the line read «Admitted: … withdrawn
+     * · …» in one breath. What was admitted is a part of the line the page can strike through, and what the
+     * withdrawal says stands apart from it.
+     */
+    public function testWhatWasAdmittedStandsApartFromWhatTheWithdrawalSays(): void
+    {
+        $html = (new DecisionsInboxView())->seatsHtml([$this->seat([
+            ['capability' => 'Prestamos', 'scope' => 'herramientas:write', 'key' => 'herramientas:write', 'admitted_by' => 'passkey:QM1L', 'at' => '2026-10-07T18:00:00Z', 'verbs' => ['herramientas.prestar' => 'admitted']],
+        ])]);
+
+        self::assertStringContainsString('<span class="decision-card__held">Admitted: herramientas:write of Prestamos · herramientas.prestar · by passkey:QM1L, 2026-10-07T18:00:00Z</span>', $html);
+        self::assertMatchesRegularExpression('~</button><span class="decision-card__said" data-seat-status></span></p>~', $html);
+        $css = (string) file_get_contents(\dirname(__DIR__, 2) . '/resources/components/desktop-decisions/desktop-decisions.css');
+        self::assertStringContainsString('[data-withdrawn] > .decision-card__held', $css, 'the page strikes what was taken back');
+        self::assertStringContainsString('.decision-card__said { display: block;', $css, 'and what the withdrawal says is a line of its own');
+    }
+
     /** A runtime that cannot withdraw does not say what a withdrawal would name, and no button is offered. */
     public function testARuntimeThatCannotWithdrawOffersNoButton(): void
     {

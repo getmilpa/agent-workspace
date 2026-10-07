@@ -494,12 +494,16 @@ final class DecisionsInboxView
                     ? ' data-withdraw-seat="' . $this->esc((string) $seat['fingerprint']) . '" data-withdraw-capability="' . $this->esc((string) ($admitted['capability'] ?? '')) . '" data-withdraw-scope="' . $this->esc($key) . '"'
                     : '')
                 . '>'
+                // What was admitted is a part of its own, so the page can strike it once it is taken back, and what
+                // the withdrawal says is a line under it — measured: read in one breath, the line said both.
+                . '<span class="decision-card__held">'
                 . $this->esc(sprintf($copy['admitted'], (string) ($admitted['scope'] ?? ''), (string) ($admitted['capability'] ?? '')))
                 . ' · ' . $this->esc(implode('; ', $verbs))
                 . ' · ' . $this->esc(sprintf($copy['admitted_by'], (string) ($admitted['admitted_by'] ?? ''), (string) ($admitted['at'] ?? '')))
+                . '</span>'
                 . ($key !== ''
                     ? ' <button type="button" class="mui-btn mui-btn--sm" title="' . $this->esc($copy['withdraw_hint']) . '" data-seat-withdraw>' . $this->esc($copy['withdraw']) . '</button>'
-                        . ' <span data-seat-status></span>'
+                        . '<span class="decision-card__said" data-seat-status></span>'
                     : '')
                 . '</p>';
         }
