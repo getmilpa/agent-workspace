@@ -159,7 +159,19 @@ final class DecisionsInboxView
     {
         $copy += self::FRONTIER_COPY;
         $cards = '';
-        foreach ($frontier as $seat) {
+        // ONE DECISION, ONE CARD (greenhouse evidence/1139). A seat refused the same scope in ten sessions is one
+        // thing for its person to decide, and admitting from any of them clears them all: the card is the LATEST
+        // refusal of that seat for that contract, and it says how many sessions asked.
+        $latest = [];
+        $asked = [];
+        foreach ($frontier as $index => $seat) {
+            foreach ($seat['admissions'] ?? [] as $admission) {
+                $key = $seat['seat'] . "\0" . (string) ($admission['contract'] ?? '') . "\0" . (string) ($admission['permission'] ?? '');
+                $latest[$key] = $index . ':' . (int) $admission['seq'];
+                $asked[$key][$seat['session']] = true;
+            }
+        }
+        foreach ($frontier as $index => $seat) {
             foreach ($seat['refusals'] as $refusal) {
                 $plugin = $refusal['plugin'];
                 $facts = sprintf($copy['refused'], $seat['seat'], $refusal['tool'])
@@ -197,6 +209,11 @@ final class DecisionsInboxView
             // from the refusals above — they are not a scope of authoring — and a runtime that does not know them
             // hands none.
             foreach ($seat['admissions'] ?? [] as $admission) {
+                $key = $seat['seat'] . "\0" . (string) ($admission['contract'] ?? '') . "\0" . (string) ($admission['permission'] ?? '');
+                if ($latest[$key] !== $index . ':' . (int) $admission['seq']) {
+                    continue;
+                }
+                $sessions = \count($asked[$key]);
                 $call = isset($admission['call']) ? $this->shownCall((string) $admission['tool'], $admission['call']) : '';
                 $cards .= $this->admissionCard(
                     $admission,
@@ -205,7 +222,8 @@ final class DecisionsInboxView
                     ($seat['goal'] !== '' ? '<p class="decision-card__goal">' . $this->esc($seat['goal']) . '</p>' : '')
                         . '<p class="decision-card__q">' . $this->esc(sprintf($copy['admit_q'], (string) $admission['permission'], (string) $admission['capability'])) . '</p>'
                         . '<p class="decision-card__facts">' . $this->esc(sprintf($copy['refused'], $seat['seat'], (string) $admission['tool'])) . '</p>'
-                        . ($call !== '' ? '<p class="decision-card__facts" data-seat-call>' . $this->esc($copy['call']) . ' <code>' . $this->esc($call) . '</code></p>' : ''),
+                        . ($call !== '' ? '<p class="decision-card__facts" data-seat-call>' . $this->esc($copy['call']) . ' <code>' . $this->esc($call) . '</code></p>' : '')
+                        . ($sessions > 1 ? '<p class="decision-card__facts" data-admit-asked>' . $this->esc(sprintf($copy['admit_asked'], $sessions)) . '</p>' : ''),
                     'data-seat-grant',
                     '<a class="mui-btn mui-btn--sm decision-card__open" href="?session=' . rawurlencode($seat['session']) . '">' . $this->esc($copy['open']) . '</a>',
                 );
@@ -483,7 +501,7 @@ final class DecisionsInboxView
     }
 
     /** The keys of the admission card's words, as the catalog names them under `frontier.` (decisions/0590). */
-    public const array ADMISSION_WORDS = ['admit_q', 'admit_opens', 'col_verb', 'col_does', 'col_effects', 'col_state', 'col_runs', 'does_reads', 'does_writes', 'does_confirms', 'does_names', 'standing_admitted', 'standing_changed', 'standing_added', 'state_none', 'state_entities', 'state_declared', 'runs_reads', 'runs_trial', 'runs_house', 'runs_pre', 'runs_nopre', 'runs_asks', 'runs_refused', 'words', 'not_opened', 'house_limit', 'digest', 'blocked', 'admit_ack', 'admit'];
+    public const array ADMISSION_WORDS = ['admit_q', 'admit_asked', 'admit_opens', 'col_verb', 'col_does', 'col_effects', 'col_state', 'col_runs', 'does_reads', 'does_writes', 'does_confirms', 'does_names', 'standing_admitted', 'standing_changed', 'standing_added', 'state_none', 'state_entities', 'state_declared', 'runs_reads', 'runs_trial', 'runs_house', 'runs_pre', 'runs_nopre', 'runs_asks', 'runs_refused', 'words', 'not_opened', 'house_limit', 'digest', 'blocked', 'admit_ack', 'admit'];
 
     /** The keys of what «Your seats» says each seat holds, as the catalog names them under `seats.` (decisions/0597). */
     public const array HOLDING_WORDS = ['admitted', 'admitted_by', 'held_changed', 'held_gone', 'waiting', 'uncovered', 'ran_before'];
@@ -525,6 +543,7 @@ final class DecisionsInboxView
         'grant_existing' => 'Grant write over existing %s',
         // The admission of a built verb (greenhouse decisions/0590, 0597).
         'admit_q' => 'It asks for %1$s of the capability %2$s',
+        'admit_asked' => 'It asked for this in %d sessions; this is the latest.',
         'admit_opens' => 'Admitting opens these verbs to this seat, each with the contract it has now:',
         'col_verb' => 'Verb',
         'col_does' => 'What it does',

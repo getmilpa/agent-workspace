@@ -361,6 +361,7 @@ final class Catalog
             'frontier.ack_first' => 'tick the box first: this grant opens write over existing work',
             // The admission of a built verb (greenhouse decisions/0590, 0597).
             'frontier.admit_q' => 'It asks for %1$s of the capability %2$s',
+            'frontier.admit_asked' => 'It asked for this in %d sessions; this is the latest.',
             'frontier.admit_opens' => 'Admitting opens these verbs to this seat, each with the contract it has now:',
             'frontier.col_verb' => 'Verb',
             'frontier.col_does' => 'What it does',
@@ -737,6 +738,7 @@ final class Catalog
             'frontier.grant_existing' => 'Conceder escritura sobre %s existente',
             'frontier.ack_first' => 'marca la casilla primero: esta concesión abre escritura sobre obra existente',
             'frontier.admit_q' => 'Pide %1$s de la capacidad %2$s',
+            'frontier.admit_asked' => 'Lo pidió en %d sesiones; ésta es la última.',
             'frontier.admit_opens' => 'Admitir le abre a este puesto estos verbos, cada uno con el contrato que tiene hoy:',
             'frontier.col_verb' => 'Verbo',
             'frontier.col_does' => 'Qué hace',

@@ -67,6 +67,28 @@ final class APersonAdmitsABuiltVerbFromThePanelTest extends TestCase
         self::assertStringNotContainsString('Granting opens write over the existing plugin', $html, 'this is not write over a plugin');
     }
 
+    /**
+     * Measured with the real panel (greenhouse evidence/1139): a seat that was refused the same scope in ten sessions
+     * put ten cards in front of its person, and admitting from any one cleared them all. One decision is one card:
+     * the latest refusal of that seat for that contract, saying how many sessions asked.
+     */
+    public function testASeatThatAskedForTheSameContractInSeveralSessionsGetsOneCard(): void
+    {
+        $older = ['session' => 'taller-lunes', 'admissions' => [['seq' => 7] + $this->admission()]] + $this->session([]);
+        $latest = ['session' => 'taller-martes', 'admissions' => [['seq' => 21] + $this->admission()]] + $this->session([]);
+        $other = ['seat' => 'key:D2A77A0E6562218C52C02D67022F264E481377BD', 'session' => 'taller-b', 'admissions' => [['seq' => 3] + $this->admission()]] + $this->session([]);
+        $read = ['contract' => 'sha256:' . str_repeat('d', 64), 'permission' => 'herramientas:read', 'scope' => 'herramientas:read', 'seq' => 30] + $this->admission();
+
+        $html = (new DecisionsInboxView())->frontierHtml([$older, ['admissions' => [$latest['admissions'][0], $read]] + $latest, $other]);
+
+        self::assertSame(3, substr_count($html, 'decision-card--admission'), 'one for A\'s write, one for A\'s read, one for B\'s write');
+        self::assertStringNotContainsString('data-seat-session="taller-lunes"', $html, 'the older refusal of the same contract is not a second decision');
+        self::assertStringContainsString('data-seat-session="taller-martes" data-seat-seq="21"', $html, 'the latest one is what the approval is bound to');
+        self::assertStringContainsString('data-seat-session="taller-martes" data-seat-seq="30"', $html, 'another scope is another decision');
+        self::assertStringContainsString('data-seat-session="taller-b" data-seat-seq="3"', $html, 'another seat is another decision');
+        self::assertSame(1, substr_count($html, 'It asked for this in 2 sessions; this is the latest.'));
+    }
+
     /** The description is text the capability's author wrote — and the author may be the seat that asks. */
     public function testTheCapabilitysOwnWordsAreShownAsItsWordsAndNeverAsMarkup(): void
     {
