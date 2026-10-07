@@ -57,7 +57,7 @@ final class APersonWithdrawsAnAdmissionFromThePanelTest extends TestCase
         self::assertStringContainsString('<span class="decision-card__held">Admitted: herramientas:write of Prestamos · herramientas.prestar · by passkey:QM1L, 2026-10-07T18:00:00Z</span>', $html);
         self::assertMatchesRegularExpression('~</button><span class="decision-card__said" data-seat-status></span></p>~', $html);
         $css = (string) file_get_contents(\dirname(__DIR__, 2) . '/resources/components/desktop-decisions/desktop-decisions.css');
-        self::assertStringContainsString('[data-withdrawn] > .decision-card__held', $css, 'the page strikes what was taken back');
+        self::assertStringContainsString('[data-withdrawn] > .decision-card__held { text-decoration: line-through;', $css, 'the page strikes what was taken back');
         self::assertStringContainsString('.decision-card__said { display: block;', $css, 'and what the withdrawal says is a line of its own');
     }
 
