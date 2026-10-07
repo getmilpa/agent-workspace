@@ -3,6 +3,13 @@
 All notable changes to milpa/desktop-app are documented here. This project adheres to
 [Semantic Versioning](https://semver.org/) and [Keep a Changelog](https://keepachangelog.com/).
 
+## [0.90.0](https://github.com/getmilpa/agent-workspace/compare/v0.89.0...v0.90.0) (2026-10-07)
+
+
+### Features
+
+* a person admits a built verb from the panel, seeing its contract (greenhouse decisions/0590, 0597) ([#128](https://github.com/getmilpa/agent-workspace/issues/128)) ([5d209b2](https://github.com/getmilpa/agent-workspace/commit/5d209b22d66e960daad4befb112bd11506aa9ac9))
+
 ## [0.89.0](https://github.com/getmilpa/agent-workspace/compare/v0.88.1...v0.89.0) (2026-10-07)
 
 
