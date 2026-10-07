@@ -136,7 +136,7 @@ final class DecisionsInbox
                 'unnamed' => $this->plain('frontier.unnamed'),
                 'ack' => $this->plain('frontier.ack'),
                 'grant_existing' => $this->plain('frontier.grant_existing'),
-            ])
+            ] + $this->words('frontier', DecisionsInboxView::ADMISSION_WORDS))
             // YOUR SEATS (greenhouse decisions/0499): the seats this reader answers for, and the one place a human
             // gives the resident a seat — no file edited, the resident's own key proving itself by signing.
             . '<h3 class="milpa-decisions__heading">' . $this->tr('seats.heading') . '</h3>'
@@ -149,7 +149,7 @@ final class DecisionsInbox
                 'held' => $this->plain('seats.held'),
                 'another' => $this->plain('seats.another'),
                 'give_another' => $this->plain('seats.give_another'),
-            ])
+            ] + $this->words('seats', DecisionsInboxView::HOLDING_WORDS) + $this->words('frontier', DecisionsInboxView::ADMISSION_WORDS))
             // THE SEQUENCES THIS APP DECLARED, to run from here (greenhouse decisions/0223, F4): a deployment
             // is a list, and the place a human authorizes everything else is where its run starts and where
             // its pause is answered.
@@ -186,5 +186,22 @@ final class DecisionsInbox
     private function plain(string $key): string
     {
         return ($this->catalog ?? new Catalog())->tr($key);
+    }
+
+    /**
+     * The catalog's words for a list of the view's keys, under one prefix.
+     *
+     * @param list<string> $keys
+     *
+     * @return array<string, string>
+     */
+    private function words(string $prefix, array $keys): array
+    {
+        $words = [];
+        foreach ($keys as $key) {
+            $words[$key] = $this->plain($prefix . '.' . $key);
+        }
+
+        return $words;
     }
 }

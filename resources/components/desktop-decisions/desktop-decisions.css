@@ -41,3 +41,12 @@
    is inside keeps the layout it had. A region that could not be re-read says so by dimming. */
 .milpa-live-region { display: contents; }
 .milpa-live-region[data-live-stale] > * { opacity: 0.6; }
+
+/* The contract a person reads before admitting a built verb (greenhouse decisions/0590): one verb per row. */
+.decision-card__contract { width: 100%; margin: var(--space-2) 0 0; border-collapse: collapse; font-family: var(--font-mono); font-size: var(--text-2xs); color: var(--text-secondary); }
+.decision-card__contract th { text-align: left; font-weight: 600; padding: var(--space-1) var(--space-2) var(--space-1) 0; border-bottom: 1px solid var(--border-subtle, currentColor); }
+.decision-card__contract td { vertical-align: top; padding: var(--space-1) var(--space-2) var(--space-1) 0; }
+.decision-card__contract em { display: block; font-style: normal; color: var(--text-warning, inherit); }
+.decision-card__words { margin: var(--space-1) 0 0; padding-left: var(--space-4); font-size: var(--text-2xs); color: var(--text-secondary); }
+.decision-card__waiting { margin: var(--space-2) 0 0; }
+.decision-card__waiting > summary { cursor: pointer; font-size: var(--text-2xs); color: var(--text-secondary); }

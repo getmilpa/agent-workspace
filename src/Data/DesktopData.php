@@ -467,7 +467,21 @@ final class DesktopData
         if (!$kernel instanceof Kernel || $file === null || !is_file($file)) {
             return [];
         }
-        return $class::forRoot($kernel->root(), new \Milpa\Agent\SessionStore(new \Milpa\EventStore\FileEventStore($file)))->sessionsFor($principal);
+        // WHAT THE HOUSE BUILT is handed to the frontier (greenhouse decisions/0590): with it, a seat's call to a verb
+        // of a capability built here that no person admitted is listed apart, under `admissions`, with the contract
+        // to admit. A runtime that does not know built capabilities takes no third argument and lists none.
+        return $class::forRoot($kernel->root(), new \Milpa\Agent\SessionStore(new \Milpa\EventStore\FileEventStore($file)), self::built($kernel))->sessionsFor($principal);
+    }
+
+    /**
+     * The capabilities built in this house, as app-runtime reads them — or null when the runtime does not know them.
+     * Named as a string for the same reason the frontier is: this package does not require the runtime.
+     */
+    private static function built(Kernel $kernel): ?object
+    {
+        $class = 'Milpa\\AppRuntime\\Agent\\BuiltCapabilities';
+
+        return class_exists($class) ? $class::of($kernel) : null;
     }
 
     /**
@@ -477,7 +491,8 @@ final class DesktopData
      * The relation is app-runtime's (`ResidentSeat::seatsFor`, the line of decisions/0493); an app without the
      * runtime shows none rather than guessing.
      *
-     * @return list<array{fingerprint: string, label: string|null, scopes: list<string>, authorized_by: string}>
+     * @return list<array<string, mixed>> each `fingerprint`, `label`, `scopes`, `authorized_by` — and, from a runtime
+     *                                    that knows built capabilities, `admitted` and `unadmitted`
      */
     public function seats(string $principal): array
     {
@@ -490,6 +505,14 @@ final class DesktopData
         if (!$kernel instanceof Kernel) {
             return [];
         }
+        // WITH WHAT EACH HOLDS, when the runtime can say it (greenhouse decisions/0590, 0597): what persons admitted
+        // to the seat of the capabilities built here, and each scope no admission covers, with its contract.
+        $built = self::built($kernel);
+        // The runtime this package is analysed against may be older than the one a house runs: the method is asked for.
+        if ($built !== null && method_exists($class, 'holdings')) { // @phpstan-ignore function.impossibleType
+            return $class::holdings($kernel->root(), $principal, $built);
+        }
+
         return $class::seatsFor($kernel->root(), $principal);
     }
 

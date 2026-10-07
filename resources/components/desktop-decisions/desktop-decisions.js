@@ -35,6 +35,9 @@
   var SEAT_ROUTE = '/workspace/seat';
   /** The intent session a seat's touch is bound to — there is no agent session yet (app-runtime ResidentSeat). */
   var SEAT_INTENT_SESSION = 'identity:seat';
+  /** The panel's own door to `identity:admit`, and the intent session its touch is bound to (greenhouse decisions/0597). */
+  var ADMIT_ROUTE = '/workspace/admit';
+  var ADMIT_INTENT_SESSION = 'identity:admit';
   var INTENT_ROUTE = '/webauthn/intent/options';
 
   /** The list the cards live in, and the prototype the server rendered for one. */
@@ -377,28 +380,82 @@
       }
       call.existing = existing;
     }
+    // A VERB OF A BUILT CAPABILITY IS ADMITTED, NOT GRANTED A WORD (greenhouse decisions/0590). Its card carries
+    // the digest of the contract it shows; the reader ticks the box that says they read it, and that digest
+    // travels inside what the passkey approves — so what is approved is what was shown.
+    var admits = card.getAttribute('data-seat-admits');
+    if (admits !== null) {
+      if (!acknowledged(card)) {
+        status.textContent = tr('frontier.admit_ack_first');
+        return Promise.resolve(null);
+      }
+      call.admits = admits;
+    }
     if (!canTouch()) {
       status.textContent = tr('frontier.no_passkey');
       return Promise.resolve(null);
     }
-    status.textContent = tr('frontier.granting');
+    status.textContent = tr(admits !== null ? 'frontier.admitting' : 'frontier.granting');
 
     return busy(card, touchFor('identity:grant', call, call.session)
       .then(function (assertion) {
         var body = { session: call.session, seq: call.seq, assertion: assertion };
         if (call.existing !== undefined) { body.existing = call.existing; }
+        if (call.admits !== undefined) { body.admits = call.admits; }
         return confirmed(GRANT_ROUTE, body);
       })
       .then(function (read) {
         if (!read || read.ok === false) { throw new Error((read && (read.error || read.message)) || 'refused'); }
-        status.textContent = tr('frontier.granted', String(read.granted || ''));
+        status.textContent = admits !== null
+          ? tr('frontier.admitted', String(read.granted || ''), String(read.capability || ''))
+          : tr('frontier.granted', String(read.granted || ''));
         card.setAttribute('data-granted', '');
         var button = card.querySelector('[data-seat-grant]');
         if (button) { button.setAttribute('hidden', ''); }
         return read;
       })
       .catch(function (err) {
-        status.textContent = tr('frontier.refused_grant', why(err));
+        status.textContent = tr(admits !== null ? 'frontier.refused_admit' : 'frontier.refused_grant', why(err));
+      }));
+  }
+
+  function acknowledged(card) {
+    var ack = card.querySelector('[data-seat-ack]');
+    return !!(ack && ack.checked);
+  }
+
+  // ── admitting with no refusal in front (greenhouse decisions/0597) ──────────────────────────────────────────
+  // «Your seats» offers each scope of a built capability no admission covers, with the contract a refusal's card
+  // shows. The touch is bound to `identity:admit {seat, admits}`: a seat and the digest of what was read — never a
+  // capability, never a scope. The house finds which scope that digest is; one that moved since admits nothing.
+  function admitSeat(card) {
+    var status = seatStatus(card);
+    var call = { seat: card.getAttribute('data-admit-seat') || '', admits: card.getAttribute('data-seat-admits') || '' };
+    if (call.seat === '' || call.admits === '') { return Promise.resolve(null); }
+    if (!acknowledged(card)) {
+      status.textContent = tr('frontier.admit_ack_first');
+      return Promise.resolve(null);
+    }
+    if (!canTouch()) {
+      status.textContent = tr('frontier.no_passkey');
+      return Promise.resolve(null);
+    }
+    status.textContent = tr('frontier.admitting');
+
+    return busy(card, touchFor('identity:admit', call, ADMIT_INTENT_SESSION)
+      .then(function (assertion) {
+        return confirmed(ADMIT_ROUTE, { seat: call.seat, admits: call.admits, assertion: assertion });
+      })
+      .then(function (read) {
+        if (!read || read.ok === false) { throw new Error((read && (read.error || read.message)) || 'refused'); }
+        status.textContent = tr('frontier.admitted', String(read.granted || ''), String(read.capability || ''));
+        card.setAttribute('data-granted', '');
+        var button = card.querySelector('[data-seat-admit]');
+        if (button) { button.setAttribute('hidden', ''); }
+        return read;
+      })
+      .catch(function (err) {
+        status.textContent = tr('frontier.refused_admit', why(err));
       }));
   }
 
@@ -521,6 +578,15 @@
       if (!seatCard || seatCard.getAttribute('data-granted') !== null) { return; }
       event.preventDefault();
       grantSeat(seatCard);
+      return;
+    }
+
+    var admit = target.closest('[data-seat-admit]');
+    if (admit) {
+      var admitCard = admit.closest('[data-admit-seat]');
+      if (!admitCard || admitCard.getAttribute('data-granted') !== null) { return; }
+      event.preventDefault();
+      admitSeat(admitCard);
       return;
     }
 
