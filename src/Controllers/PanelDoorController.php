@@ -260,7 +260,19 @@ final class PanelDoorController
         if ($this->lookup !== null) {
             return ($this->lookup)($name);
         }
-        $kernel = $this->container->has(Kernel::class) ? $this->container->get(Kernel::class) : null;
+
+        return self::offered($this->container, $name);
+    }
+
+    /**
+     * The operation this app offers under `$name`, read from its own catalogue — or null when it offers none.
+     *
+     * It is what a door projects, and what the panel reads to say beforehand what a door will ask of whoever
+     * presses (greenhouse decisions/0584): one lookup, so the two cannot name different operations.
+     */
+    public static function offered(DIContainerInterface $container, string $name): ?Operation
+    {
+        $kernel = $container->has(Kernel::class) ? $container->get(Kernel::class) : null;
         if (!$kernel instanceof Kernel || !class_exists(self::CATALOGUE)) {
             return null;
         }

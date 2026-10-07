@@ -244,6 +244,27 @@ test('a run denied at a step, or that failed, says so and shows no answers', asy
   assert.equal(card.querySelector('[data-sequence-status]').textContent, 'did not finish · step 2 threw');
 });
 
+test('an option the card shows switched off posts nothing — the reader was told, and nothing is sent (0584)', async () => {
+  // As `DecisionsInboxView` prints an option the reader may not take: shown, disabled, and without `data-graph-decide`.
+  const root = graphTree();
+  const card = root.querySelector('[data-graph-instance="run-1"]');
+  const off = card.querySelector('.decision-card__options').appendChild(new El('button', { 'data-graph-option': 'accept_as_is', disabled: '', 'aria-disabled': 'true', text: 'accept_as_is' }));
+  const p = page({ tree: root, catalog: COPY, modules: ['desktop-decisions'] });
+  const calls = stubFetch(p, [response(201, { instance_id: 'run-1', state: 'publish_done', awaiting: null })]);
+
+  click(p, off);
+  await settle();
+
+  assert.equal(calls.length, 0, 'no answer travels for an option the card did not offer as a button');
+  assert.equal(card.querySelector('[data-decision-status]'), null, 'and the card says nothing happened');
+
+  // The option the reader MAY take still answers, as it always did.
+  click(p, card.querySelector('[data-graph-decide]'));
+  await settle();
+  assert.equal(calls.length, 1);
+  assert.deepEqual(JSON.parse(calls[0].init.body), { graph: 'essay:review', instance: 'run-1', decision: 'publish_as_is' });
+});
+
 /** A graph's card as `DecisionsInboxView::html()` prints it — here as an OLDER panel printed it, principal included. */
 function graphTree() {
   const root = new El('html');
