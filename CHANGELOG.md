@@ -3,6 +3,13 @@
 All notable changes to milpa/desktop-app are documented here. This project adheres to
 [Semantic Versioning](https://semver.org/) and [Keep a Changelog](https://keepachangelog.com/).
 
+## [0.91.1](https://github.com/getmilpa/agent-workspace/compare/v0.91.0...v0.91.1) (2026-10-07)
+
+
+### Bug Fixes
+
+* the admission card has words for a call the house does not confine, and says whose call the column is about ([#132](https://github.com/getmilpa/agent-workspace/issues/132)) ([ef83030](https://github.com/getmilpa/agent-workspace/commit/ef8303079c031c0b8a012479963cf943be98527c))
+
 ## [0.91.0](https://github.com/getmilpa/agent-workspace/compare/v0.90.0...v0.91.0) (2026-10-07)
 
 
