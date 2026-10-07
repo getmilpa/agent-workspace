@@ -123,7 +123,7 @@ test('Save posts the form through the guard and says Saved only on a 2xx', async
 
 test('the endpoint is written where the agent reads it, through the confirm gate', async () => {
   const p = page({ modules: ['desktop-settings'] });
-  const input = new El('input', { id: 'set-end', value: 'http://llama.tailf880b7.ts.net:11438' });
+  const input = new El('input', { id: 'set-end', value: 'http://llama.tailnet.example:11438' });
   p.byId['set-end'] = input;
   const settings = p.mount('desktopSettings', undefined, settingsRoot());
   const calls = stubFetch(p, [response(428, { requires_confirmation: true, confirm_token: 't-42' }), response(200, { ok: true })]);
@@ -132,11 +132,11 @@ test('the endpoint is written where the agent reads it, through the confirm gate
 
   assert.equal(calls.length, 2, 'the 428 is a step of the flow, not a failure');
   assert.equal(calls[0].url, '/workspace/config', 'agent.baseUrl is governed configuration, not the settings file');
-  assert.deepEqual(JSON.parse(calls[0].init.body), { key: 'agent.baseUrl', value: 'http://llama.tailf880b7.ts.net:11438' });
+  assert.deepEqual(JSON.parse(calls[0].init.body), { key: 'agent.baseUrl', value: 'http://llama.tailnet.example:11438' });
   assert.equal(calls[1].init.headers['Confirm-Token'], 't-42', 'the second call carries the token back');
   assert.equal(p.signal('settings.saved').ok, true);
   // NOT cleared: unlike a key, an address is something you want to still see after saving it.
-  assert.equal(input.value, 'http://llama.tailf880b7.ts.net:11438');
+  assert.equal(input.value, 'http://llama.tailnet.example:11438');
 });
 
 test('a refused endpoint says so with its status and never says saved', async () => {
