@@ -76,6 +76,9 @@ final class PanelDoorController
     /** Admit to a seat one scope of a built capability with no refusal in front, by its digest (greenhouse decisions/0597). */
     public const string ADMIT = 'identity:admit';
 
+    /** Take back from a seat ONE admission — it only removes authority (greenhouse decisions/0590, rule 12). */
+    public const string WITHDRAW = 'identity:withdraw';
+
     /**
      * Each door's path and route name — never the operation's own, so none collides with a host that exposes
      * the operation globally.
@@ -100,6 +103,8 @@ final class PanelDoorController
         self::SEAT => ['path' => '/workspace/seat', 'route' => 'desktop.door.seat', 'method' => 'seat', 'from' => 'milpa/app-runtime', 'verb' => 'POST'],
         // greenhouse decisions/0597: «Your seats» admits what a seat never asked for in a session — by the digest read there.
         self::ADMIT => ['path' => '/workspace/admit', 'route' => 'desktop.door.admit', 'method' => 'admit', 'from' => 'milpa/app-runtime', 'verb' => 'POST'],
+        // greenhouse decisions/0590, rule 12: «Your seats» takes one admission back — the button beside what was admitted.
+        self::WITHDRAW => ['path' => '/workspace/withdraw', 'route' => 'desktop.door.withdraw', 'method' => 'withdraw', 'from' => 'milpa/app-runtime', 'verb' => 'POST'],
     ];
 
     /** Named as a string: milpa/app-runtime owns the catalogue, and this package does not require it. */
@@ -178,6 +183,12 @@ final class PanelDoorController
     public function admit(ServerRequestInterface $request): ResponseInterface
     {
         return $this->door(self::ADMIT, $request);
+    }
+
+    /** Project the request as `identity:withdraw`. */
+    public function withdraw(ServerRequestInterface $request): ResponseInterface
+    {
+        return $this->door(self::WITHDRAW, $request);
     }
 
     /**

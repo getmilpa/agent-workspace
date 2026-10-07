@@ -49,4 +49,8 @@
 .decision-card__contract em { display: block; font-style: normal; color: var(--text-warning, inherit); }
 .decision-card__words { margin: var(--space-1) 0 0; padding-left: var(--space-4); font-size: var(--text-2xs); color: var(--text-secondary); }
 .decision-card__waiting { margin: var(--space-2) 0 0; }
+/* An admission taken back (greenhouse decisions/0590, rule 12): what was admitted is struck, and what the withdrawal says is a line of its own. */
+[data-withdrawn] > .decision-card__held { text-decoration: line-through; opacity: 0.6; }
+.decision-card__said { display: block; margin: var(--space-1) 0 0; }
+.decision-card__said:empty { display: none; }
 .decision-card__waiting > summary { cursor: pointer; font-size: var(--text-2xs); color: var(--text-secondary); }
