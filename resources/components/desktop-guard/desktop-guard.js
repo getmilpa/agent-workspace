@@ -19,6 +19,10 @@
  *     with its status and parsed body — so «Saved» is only ever said on a 2xx.
  *   - `guardedFlow(response)` — the same discipline with 428 passed through: the house's confirm gate is
  *     the capabilities FLOW, not a refusal.
+ *   - `answered(response)` / `answeredFlow(response)` — for a caller that READS what the operation said: the
+ *     same discipline, with the house's «no» passed through. An operation that ran and answered `ok: false`
+ *     comes back as a 409 carrying that body (greenhouse decisions/0583); it is an answer, and the caller
+ *     paints it with the fields it already knows. Any other 409 is still a call that failed.
  *   - `failed(err, unreachable)` — a rejected call told once (never twice for a 403 `guarded` already told).
  *   - `notice(kind, text)` — the `desktop.notice` signal (payload `{kind, text}`): the guard no longer
  *     reaches into the conversation, it says what happened and whoever renders notices consumes it.
@@ -110,26 +114,34 @@
   function onNotice(cb) { if (typeof cb === 'function') { noticeHandlers.push(cb); } }
 
   // ── the fetch discipline ─────────────────────────────────────────────────────────────────────────
+  /** A body as the guard reads one: the door's JSON object, or nothing — a door may answer HTML. */
+  function parsed(text) {
+    var body = null;
+    try { body = JSON.parse(text); } catch (e) { /* a door may answer HTML */ }
+
+    return (body && typeof body === 'object') ? body : {};
+  }
+
   function reject(r) {
-    return r.text().then(function (t) {
-      var body = null;
-      try { body = JSON.parse(t); } catch (e) { /* a door may answer HTML */ }
-      body = (body && typeof body === 'object') ? body : {};
-      var signin = r.status === 401 ? signinFor(body) : '';
-      if (signin !== '') {
-        location.assign(signin + '?next=' + encodeURIComponent(location.pathname + location.search));
-        return new Promise(function () {});
-      }
-      var err = new Error('HTTP ' + r.status);
-      err.status = r.status;
-      err.body = body;
-      err.told = false;
-      if (r.status === 403) {
-        notice('error', (typeof body.error === 'string' && body.error !== '') ? tr('guard.forbidden.reason', body.error) : tr('guard.forbidden'));
-        err.told = true;
-      }
-      return Promise.reject(err);
-    });
+    return r.text().then(function (t) { return refuse(r, parsed(t)); });
+  }
+
+  /** Reject a call whose body was already read — the one place a non-2xx becomes an error with its status. */
+  function refuse(r, body) {
+    var signin = r.status === 401 ? signinFor(body) : '';
+    if (signin !== '') {
+      location.assign(signin + '?next=' + encodeURIComponent(location.pathname + location.search));
+      return new Promise(function () {});
+    }
+    var err = new Error('HTTP ' + r.status);
+    err.status = r.status;
+    err.body = body;
+    err.told = false;
+    if (r.status === 403) {
+      notice('error', (typeof body.error === 'string' && body.error !== '') ? tr('guard.forbidden.reason', body.error) : tr('guard.forbidden'));
+      err.told = true;
+    }
+    return Promise.reject(err);
   }
 
   function guarded(r) {
@@ -142,6 +154,47 @@
   function guardedFlow(r) {
     if (r.ok || r.status === 428) { return Promise.resolve(r); }
     return reject(r);
+  }
+
+  /**
+   * THE HOUSE'S «NO» IS AN ANSWER (greenhouse decisions/0583).
+   *
+   * An operation that ran and answered `ok: false` is not a call that failed: the house understood it, ran it,
+   * and said no — with a sentence, and often with fields the caller paints (a run denied at a step, a turn that
+   * stopped with a verdict). Over HTTP that answer arrives as a 409 carrying the operation's own body, where it
+   * used to arrive as a 201. For a caller that reads the body it is the same answer, so it passes: the response
+   * handed on keeps the house's status and gives the body back both ways, because reading it was the only way
+   * to know.
+   *
+   * ONLY THAT 409. One with no `ok: false` in it is not the operation speaking — a listener stopped the call —
+   * and a body that says `ok: false` under any other status is the door or the server speaking. Both are
+   * rejected exactly as {@see guarded} rejects them.
+   *
+   * A caller that does NOT read the body keeps {@see guarded}: there the «no» is rejected, and `failed()` tells
+   * its sentence — «Saved» is still only ever said on a 2xx.
+   */
+  var VERDICT = 409;
+
+  function answered(r) {
+    if (r.ok) { return Promise.resolve(r); }
+    if (r.status !== VERDICT) { return reject(r); }
+
+    return r.text().then(function (text) {
+      var body = parsed(text);
+      if (body.ok !== false) { return refuse(r, body); }
+
+      return {
+        ok: false,
+        status: r.status,
+        json: function () { return Promise.resolve(body); },
+        text: function () { return Promise.resolve(text); },
+      };
+    });
+  }
+
+  /** {@see answered}, with the confirm gate's 428 passed through as {@see guardedFlow} passes it. */
+  function answeredFlow(r) {
+    return r.status === 428 ? Promise.resolve(r) : answered(r);
   }
 
   // A rejected call, told once: a 403 was already told by guarded(); a status error names the body's error
@@ -235,6 +288,8 @@
     signal: signal,
     guarded: guarded,
     guardedFlow: guardedFlow,
+    answered: answered,
+    answeredFlow: answeredFlow,
     failed: failed,
     notice: notice,
     onNotice: onNotice,

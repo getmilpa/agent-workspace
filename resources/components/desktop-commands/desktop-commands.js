@@ -134,7 +134,10 @@
   function failure(op, result) {
     var data = result.data || {};
     var error = data.error || (data.errors ? JSON.stringify(data.errors) : '');
-    if (result.status >= 200 && result.status < 300) { return tr('op.refused', op, error || tr('op.no_reason')); }
+    // The operation ran and said «no»: once a 2xx whose body said so, now the 409 that carries that same body
+    // (greenhouse decisions/0583). Either way it is the op refusing, in its own words — not a call that failed.
+    var refused = (result.status >= 200 && result.status < 300) || (result.status === 409 && data.ok === false);
+    if (refused) { return tr('op.refused', op, error || tr('op.no_reason')); }
     var hint = (result.status === 404 || result.status === 405) ? tr('op.hint.not_exposed', op)
       : result.status === 428 ? tr('op.hint.confirm', op)
         : result.status === 0 ? tr('op.hint.unreachable')

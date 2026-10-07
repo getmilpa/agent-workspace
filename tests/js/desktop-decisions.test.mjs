@@ -286,3 +286,48 @@ test('a gate its own opener tries to answer is refused, and the refusal is paint
   assert.match(card.querySelector('[data-decision-status]').textContent, /^that answer was refused: .*cannot approve it/);
   assert.equal(card.getAttribute('data-answered'), null, 'a refused card can still be answered by someone else');
 });
+
+// ── the house's «no» as a 409 (greenhouse decisions/0583) ───────────────────────────────────────────
+test('a run the house denied with a 409 is painted as the same run was with a 201 — the body is still read', async () => {
+  const root = tree();
+  const p = page({ tree: root, catalog: COPY, modules: ['desktop-decisions'] });
+  const card = root.querySelector('[data-sequence="deploy"]');
+
+  stubFetch(p, [response(409, { ok: false, applied: false, paused: false, denied: true, denied_operation: 'nobody:has-this', reason: 'UNJUDGEABLE: …' })]);
+  click(p, card.querySelector('[data-sequence-run]'));
+  await settle();
+  assert.equal(card.querySelector('[data-sequence-status]').textContent, 'denied · UNJUDGEABLE: …', 'denied, by its own reason — not «did not finish · HTTP 409»');
+
+  // …and after the confirm gate, which is where a mutating operation's answer arrives.
+  stubFetch(p, [response(428, { requires_confirmation: true, confirm_token: 'tok-9' }), response(409, { ok: false, applied: false, paused: false, reason: 'step 2 threw' })]);
+  click(p, card.querySelector('[data-sequence-run]'));
+  await settle();
+  assert.equal(card.querySelector('[data-sequence-status]').textContent, 'did not finish · step 2 threw');
+});
+
+test('a graph answer the house did not record comes back as 409, and the card says the house\'s sentence', async () => {
+  const root = graphTree();
+  const p = page({ tree: root, catalog: COPY, modules: ['desktop-decisions'] });
+  const sentence = 'The answer \'publish_as_is\' was not recorded: it leads to the node \'publish\' (essay:publish), and it needs the scope essay:publish, which actor:clerk does not hold. The gate is still waiting.';
+  const calls = stubFetch(p, [response(428, { requires_confirmation: true, confirm_token: 'tok-1' }), response(409, { ok: false, error: sentence, state: 'editor_call', awaiting: 'editor_call_gate' })]);
+  const card = root.querySelector('[data-graph-instance="run-1"]');
+
+  click(p, card.querySelector('[data-graph-decide]'));
+  await settle();
+
+  assert.equal(calls.length, 2);
+  assert.equal(card.querySelector('[data-decision-status]').textContent, 'that answer was refused: ' + sentence);
+  assert.equal(card.getAttribute('data-answered'), null, 'the card can still be answered by somebody who may');
+});
+
+test('a 409 that is not the operation\'s answer is still a call that failed, said with what the door gave', async () => {
+  const root = graphTree();
+  const p = page({ tree: root, catalog: COPY, modules: ['desktop-decisions'] });
+  stubFetch(p, [response(409, { error: 'stopped by a listener', code: 'MILPA_OPERATION_STOPPED' })]);
+  const card = root.querySelector('[data-graph-instance="run-1"]');
+
+  click(p, card.querySelector('[data-graph-decide]'));
+  await settle();
+
+  assert.equal(card.querySelector('[data-decision-status]').textContent, 'that answer was refused: stopped by a listener');
+});
