@@ -3,6 +3,13 @@
 All notable changes to milpa/desktop-app are documented here. This project adheres to
 [Semantic Versioning](https://semver.org/) and [Keep a Changelog](https://keepachangelog.com/).
 
+## [0.91.0](https://github.com/getmilpa/agent-workspace/compare/v0.90.0...v0.91.0) (2026-10-07)
+
+
+### Features
+
+* a person takes one admission back from the panel (greenhouse decisions/0590) ([#130](https://github.com/getmilpa/agent-workspace/issues/130)) ([fb7e486](https://github.com/getmilpa/agent-workspace/commit/fb7e486a5442a4bb1ef5069da9498f54d2554e8b))
+
 ## [0.90.0](https://github.com/getmilpa/agent-workspace/compare/v0.89.0...v0.90.0) (2026-10-07)
 
 
