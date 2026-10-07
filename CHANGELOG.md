@@ -3,6 +3,18 @@
 All notable changes to milpa/desktop-app are documented here. This project adheres to
 [Semantic Versioning](https://semver.org/) and [Keep a Changelog](https://keepachangelog.com/).
 
+## [0.89.0](https://github.com/getmilpa/agent-workspace/compare/v0.88.1...v0.89.0) (2026-10-07)
+
+
+### Features
+
+* a graph's card says, to whoever is looking, which options they may take ([#126](https://github.com/getmilpa/agent-workspace/issues/126)) ([3f420bd](https://github.com/getmilpa/agent-workspace/commit/3f420bdcca1bf682510b8cba3268465829656f2a))
+
+
+### Bug Fixes
+
+* the panel reads the house's «no» whether it arrives as a 2xx or as a 409 ([#125](https://github.com/getmilpa/agent-workspace/issues/125)) ([fe2afef](https://github.com/getmilpa/agent-workspace/commit/fe2afef0e27bb1defba6af912464b85135a8cc63))
+
 ## [0.88.1](https://github.com/getmilpa/agent-workspace/compare/v0.88.0...v0.88.1) (2026-10-05)
 
 
