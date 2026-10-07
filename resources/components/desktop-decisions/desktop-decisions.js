@@ -182,8 +182,10 @@
       if (token) { headers['Confirm-Token'] = token; }
       return fetch(path, { method: 'POST', headers: headers, body: JSON.stringify(body) });
     };
-    var flow = d && d.guardedFlow ? d.guardedFlow : function (r) { return r; };
-    var guard = d && d.guarded ? d.guarded : function (r) { return r; };
+    // What comes back is READ — a run says whether it was denied or failed, an answer says why it was not taken —
+    // so the house's «no» passes as the answer it is (greenhouse decisions/0583), with or without the gate first.
+    var flow = d && d.answeredFlow ? d.answeredFlow : function (r) { return r; };
+    var guard = d && d.answered ? d.answered : function (r) { return r; };
 
     return send('').then(flow).then(function (r) {
       if (r.status !== 428) { return r.json(); }

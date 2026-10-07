@@ -182,8 +182,9 @@
 
       return fetch(ANSWER_ROUTE, { method: 'POST', headers: headers, body: JSON.stringify({ session: sid, answer: chosen }) });
     };
-    var flow = (d && d.guardedFlow) ? d.guardedFlow : function (r) { return r; };
-    var guard = (d && d.guarded) ? d.guarded : function (r) { return r; };
+    // The answer's own answer is read below, so the house's «no» passes as one (greenhouse decisions/0583).
+    var flow = (d && d.answeredFlow) ? d.answeredFlow : function (r) { return r; };
+    var guard = (d && d.answered) ? d.answered : function (r) { return r; };
     setStatus(root, tr('grant.sending'));
 
     return send('').then(flow).then(function (response) {

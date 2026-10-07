@@ -173,3 +173,75 @@ test('one document listener bumps ui.dismiss and calls every consumer', () => {
   clicks[0]({ target: 'elsewhere' });
   assert.equal(p.sandbox.MilpaLive.signal('ui.dismiss'), 2, 'the signal is a counter, so every click is a new dismissal');
 });
+
+// ── the house's «no» is an answer (greenhouse decisions/0583) ───────────────────────────────────────
+const REFUSAL = { ok: false, error: 'The node \'publish\' (essay:publish) did not run: it needs the scope essay:publish, which actor:clerk does not hold.' };
+
+test('an operation that ran and answered «no» comes back as 409, and `answered` hands its body on', async () => {
+  const { desktop, sandbox } = page();
+  const told = [];
+  desktop().onNotice((notice) => told.push(notice.text));
+
+  const passed = await desktop().answered(response(409, REFUSAL));
+
+  assert.equal(passed.status, 409, 'the status is still the one the house gave');
+  assert.equal(passed.ok, false);
+  // The body crosses from the module's context: compared as what it says, not as the same object.
+  assert.equal(JSON.stringify(await passed.json()), JSON.stringify(REFUSAL), 'the operation\'s own body is what the caller reads');
+  assert.deepEqual(JSON.parse(await passed.text()), REFUSAL);
+  assert.deepEqual(told, [], 'an answer is not a failure: nothing is told on the caller\'s behalf');
+  assert.equal(sandbox.MilpaLive.signal('desktop.notice'), null);
+});
+
+test('`answered` passes a 2xx untouched, and judges everything else as `guarded` does', async () => {
+  const { desktop, assigned } = page();
+  const told = [];
+  desktop().onNotice((notice) => told.push(notice.text));
+
+  const fine = response(201, { ok: true });
+  assert.equal(await desktop().answered(fine), fine);
+
+  // A 409 that is NOT the operation's own answer — a listener stopped it — is a call that failed.
+  await assert.rejects(desktop().answered(response(409, { error: 'stopped by a listener', code: 'MILPA_OPERATION_STOPPED' })), (err) => {
+    assert.equal(err.status, 409);
+    assert.equal(err.body.code, 'MILPA_OPERATION_STOPPED');
+
+    return true;
+  });
+  // A body that says `ok: false` under another status is the door or the server speaking, not the operation.
+  await assert.rejects(desktop().answered(response(500, { ok: false, error: 'internal_error', reference: 'abc' })), (err) => err.status === 500);
+  await assert.rejects(desktop().answered(response(501, { ok: false, error: 'This app offers no graph:decide' })), (err) => err.status === 501);
+  await assert.rejects(desktop().answered(response(422, { errors: { decision: 'required' } })), (err) => err.status === 422);
+  // A 409 whose body is not JSON at all.
+  await assert.rejects(desktop().answered({ ok: false, status: 409, text: () => Promise.resolve('<html>conflict</html>') }), (err) => err.status === 409);
+
+  await assert.rejects(desktop().answered(response(403, { error: 'This operation requires scope graph:decide' })), (err) => err.told === true);
+  assert.deepEqual(told, ['Not allowed here (This operation requires scope graph:decide)'], 'a 403 is still told once, by the guard');
+
+  desktop().answered(response(401, { signin: '/webauthn/signin' }));
+  await new Promise((resolve) => setTimeout(resolve, 5));
+  assert.equal(assigned.length, 1, 'and a 401 still leaves for the door');
+});
+
+test('`answeredFlow` is the confirm flow that also reads an answer: 428 and the house\'s «no» both pass', async () => {
+  const { desktop } = page();
+
+  const gate = response(428, { requires_confirmation: true, confirm_token: 'tok-1' });
+  assert.equal(await desktop().answeredFlow(gate), gate);
+  assert.equal(JSON.stringify(await (await desktop().answeredFlow(response(409, REFUSAL))).json()), JSON.stringify(REFUSAL));
+  await assert.rejects(desktop().answeredFlow(response(409, { error: 'stopped by a listener' })), (err) => err.status === 409);
+  await assert.rejects(desktop().answeredFlow(response(404, {})), (err) => err.status === 404);
+});
+
+test('`guarded` is unchanged: a caller that never reads the body is still told the house said «no»', async () => {
+  const { desktop } = page();
+  const told = [];
+  desktop().onNotice((notice) => told.push(notice.text));
+
+  const err = await desktop().guarded(response(409, REFUSAL)).then(() => null, (e) => e);
+
+  assert.ok(err, 'a 409 does not pass for a success');
+  assert.equal(err.status, 409);
+  desktop().failed(err, 'unreachable');
+  assert.deepEqual(told, [REFUSAL.error], 'and what is told is the operation\'s sentence, not a status');
+});

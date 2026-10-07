@@ -305,3 +305,23 @@ test('F7 · a question id repeats across turns, so the decision closes the one s
 
   assert.equal(bubbles[1].getAttribute('data-grant-state'), 'answered', 'la decisión cierra la que esperaba');
 });
+
+test('a refused answer that comes back as 409 says the house\'s sentence, and the question stays answerable (0583)', async () => {
+  const { p, chat, view, conv } = thread();
+  stubFetch(p, [response(428, { requires_confirmation: true, confirm_token: 'tok-1' }), response(409, { ok: false, error: 'that answer is not one of the options' })]);
+  conv.append('ask-grant', QUESTION);
+  const grant = chat.children[0];
+
+  choose(view, grant, 'yes');
+  await settle();
+
+  assert.equal(grant.getAttribute('data-grant-state'), 'open', 'still waiting');
+  assert.equal(grant.querySelector('[data-grant-status]').textContent, 'That answer did not go through: that answer is not one of the options', 'the sentence — not «HTTP 409»');
+  assert.equal(grant.querySelectorAll('[data-grant-option]').find((b) => b.textContent === 'yes').disabled, false, 'and still answerable');
+
+  // …and when no gate stood in front of it: the «no» is the first thing that comes back.
+  stubFetch(p, [response(409, { ok: false, error: 'the session is not waiting for an answer' })]);
+  choose(view, grant, 'no');
+  await settle();
+  assert.equal(grant.querySelector('[data-grant-status]').textContent, 'That answer did not go through: the session is not waiting for an answer');
+});

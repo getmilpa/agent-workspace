@@ -718,3 +718,49 @@ test('with NO model declared the label is left alone — there is no name to fai
 
   assert.equal(p.signal('agent.model.label'), 'no model declared');
 });
+
+// ── the house's «no» as a 409 (greenhouse decisions/0583) ───────────────────────────────────────────
+test('a turn the house answered «no» with a 409 is said IN THE THREAD, as it was with a 2xx', async () => {
+  const { p, chat, told } = composerPage();
+  stubFetch(p, [response(409, { ok: false, error: 'the provider answered 401 — check the key in Settings' })]);
+
+  await p.desktop().turn.run('is it green?');
+
+  assert.equal(chat.children.length, 1, 'the turn came back, and what it said is in the conversation');
+  assert.equal(chat.children[0].classList.contains('msg--system'), true);
+  assert.match(chat.children[0].textContent, /the provider answered 401/);
+  assert.deepEqual(told, [], 'it is the turn\'s answer, not a failed call told as a notice');
+  assert.equal(p.signal('session.working'), false);
+  assert.equal(p.signal('session.turns') || 0, 0, 'and a turn that was refused does not count as one');
+});
+
+test('a 409 turn still carries what the agent said and the verdict the house reached', async () => {
+  const { p, chat } = composerPage();
+  stubFetch(p, [response(409, { ok: false, answer: 'I could not finish it', closure: { verified: false, reasons: ['a step carries no evidence'] } })]);
+
+  await p.desktop().turn.run('ship it');
+
+  assert.equal(chat.children.length >= 1, true, 'the response was read, not dropped');
+  const verdicts = chat.querySelectorAll('[data-agent-verdict]').concat(chat.querySelectorAll('.msg--result'));
+  assert.equal(verdicts.length >= 1, true, 'the closure verdict is painted');
+});
+
+test('a command the house refused with a 409 is reported as a REFUSAL, with the operation\'s reason', async () => {
+  const { p, told } = composerPage();
+  stubFetch(p, [
+    response(409, { ok: false, error: 'the session has no goal to clear' }),
+    response(409, { error: 'stopped by a listener', code: 'MILPA_OPERATION_STOPPED' }),
+    response(500, { ok: false, error: 'internal_error', reference: 'abc' }),
+  ]);
+
+  await p.desktop().commands.run({ name: 'goal', args: 'clear' });
+  assert.deepEqual(told, ['agent:goal refused — the session has no goal to clear'], 'the same words a 2xx «no» gets — not «→ HTTP 409 — the operation failed»');
+
+  // A 409 that is not the operation speaking is still a failed call.
+  await p.desktop().commands.run({ name: 'goal', args: 'clear' });
+  assert.match(told[1], /^agent:goal → HTTP 409 — the operation failed/);
+
+  // And a body that says `ok: false` under another status is the server speaking, not the operation.
+  await p.desktop().commands.run({ name: 'goal', args: 'clear' });
+  assert.match(told[2], /^agent:goal → HTTP 500 — the operation failed/);
+});

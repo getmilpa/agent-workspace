@@ -386,8 +386,11 @@ module. The page **composes** them and emits **one** runtime.
 - **The shared module.** `desktop-guard.js` is a runtime module, not a component: it hangs off
   `MilpaLive.desktop` and owns the Desktop's copy (`tr`), the fetch discipline every call passes through
   (`guarded`: 401 → sign in and come back with `next`; 403 → told once; anything else → rejected with its
-  status — and `guardedFlow`, which lets the capabilities gate's `428` through as the flow it is), the
-  `desktop.notice` signal, and the **one** document-level click listener behind `onDismiss`.
+  status — `guardedFlow`, which lets the capabilities gate's `428` through as the flow it is — and
+  `answered` / `answeredFlow`, for a caller that READS what the operation said: an operation that ran and
+  answered `ok: false` comes back as a `409` carrying that body, and it passes as the answer it is, while
+  any other `409` is still a call that failed), the `desktop.notice` signal, and the **one**
+  document-level click listener behind `onDismiss`.
 - **Signals, not couplings.** `session.working` (the send button's glyph/label/disabled and the topbar
   badge's modifiers **bind** to it), `composer.draft`, `ui.dismiss` (the mode menu and the command popup
   consume it), `desktop.notice` (the guard says what happened; the conversation renders it), `composer.panel`
@@ -439,7 +442,7 @@ renders them:
 
 | Module | Hangs off | What it owns |
 |---|---|---|
-| `desktop-guard.js` | `MilpaLive.desktop` | the copy (`tr`), the fetch discipline (`guarded` / `guardedFlow` / `failed`), the `desktop.notice` signal, the one document click listener (`onDismiss`) |
+| `desktop-guard.js` | `MilpaLive.desktop` | the copy (`tr`), the fetch discipline (`guarded` / `guardedFlow` / `answered` / `answeredFlow` / `failed`), the `desktop.notice` signal, the one document click listener (`onDismiss`) |
 | `desktop-shell-bus.js` | `window.MilpaShell` (and `MilpaLive.desktop.bus`) | `on` / `onAny` / `emit`, `onStatus` / `status` (which writes `conn.state` and `conn.label`), `panel(id)`. It is its **own** module because the bus is the Desktop's published extension point — five shipped modules and every plugin panel reach for it — not a private channel between two of them |
 | `desktop-regions.js` | `MilpaLive.desktop.regions` | `reread(names)` — what the house **derives** (a seat's frontier, a parked question's card, the work board and the verdict on it, the session's figures) is re-read from the page the window is on and swapped into the elements the server marked `data-live-region` (`Live\LiveRegion`); asks made together are one request, a region a human is acting in (`[data-busy]`) is deferred until `resume()`, and a page that does not print the region leaves what is shown, marked `data-live-stale`. With no hub it re-reads on a slow poll; when the hub returns it catches up once. `keep(name, fn)` lets a surface carry something into the fresh region — the inbox keeps the receipt of what the human just granted or answered |
 | `desktop-hub.js` | `MilpaLive.desktop.hub` | the ONE `EventSource`, opened on `DOMContentLoaded` (after every deferred module has subscribed) from the URL in `#milpa-desktop-hub`, and `translate(env)` — a `ShellEvent` republished unchanged, a governed turn's `kind` projection mapped to the facts the shell already renders, a parked question turned into a notice **plus** `decision.parked`, and what the house decides said as facts of its own: `house.closure` (its verdict), `house.notice` (its own turn in the session — a grant), `tool.failed`, `work.changed` and `run.ended`. The surfaces that show what the house derives consume them and re-read themselves; the transport builds no card |

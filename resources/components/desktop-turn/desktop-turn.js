@@ -222,7 +222,10 @@
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(input),
-    }).then(d.guarded).then(function (response) {
+    }).then(d.answered).then(function (response) {
+      // `answered`, not `guarded`: a turn the house answered «no» still came back, with what the agent said and
+      // the verdict the house reached — and it belongs in the thread, as it did when it arrived as a 2xx
+      // (greenhouse decisions/0583).
       return response.json();
     }).then(function (result) {
       // The turn came back — answered, parked or refused: either way this page is not running it any
