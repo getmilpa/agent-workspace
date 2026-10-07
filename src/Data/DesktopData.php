@@ -14,6 +14,7 @@ declare(strict_types=1);
 
 namespace Milpa\AgentWorkspace\Data;
 
+use Milpa\AgentWorkspace\Controllers\PanelDoorController;
 use Milpa\Attributes\PluginMetadata;
 use Milpa\AgentWorkspace\Live\ShellEventLog;
 use Milpa\Interfaces\Di\DIContainerInterface;
@@ -261,11 +262,23 @@ final class DesktopData
      *
      * Guarded so an app without `milpa/orchestrator`, or one that declares no graphs, degrades to none.
      *
-     * @return list<array{graph: string, instance: string, question: string, options: list<string>, requester: string}>
+     * ── FOR WHOEVER IS READING (greenhouse decisions/0584) ──────────────────────────────────────────────────────────
+     *
+     * Given the reader, each decision also says which options THAT person may take. This judges nothing: the engine
+     * does, with the rule it refuses an answer by (`choices`, `viewer` — `GraphRuns::pending($viewer)`), and what the
+     * door asks of whoever presses is the door's own operation's (`door`). The reader is handed to the engine the way
+     * the door would hand them when they press — who the panel authenticated, with what the house's ledger says they
+     * hold NOW — so what the card says and what the door does are read from the same place.
+     *
+     * With no reader, a reader the ledger does not know, or an orchestrator that does not say it yet, the rows carry
+     * no judgement and the card paints every option as it always did.
+     *
+     * @return list<array<string, mixed>> each `{graph, instance, question, options, requester}`, and when judged
+     *                                    `choices`, `viewer` and `door`
      *
      * @codeCoverageIgnore reads through to GraphRuns; exercised on a booted app, not by the standalone suite
      */
-    public function pendingGraphDecisions(): array
+    public function pendingGraphDecisions(string $principal = ''): array
     {
         if (!class_exists(\Milpa\Orchestrator\Declaration\GraphRuns::class)
             || !$this->container->getContainer()->has(\Milpa\Orchestrator\Declaration\GraphRuns::class)) {
@@ -278,11 +291,16 @@ final class DesktopData
             return [];
         }
 
+        $holds = $this->scopesOf($principal);
+        $viewer = $holds === null ? null : $this->viewer($principal, $holds);
+        $door = $viewer === null ? null : $this->doorOf(PanelDoorController::DECIDE, $principal, $holds);
         $rows = [];
 
-        foreach ($runs->pending() as $row) {
+        // An engine that takes no viewer ignores the argument: its rows carry no `choices`, and nothing is judged.
+        foreach ($runs->pending($viewer) as $row) {
             /** @var list<string> $options */
             $options = \is_array($row['options'] ?? null) ? array_values(array_filter($row['options'], 'is_string')) : [];
+            $judged = \is_array($row['viewer'] ?? null) && \is_array($row['choices'] ?? null);
 
             $rows[] = [
                 'graph' => (string) ($row['graph'] ?? ''),
@@ -290,10 +308,79 @@ final class DesktopData
                 'question' => (string) ($row['gate_id'] ?? ''),
                 'options' => $options,
                 'requester' => (string) ($row['requester'] ?? ''),
-            ];
+            ] + ($judged ? ['choices' => $row['choices'], 'viewer' => $row['viewer'], 'door' => $door] : []);
         }
 
         return $rows;
+    }
+
+    /**
+     * What this principal holds NOW, as the house's ledger says it — or null when the house cannot say.
+     *
+     * The same reading the passkey door makes on every request (app-runtime's `PasskeySessionResolver`): the session
+     * proves who is there, the ledger supplies the scopes they hold at this moment.
+     *
+     * @return list<string>|null
+     *
+     * @codeCoverageIgnore reads through to app-runtime's enrollment ledger; exercised on a booted app
+     */
+    private function scopesOf(string $principal): ?array
+    {
+        // Named as strings: milpa/app-runtime is where the ledger lives and this package does not require it.
+        $ledger = 'Milpa\\AppRuntime\\Identity\\FileEnrollmentStore';
+        $line = 'Milpa\\AppRuntime\\Identity\\EnrollmentLine';
+        $kernel = $this->container->has(Kernel::class) ? $this->container->get(Kernel::class) : null;
+        if ($principal === '' || !$kernel instanceof Kernel || !class_exists($ledger) || !class_exists($line)) {
+            return null;
+        }
+        $key = $line::keyOf($principal);
+
+        return $key === null ? null : (new $ledger(rtrim($kernel->root(), '/') . '/storage/identity/enrollments.json'))->scopesFor($key);
+    }
+
+    /**
+     * The reader as the engine judges a caller: who the panel authenticated, and what they hold.
+     *
+     * @param list<string> $holds
+     *
+     * @codeCoverageIgnore builds milpa/orchestrator's Caller; exercised on a booted app
+     */
+    private function viewer(string $principal, array $holds): ?object
+    {
+        $caller = 'Milpa\\Orchestrator\\Declaration\\Caller';
+        if (!class_exists($caller) || !class_exists(\Milpa\Command\InvocationContext::class) || !class_exists(\Milpa\ToolRuntime\Contracts\ToolContext::class)) {
+            return null;
+        }
+
+        // As the HTTP door names whoever presses: the actor it attributes the call to, and the principal it judges.
+        return new $caller(
+            new \Milpa\Command\InvocationContext(actor: 'actor:' . $principal, verified: true, channel: 'web'),
+            \Milpa\ToolRuntime\Contracts\ToolContext::web($principal, $holds),
+        );
+    }
+
+    /**
+     * What a panel door will ask of this reader: the scopes its operation declares, and whether they hold one.
+     *
+     * Null when the app does not offer the operation — the door says that itself when pressed.
+     *
+     * @param list<string> $holds
+     *
+     * @return array{may: bool, needs: list<string>}|null
+     *
+     * @codeCoverageIgnore reads the app's own catalogue; exercised on a booted app
+     */
+    private function doorOf(string $operation, string $principal, array $holds): ?array
+    {
+        $offered = PanelDoorController::offered($this->container, $operation);
+        if ($offered === null) {
+            return null;
+        }
+
+        return [
+            'may' => $offered->scopes === [] || \Milpa\ToolRuntime\Contracts\ToolContext::web($principal, $holds)->hasAnyScope($offered->scopes),
+            'needs' => $offered->scopes,
+        ];
     }
 
     /**

@@ -73,7 +73,8 @@ final class DecisionsInbox
             // shell's stacked views paint exactly as they did.
             'hidden' => $hidden,
             'pending' => $this->data?->pendingDecisions() ?? [],
-            'graphs' => $this->data?->pendingGraphDecisions() ?? [],
+            // Judged for whoever is reading (greenhouse decisions/0584): the engine says which options THIS reader may take.
+            'graphs' => $this->data?->pendingGraphDecisions($this->principal) ?? [],
             'sequences' => $this->data?->declaredSequences() ?? [],
             // The seats this reader enrolled, and what they were refused (greenhouse decisions/0493).
             'frontier' => $this->principal === '' ? [] : ($this->data?->seatFrontier($this->principal) ?? []),
@@ -96,7 +97,7 @@ final class DecisionsInbox
     {
         /** @var list<array{session: string, goal: string, question: string, operation: string, reason: string}> $pending */
         $pending = \is_array($props['pending'] ?? null) ? $props['pending'] : [];
-        /** @var list<array{graph: string, instance: string, question: string, options: list<string>, requester: string}> $graphs */
+        /** @var list<array<string, mixed>> $graphs */
         $graphs = \is_array($props['graphs'] ?? null) ? $props['graphs'] : [];
         /** @var list<array{name: string, steps: list<string>, session: string, paused: bool, pending_operation: string}> $sequences */
         $sequences = \is_array($props['sequences'] ?? null) ? $props['sequences'] : [];
@@ -105,6 +106,9 @@ final class DecisionsInbox
             'approve' => $this->plain('decisions.approve'),
             'deny' => $this->plain('decisions.deny'),
             'paused_on' => $this->plain('decisions.paused_on'),
+            'graph_door' => $this->plain('decisions.graph.door'),
+            'graph_yours' => $this->plain('decisions.graph.yours'),
+            'graph_needs' => $this->plain('decisions.graph.needs'),
         ];
         /** @var list<array{session: string, goal: string, seat: string, refusals: list<array{seq: int, tool: string, plugin: ?string, permission: string}>}> $frontier */
         $frontier = \is_array($props['frontier'] ?? null) ? $props['frontier'] : [];

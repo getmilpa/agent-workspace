@@ -36,7 +36,7 @@ final class DecisionsInboxView
      *
      * @param list<array{session: string, goal: string, question: string, operation: string, reason: string, sequence?: string}> $pending
      * @param array<string, string>                                                                                              $copy    the caller's words for the answers, by key
-     * @param list<array{graph: string, instance: string, question: string, options: list<string>, requester: string}>           $graphs
+     * @param list<array<string, mixed>>                                                                                         $graphs
      *                                                                                                                                    Decisions DECLARED GRAPHS are waiting on. They render differently on purpose: an agent's parked
      *                                                                                                                                    question is answered in the conversation of its own session, so its card is a link there; a graph's
      *                                                                                                                                    is answered HERE, so its card carries its options as buttons — and those options are the cases of
@@ -53,11 +53,7 @@ final class DecisionsInboxView
         $cards = '';
 
         foreach ($graphs as $g) {
-            $options = '';
-            foreach ($g['options'] as $option) {
-                $options .= '<button type="button" class="mui-btn mui-btn--sm decision-card__option"'
-                    . ' data-graph-decide="' . $this->esc($option) . '">' . $this->esc($option) . '</button>';
-            }
+            [$options, $reasons] = $this->graphOptions($g, $copy);
 
             $cards .= '<li class="decision-card decision-card--graph" data-graph="' . $this->esc($g['graph']) . '"'
                 . ' data-graph-instance="' . $this->esc($g['instance']) . '">'
@@ -65,6 +61,7 @@ final class DecisionsInboxView
                 . '<p class="decision-card__q">' . $this->esc($g['question']) . '</p>'
                 . ($g['requester'] !== '' ? '<p class="decision-card__facts">started by <strong>' . $this->esc($g['requester']) . '</strong></p>' : '')
                 . '<p class="decision-card__options">' . $options . '</p>'
+                . $reasons
                 . '</li>';
         }
 
@@ -327,7 +324,86 @@ final class DecisionsInboxView
     ];
 
     /** The English a caller with no catalog reads. */
-    private const array COPY = ['run' => 'Run', 'approve' => 'Approve', 'deny' => 'Deny', 'paused_on' => 'paused on %s — answer below'];
+    private const array COPY = [
+        'run' => 'Run',
+        'approve' => 'Approve',
+        'deny' => 'Deny',
+        'paused_on' => 'paused on %s — answer below',
+        'graph_door' => 'You cannot answer this decision: it needs %s, and you do not hold it. Whoever enrolled you can grant it.',
+        'graph_yours' => 'You started this run, so you cannot approve it: somebody else answers.',
+        'graph_needs' => '%1$s leads to %2$s, which needs %3$s — you do not hold it.',
+    ];
+
+    /**
+     * A graph card's options, and the reasons under them — painted FOR WHOEVER IS LOOKING (greenhouse decisions/0584).
+     *
+     * THE CARD JUDGES NOTHING. Each choice arrives judged by the engine (`may`, and `because`: the rule that refused
+     * it), and whether the reader may reach `graph:decide` at all arrives as the door's own verdict (`door`). With
+     * neither — an older orchestrator, a page with no reader — every option is a button, as it always was.
+     *
+     * AN OPTION THE READER MAY NOT TAKE IS SHOWN, switched off, with its reason. Hiding it would say the gate offers
+     * less than it does. It carries no `data-graph-decide`, so it posts nothing — and if it did, the door would
+     * refuse it exactly as before: this is what the reader is TOLD, not what keeps them out.
+     *
+     * The reasons are the reader's: where the option leads and what that asks, in the page's locale. A rule this
+     * card has no words for is said in the engine's own sentence.
+     *
+     * @param array<string, mixed>  $g    the decision: `options`, and when judged `choices`, `viewer` and `door`
+     * @param array<string, string> $copy
+     *
+     * @return array{0: string, 1: string} the buttons, and the reasons that follow them
+     */
+    private function graphOptions(array $g, array $copy): array
+    {
+        /** @var array<string, array<string, mixed>> $choices */
+        $choices = array_column(\is_array($g['choices'] ?? null) ? $g['choices'] : [], null, 'option');
+        $door = \is_array($g['door'] ?? null) ? $g['door'] : [];
+        $closed = ($door['may'] ?? true) === false;
+        $buttons = '';
+        $reasons = '';
+        $own = false;
+
+        /** @var string $option */
+        foreach ($g['options'] as $option) {
+            $choice = $choices[$option] ?? [];
+
+            if (!$closed && ($choice['may'] ?? true) !== false) {
+                $buttons .= '<button type="button" class="mui-btn mui-btn--sm decision-card__option"'
+                    . ' data-graph-decide="' . $this->esc($option) . '">' . $this->esc($option) . '</button>';
+
+                continue;
+            }
+
+            $buttons .= '<button type="button" class="mui-btn mui-btn--sm decision-card__option"'
+                . ' data-graph-option="' . $this->esc($option) . '" disabled aria-disabled="true">' . $this->esc($option) . '</button>';
+
+            $because = $choice['because'] ?? null;
+            if ($because === 'requester') {
+                $own = true; // also one reason for the whole card.
+
+                continue;
+            }
+
+            /** @var list<string> $needs */
+            $needs = \is_array($choice['needs'] ?? null) ? $choice['needs'] : [];
+            $said = $because === 'needs'
+                ? ' ' . $this->esc(ltrim(sprintf($copy['graph_needs'], '', (string) ($choice['leads_to'] ?? ''), implode(', ', $needs))))
+                : ' — ' . $this->esc((string) ($choice['why_not'] ?? ''));
+
+            $reasons .= '<p class="decision-card__facts" data-graph-why="' . $this->esc($option) . '"><strong>' . $this->esc($option) . '</strong>' . $said . '</p>';
+        }
+
+        if ($closed) {
+            // ONE reason for the whole card, the door's: it replaces whatever each option would have said.
+            /** @var list<string> $needs */
+            $needs = \is_array($door['needs'] ?? null) ? $door['needs'] : [];
+            $reasons = '<p class="decision-card__facts" data-graph-why="">' . $this->esc(sprintf($copy['graph_door'], implode(', ', $needs))) . '</p>';
+        } elseif ($own) {
+            $reasons .= '<p class="decision-card__facts" data-graph-why="">' . $this->esc($copy['graph_yours']) . '</p>';
+        }
+
+        return [$buttons, $reasons];
+    }
 
     private function esc(string $v): string
     {
