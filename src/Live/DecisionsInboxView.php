@@ -352,6 +352,10 @@ final class DecisionsInboxView
                 'house' => $copy['runs_house'] . ' — ' . (($runs['pre_image'] ?? false) === true ? $copy['runs_pre'] : $copy['runs_nopre']),
                 'asks' => sprintf($copy['runs_asks'], $why),
                 'refused' => sprintf($copy['runs_refused'], $why),
+                // The house does not run it confined to that state, and says why (confinement switched off here, or
+                // an agent runtime that cannot record where work ran). A value this panel has no words for is left
+                // unsaid: an empty cell claims nothing.
+                'open' => sprintf($copy['runs_open'], $why),
                 default => '',
             };
             $rows .= '<tr data-admit-verb="' . $this->esc($verb['verb']) . '">'
@@ -551,7 +555,7 @@ final class DecisionsInboxView
     }
 
     /** The keys of the admission card's words, as the catalog names them under `frontier.` (decisions/0590). */
-    public const array ADMISSION_WORDS = ['admit_q', 'admit_asked', 'admit_opens', 'col_verb', 'col_does', 'col_effects', 'col_state', 'col_runs', 'does_reads', 'does_writes', 'does_confirms', 'does_names', 'standing_admitted', 'standing_changed', 'standing_added', 'standing_withdrawn', 'admit_withdrawn', 'state_none', 'state_entities', 'state_declared', 'runs_reads', 'runs_trial', 'runs_house', 'runs_pre', 'runs_nopre', 'runs_asks', 'runs_refused', 'words', 'not_opened', 'house_limit', 'digest', 'blocked', 'admit_ack', 'admit'];
+    public const array ADMISSION_WORDS = ['admit_q', 'admit_asked', 'admit_opens', 'col_verb', 'col_does', 'col_effects', 'col_state', 'col_runs', 'does_reads', 'does_writes', 'does_confirms', 'does_names', 'standing_admitted', 'standing_changed', 'standing_added', 'standing_withdrawn', 'admit_withdrawn', 'state_none', 'state_entities', 'state_declared', 'runs_reads', 'runs_trial', 'runs_house', 'runs_pre', 'runs_nopre', 'runs_asks', 'runs_refused', 'runs_open', 'words', 'not_opened', 'house_limit', 'digest', 'blocked', 'admit_ack', 'admit'];
 
     /** The keys of what «Your seats» says each seat holds, as the catalog names them under `seats.` (decisions/0597). */
     public const array HOLDING_WORDS = ['admitted', 'admitted_by', 'held_changed', 'held_gone', 'waiting', 'uncovered', 'ran_before', 'withdraw', 'withdraw_hint', 'withdrawn'];
@@ -602,7 +606,7 @@ final class DecisionsInboxView
         'col_does' => 'What it does',
         'col_effects' => 'Effects, as declared',
         'col_state' => 'Where its state lives',
-        'col_runs' => 'How a call runs here',
+        'col_runs' => 'How the house runs a call of it, in a session',
         'does_reads' => 'reads',
         'does_writes' => 'changes state',
         'does_confirms' => 'asks each time',
@@ -622,6 +626,7 @@ final class DecisionsInboxView
         'runs_nopre' => 'nothing is kept to return to',
         'runs_asks' => 'a person is asked first: %s',
         'runs_refused' => 'never: %s',
+        'runs_open' => 'not confined to that state: %s',
         'words' => 'The capability\'s own words:',
         'not_opened' => 'It does not open the other scopes of %s, any other capability, or writing its code.',
         'house_limit' => 'The house holds each verb to this contract. It did not read the code behind it.',
