@@ -508,8 +508,10 @@ final class DesktopData
         // WITH WHAT EACH HOLDS, when the runtime can say it (greenhouse decisions/0590, 0597): what persons admitted
         // to the seat of the capabilities built here, and each scope no admission covers, with its contract.
         $built = self::built($kernel);
-        // The runtime this package is analysed against may be older than the one a house runs: the method is asked for.
-        if ($built !== null && method_exists($class, 'holdings')) { // @phpstan-ignore function.impossibleType
+        // The runtime this package is analysed against may be older — or newer — than the one a house runs, so the
+        // method is asked for at run time, in a way the analyser does not decide from the version it happens to
+        // have installed: an ignore written for one of them broke the gate the day the other was published.
+        if ($built !== null && (new \ReflectionClass($class))->hasMethod('holdings')) {
             return $class::holdings($kernel->root(), $principal, $built);
         }
 
