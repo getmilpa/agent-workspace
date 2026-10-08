@@ -617,7 +617,8 @@ final class DecisionsInboxView
                 $card,
                 $copy,
                 ' data-admit-seat="' . $this->esc((string) $seat['fingerprint']) . '"',
-                '<p class="decision-card__q">' . $this->esc(sprintf($copy['uncovered'], (string) $card['permission'], (string) ($card['capability'] ?? ''))) . '</p>'
+                // A scope a person admitted and the works suspend is not one nobody admitted: the house says which.
+                '<p class="decision-card__q">' . $this->esc(sprintf($copy[($card['suspended'] ?? false) === true ? 'suspended_scope' : 'uncovered'], (string) $card['permission'], (string) ($card['capability'] ?? ''))) . '</p>'
                     . (($card['ran_before'] ?? false) === true ? '<p class="decision-card__facts" data-admit-ran-before>' . $this->esc($copy['ran_before']) . '</p>' : ''),
                 'data-seat-admit',
             );
@@ -644,7 +645,7 @@ final class DecisionsInboxView
     public const array ADMISSION_WORDS = ['admit_q', 'admit_asked', 'admit_opens', 'col_verb', 'col_does', 'col_effects', 'col_state', 'col_runs', 'does_reads', 'does_writes', 'does_confirms', 'does_names', 'standing_admitted', 'standing_changed', 'standing_added', 'standing_withdrawn', 'admit_withdrawn', 'admit_works', 'suspends', 'suspends_to', 'and', 'state_none', 'state_entities', 'state_declared', 'runs_reads', 'runs_trial', 'runs_house', 'runs_pre', 'runs_nopre', 'runs_asks', 'runs_refused', 'runs_open', 'words', 'not_opened', 'house_limit', 'digest', 'blocked', 'admit_ack', 'admit'];
 
     /** The keys of what «Your seats» says each seat holds, as the catalog names them under `seats.` (decisions/0597). */
-    public const array HOLDING_WORDS = ['admitted', 'admitted_by', 'held_changed', 'held_gone', 'waiting', 'uncovered', 'ran_before', 'withdraw', 'withdraw_hint', 'withdrawn', 'suspended', 'permits', 'closed'];
+    public const array HOLDING_WORDS = ['admitted', 'admitted_by', 'held_changed', 'held_gone', 'waiting', 'uncovered', 'ran_before', 'withdraw', 'withdraw_hint', 'withdrawn', 'suspended', 'suspended_scope', 'permits', 'closed'];
 
     /** The name the form offers first: the real resident is one (greenhouse decisions/0536). */
     private const string DEFAULT_SEAT = 'resident';
@@ -669,6 +670,7 @@ final class DecisionsInboxView
         'withdraw_hint' => 'It only takes authority away: the seat\'s next call to these verbs is refused. Its scopes and its other admissions stay.',
         'withdrawn' => 'Withdrawn: %1$s of %2$s',
         'suspended' => 'suspended: %s is in works',
+        'suspended_scope' => 'The admission of %1$s of the capability %2$s is suspended',
         'permits' => 'It holds the building permit of %s: while it does, no seat uses those verbs.',
         'closed' => 'Building permit of %s closed',
     ];

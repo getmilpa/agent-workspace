@@ -75,6 +75,30 @@ final class ThePanelSaysInWorksOrAdmittedTest extends TestCase
         self::assertStringContainsString('<p class="decision-card__facts" data-seat-closed>Building permit of Prestamos closed · by passkey:QM1L, 2026-10-08T00:30:00Z</p>', $html);
     }
 
+    /**
+     * Measured in the lab house (greenhouse evidence/1147): a scope a person HAD admitted, suspended by the works,
+     * waited under the heading «No admission covers…». The house says when an admission is whole and only
+     * suspended, and the card is headed by that.
+     */
+    public function testAScopeThatIsOnlySuspendedIsNotHeadedAsIfNobodyAdmittedIt(): void
+    {
+        $card = [
+            'capability' => 'Prestamos', 'scope' => 'herramientas:write', 'verbs' => ['herramientas.prestar'], 'ran_before' => false,
+            'contract' => 'sha256:' . str_repeat('a', 64), 'not_admissible' => null,
+            'opens' => [['verb' => 'herramientas.prestar', 'mutating' => true, 'standing' => 'admitted']],
+            'works' => ['holders' => [self::OTHER]],
+        ];
+        $seat = ['fingerprint' => self::SEAT, 'label' => 'resident', 'scopes' => ['agent:run'], 'authorized_by' => 'passkey:QM1L', 'admitted' => []];
+
+        $suspended = (new DecisionsInboxView())->seatsHtml([$seat + ['unadmitted' => [$card + ['suspended' => true]]]]);
+        $lacking = (new DecisionsInboxView())->seatsHtml([$seat + ['unadmitted' => [$card + ['suspended' => false]]]]);
+
+        self::assertStringContainsString('<p class="decision-card__q">The admission of herramientas:write of the capability Prestamos is suspended</p>', $suspended);
+        self::assertStringNotContainsString('No admission covers', $suspended);
+        self::assertStringContainsString('<p class="decision-card__q">No admission covers herramientas:write of the capability Prestamos</p>', $lacking);
+        self::assertStringContainsString('No admission covers', (new DecisionsInboxView())->seatsHtml([$seat + ['unadmitted' => [$card]]]), 'a runtime that does not say reads as it did');
+    }
+
     public function testASeatTheHouseSaysNothingOfReadsAsItDid(): void
     {
         $html = (new DecisionsInboxView())->seatsHtml([[
@@ -90,7 +114,7 @@ final class ThePanelSaysInWorksOrAdmittedTest extends TestCase
 
     public function testBothLanguagesHaveTheWords(): void
     {
-        foreach (['frontier.admit_works', 'frontier.suspends', 'frontier.and', 'seats.suspended', 'seats.permits', 'seats.closed', 'frontier.admitted_closed', 'frontier.granted_works'] as $key) {
+        foreach (['frontier.admit_works', 'frontier.suspends', 'frontier.and', 'seats.suspended', 'seats.suspended_scope', 'seats.permits', 'seats.closed', 'frontier.admitted_closed', 'frontier.granted_works'] as $key) {
             $en = (new \Milpa\AgentWorkspace\I18n\Catalog('en'))->all()[$key] ?? null;
             $es = (new \Milpa\AgentWorkspace\I18n\Catalog('es'))->all()[$key] ?? null;
             self::assertIsString($en, $key);
@@ -100,7 +124,7 @@ final class ThePanelSaysInWorksOrAdmittedTest extends TestCase
         foreach (['admit_works', 'suspends', 'and'] as $word) {
             self::assertContains($word, DecisionsInboxView::ADMISSION_WORDS);
         }
-        foreach (['suspended', 'permits', 'closed'] as $word) {
+        foreach (['suspended', 'suspended_scope', 'permits', 'closed'] as $word) {
             self::assertContains($word, DecisionsInboxView::HOLDING_WORDS);
         }
     }
