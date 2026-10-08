@@ -193,6 +193,8 @@ final class DecisionsInboxView
                     . '<p class="decision-card__facts">' . $this->esc($facts) . '</p>'
                     . ($call !== '' ? '<p class="decision-card__facts" data-seat-call>' . $this->esc($copy['call']) . ' <code>' . $this->esc($call) . '</code></p>' : '')
                     . ($opens !== '' ? '<p class="decision-card__facts" data-seat-opens>' . $this->esc($opens) . '</p>' : '')
+                    . $this->suspendsHtml($refusal, (string) $plugin, $copy)
+                    . $this->standsHtml($refusal, $plugin, $copy)
                     . ($informed
                         ? '<p class="decision-card__facts"><label><input type="checkbox" data-seat-ack> ' . $this->esc(sprintf($copy['ack'], (string) $plugin)) . '</label></p>'
                         : '')
@@ -266,6 +268,7 @@ final class DecisionsInboxView
             . ($offered ? ' data-seat-admits="' . $this->esc($contract) . '"' : '') . ' data-seat-permission="' . $this->esc($permission) . '">'
             . $head
             . $this->tookBack($card, $copy)
+            . $this->worksHtml($card, $capability, $copy)
             . '<p class="decision-card__facts" data-admit-opens>' . $this->esc($copy['admit_opens']) . '</p>'
             . $this->contractHtml(\is_array($card['opens'] ?? null) ? $card['opens'] : [], $copy)
             . '<p class="decision-card__facts">' . $this->esc(sprintf($copy['not_opened'], $capability)) . ' ' . $this->esc($copy['house_limit']) . '</p>'
@@ -280,6 +283,90 @@ final class DecisionsInboxView
             . $more
             . '</p>'
             . '</li>';
+    }
+
+    /**
+     * IN WORKS OR ADMITTED, NEVER BOTH (greenhouse decisions/0590, rule 10). Admitting takes the capability's
+     * building permit from every seat that holds it: something the act does beyond what its button names, so the
+     * card says whose it closes before the touch. Who holds it arrives from the house; where nobody does, or the
+     * house does not say, the card says nothing of it.
+     *
+     * @param array<string, mixed>  $card
+     * @param array<string, string> $copy
+     */
+    private function worksHtml(array $card, string $capability, array $copy): string
+    {
+        $works = \is_array($card['works'] ?? null) ? $card['works'] : [];
+        $holders = array_values(array_filter(\is_array($works['holders'] ?? null) ? $works['holders'] : [], '\is_string'));
+        if ($holders === []) {
+            return '';
+        }
+
+        return '<p class="decision-card__facts" data-admit-works>'
+            . $this->esc(sprintf($copy['admit_works'], $capability, $this->listed(array_map($this->shortKey(...), $holders), $copy)))
+            . '</p>';
+    }
+
+    /**
+     * How far the grant reaches, when the house says it does (greenhouse decisions/0602): opened knowingly over
+     * existing work, it stands for the session — the house then writes inside that plugin without asking about each
+     * piece. Said on the card, above the box and the button, because it is part of what the act does. Only the
+     * reach this panel knows is said; a house that sends none is shown the card as it was.
+     *
+     * @param array<string, mixed>  $refusal
+     * @param array<string, string> $copy
+     */
+    private function standsHtml(array $refusal, ?string $plugin, array $copy): string
+    {
+        if ($plugin === null || ($refusal['stands_for'] ?? null) !== 'session') {
+            return '';
+        }
+
+        return '<p class="decision-card__facts" data-seat-stands>' . $this->esc(sprintf($copy['stands_session'], $plugin)) . '</p>';
+    }
+
+    /**
+     * What granting the building permit of a capability persons admitted suspends: who was admitted what. While
+     * that permit stands no seat uses its verbs, and the next admission closes it — said on the card, because the
+     * button only names the scope (rule 10).
+     *
+     * @param array<string, mixed>  $refusal
+     * @param array<string, string> $copy
+     */
+    private function suspendsHtml(array $refusal, string $plugin, array $copy): string
+    {
+        $who = [];
+        foreach (\is_array($refusal['suspends'] ?? null) ? $refusal['suspends'] : [] as $held) {
+            if (!\is_array($held) || !\is_string($held['seat'] ?? null)) {
+                continue;
+            }
+            $scopes = array_values(array_filter(\is_array($held['scopes'] ?? null) ? $held['scopes'] : [], '\is_string'));
+            $who[] = sprintf($copy['suspends_to'], implode(', ', $scopes), $this->shortKey($held['seat']));
+        }
+        if ($who === []) {
+            return '';
+        }
+
+        return '<p class="decision-card__facts" data-seat-suspends>' . $this->esc(sprintf($copy['suspends'], $plugin, implode('; ', $who))) . '</p>';
+    }
+
+    /** A seat's key as a line can carry it: enough to match the one «Your seats» prints whole. */
+    private function shortKey(string $key): string
+    {
+        return mb_strlen($key) > 12 ? mb_substr($key, 0, 12) . '…' : $key;
+    }
+
+    /**
+     * Names in a sentence: «a», «a and b», «a, b and c».
+     *
+     * @param list<string>          $names
+     * @param array<string, string> $copy
+     */
+    private function listed(array $names, array $copy): string
+    {
+        $last = array_pop($names);
+
+        return $names === [] ? (string) $last : implode(', ', $names) . ' ' . $copy['and'] . ' ' . $last;
     }
 
     /**
@@ -505,10 +592,28 @@ final class DecisionsInboxView
                 . ' · ' . $this->esc(implode('; ', $verbs))
                 . ' · ' . $this->esc(sprintf($copy['admitted_by'], (string) ($admitted['admitted_by'] ?? ''), (string) ($admitted['at'] ?? '')))
                 . '</span>'
+                // In works: this admission is kept and suspended until a person admits the capability again (rule 10).
+                . (\is_array($admitted['suspended'] ?? null) && $admitted['suspended'] !== []
+                    ? ' <em data-seat-suspended>' . $this->esc(sprintf($copy['suspended'], (string) ($admitted['capability'] ?? ''))) . '</em>'
+                    : '')
                 . ($key !== ''
                     ? ' <button type="button" class="mui-btn mui-btn--sm" title="' . $this->esc($copy['withdraw_hint']) . '" data-seat-withdraw>' . $this->esc($copy['withdraw']) . '</button>'
                         . '<span class="decision-card__said" data-seat-status></span>'
                     : '')
+                . '</p>';
+        }
+        // The building permits it holds of what the house built, and the ones an admission closed for it (rule 10).
+        $permits = array_values(array_filter(\is_array($seat['permits'] ?? null) ? $seat['permits'] : [], '\is_string'));
+        if ($permits !== []) {
+            $html .= '<p class="decision-card__facts" data-seat-permits>' . $this->esc(sprintf($copy['permits'], $this->listed($permits, $copy))) . '</p>';
+        }
+        foreach (\is_array($seat['closures'] ?? null) ? $seat['closures'] : [] as $closure) {
+            if (!\is_array($closure) || !\is_string($closure['capability'] ?? null)) {
+                continue;
+            }
+            $html .= '<p class="decision-card__facts" data-seat-closed>'
+                . $this->esc(sprintf($copy['closed'], $closure['capability']))
+                . ' · ' . $this->esc(sprintf($copy['admitted_by'], (string) ($closure['closed_by'] ?? ''), (string) ($closure['at'] ?? '')))
                 . '</p>';
         }
         foreach (\is_array($seat['withdrawn'] ?? null) ? $seat['withdrawn'] : [] as $line) {
@@ -531,7 +636,8 @@ final class DecisionsInboxView
                 $card,
                 $copy,
                 ' data-admit-seat="' . $this->esc((string) $seat['fingerprint']) . '"',
-                '<p class="decision-card__q">' . $this->esc(sprintf($copy['uncovered'], (string) $card['permission'], (string) ($card['capability'] ?? ''))) . '</p>'
+                // A scope a person admitted and the works suspend is not one nobody admitted: the house says which.
+                '<p class="decision-card__q">' . $this->esc(sprintf($copy[($card['suspended'] ?? false) === true ? 'suspended_scope' : 'uncovered'], (string) $card['permission'], (string) ($card['capability'] ?? ''))) . '</p>'
                     . (($card['ran_before'] ?? false) === true ? '<p class="decision-card__facts" data-admit-ran-before>' . $this->esc($copy['ran_before']) . '</p>' : ''),
                 'data-seat-admit',
             );
@@ -555,10 +661,10 @@ final class DecisionsInboxView
     }
 
     /** The keys of the admission card's words, as the catalog names them under `frontier.` (decisions/0590). */
-    public const array ADMISSION_WORDS = ['admit_q', 'admit_asked', 'admit_opens', 'col_verb', 'col_does', 'col_effects', 'col_state', 'col_runs', 'does_reads', 'does_writes', 'does_confirms', 'does_names', 'standing_admitted', 'standing_changed', 'standing_added', 'standing_withdrawn', 'admit_withdrawn', 'state_none', 'state_entities', 'state_declared', 'runs_reads', 'runs_trial', 'runs_house', 'runs_pre', 'runs_nopre', 'runs_asks', 'runs_refused', 'runs_open', 'words', 'not_opened', 'house_limit', 'digest', 'blocked', 'admit_ack', 'admit'];
+    public const array ADMISSION_WORDS = ['admit_q', 'admit_asked', 'admit_opens', 'col_verb', 'col_does', 'col_effects', 'col_state', 'col_runs', 'does_reads', 'does_writes', 'does_confirms', 'does_names', 'standing_admitted', 'standing_changed', 'standing_added', 'standing_withdrawn', 'admit_withdrawn', 'admit_works', 'suspends', 'suspends_to', 'stands_session', 'and', 'state_none', 'state_entities', 'state_declared', 'runs_reads', 'runs_trial', 'runs_house', 'runs_pre', 'runs_nopre', 'runs_asks', 'runs_refused', 'runs_open', 'words', 'not_opened', 'house_limit', 'digest', 'blocked', 'admit_ack', 'admit'];
 
     /** The keys of what «Your seats» says each seat holds, as the catalog names them under `seats.` (decisions/0597). */
-    public const array HOLDING_WORDS = ['admitted', 'admitted_by', 'held_changed', 'held_gone', 'waiting', 'uncovered', 'ran_before', 'withdraw', 'withdraw_hint', 'withdrawn'];
+    public const array HOLDING_WORDS = ['admitted', 'admitted_by', 'held_changed', 'held_gone', 'waiting', 'uncovered', 'ran_before', 'withdraw', 'withdraw_hint', 'withdrawn', 'suspended', 'suspended_scope', 'permits', 'closed'];
 
     /** The name the form offers first: the real resident is one (greenhouse decisions/0536). */
     private const string DEFAULT_SEAT = 'resident';
@@ -582,6 +688,10 @@ final class DecisionsInboxView
         'withdraw' => 'Withdraw',
         'withdraw_hint' => 'It only takes authority away: the seat\'s next call to these verbs is refused. Its scopes and its other admissions stay.',
         'withdrawn' => 'Withdrawn: %1$s of %2$s',
+        'suspended' => 'suspended: %s is in works',
+        'suspended_scope' => 'The admission of %1$s of the capability %2$s is suspended',
+        'permits' => 'It holds the building permit of %s: while it does, no seat uses those verbs.',
+        'closed' => 'Building permit of %s closed',
     ];
 
     /** The English the frontier cards read when the caller hands no catalog. */
@@ -616,6 +726,11 @@ final class DecisionsInboxView
         'standing_added' => 'added after you admitted this scope',
         'standing_withdrawn' => 'its admission was withdrawn',
         'admit_withdrawn' => 'Its admission was withdrawn by %1$s, %2$s.',
+        'admit_works' => '%1$s is in works: its building permit is held by %2$s, and while it is no seat uses its verbs. Admitting closes that permit; what you already admitted and did not change stands again.',
+        'suspends' => '%1$s is admitted — %2$s. Granting puts it back in works: what was admitted is suspended while this permit stands, and the next admission closes it.',
+        'suspends_to' => '%1$s to %2$s',
+        'stands_session' => 'In this session the house will then write inside %s without asking you again about each piece.',
+        'and' => 'and',
         'state_none' => 'it keeps none',
         'state_entities' => 'the store of its entities',
         'state_declared' => 'declared by the capability',

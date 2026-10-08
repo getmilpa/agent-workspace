@@ -410,8 +410,11 @@
       .then(function (read) {
         if (!read || read.ok === false) { throw new Error((read && (read.error || read.message)) || 'refused'); }
         status.textContent = admits !== null
-          ? tr('frontier.admitted', String(read.granted || ''), String(read.capability || ''))
-          : tr('frontier.granted', String(read.granted || ''));
+          ? admittedSaid(read)
+          : (Array.isArray(read.suspended) && read.suspended.length > 0 && existing !== null
+            // The permit of a capability persons admitted reopens its works (greenhouse decisions/0590, rule 10).
+            ? tr('frontier.granted_works', String(read.granted || ''), existing)
+            : tr('frontier.granted', String(read.granted || '')));
         card.setAttribute('data-granted', '');
         var button = card.querySelector('[data-seat-grant]');
         if (button) { button.setAttribute('hidden', ''); }
@@ -420,6 +423,20 @@
       .catch(function (err) {
         status.textContent = tr(admits !== null ? 'frontier.refused_admit' : 'frontier.refused_grant', why(err));
       }));
+  }
+
+  // IN WORKS OR ADMITTED, NEVER BOTH (greenhouse decisions/0590, rule 10): an admission takes the capability's
+  // building permit from every seat that held it, and what the house answers says whose. Said with the admission,
+  // because it is something the act did beyond what its button named.
+  function admittedSaid(read) {
+    var granted = String(read.granted || '');
+    var capability = String(read.capability || '');
+    var closed = Array.isArray(read.closed) ? read.closed.filter(function (key) { return typeof key === 'string' && key !== ''; }) : [];
+    if (closed.length === 0) { return tr('frontier.admitted', granted, capability); }
+
+    return tr('frontier.admitted_closed', granted, capability, closed.map(function (key) {
+      return key.length > 12 ? key.slice(0, 12) + '…' : key;
+    }).join(', '));
   }
 
   function acknowledged(card) {
@@ -451,7 +468,7 @@
       })
       .then(function (read) {
         if (!read || read.ok === false) { throw new Error((read && (read.error || read.message)) || 'refused'); }
-        status.textContent = tr('frontier.admitted', String(read.granted || ''), String(read.capability || ''));
+        status.textContent = admittedSaid(read);
         card.setAttribute('data-granted', '');
         var button = card.querySelector('[data-seat-admit]');
         if (button) { button.setAttribute('hidden', ''); }
