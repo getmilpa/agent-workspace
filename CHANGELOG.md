@@ -3,6 +3,18 @@
 All notable changes to milpa/desktop-app are documented here. This project adheres to
 [Semantic Versioning](https://semver.org/) and [Keep a Changelog](https://keepachangelog.com/).
 
+## [0.92.0](https://github.com/getmilpa/agent-workspace/compare/v0.91.1...v0.92.0) (2026-10-08)
+
+
+### Features
+
+* the cards say when a capability is in works, whose permit admitting closes, what a grant suspends and how far it reaches (greenhouse decisions/0590, 0602) ([#136](https://github.com/getmilpa/agent-workspace/issues/136)) ([b7cdc21](https://github.com/getmilpa/agent-workspace/commit/b7cdc210ae43986a2bc1724a931d21d7f3994468))
+
+
+### Bug Fixes
+
+* this package's gates do not depend on which runtime they have installed ([#137](https://github.com/getmilpa/agent-workspace/issues/137)) ([d0e77cb](https://github.com/getmilpa/agent-workspace/commit/d0e77cb90b2526b9db54d577ed517aa5d1c0b810))
+
 ## [0.91.1](https://github.com/getmilpa/agent-workspace/compare/v0.91.0...v0.91.1) (2026-10-07)
 
 
