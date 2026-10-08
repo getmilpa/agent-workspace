@@ -167,7 +167,7 @@ test('ticked, the touch is bound to the grant WITH the plugin named, and the gra
 // ── the admission of a built verb (greenhouse decisions/0590, 0597) ─────────────────────────────────────────────────
 
 const DIGEST = 'sha256:12b7c568802279593b0f78fc2462543fab5b37a0f108c494305e70bea67bbee7';
-const SEAT = 'BD93ED040122235995977BA235799583EC8050B5';
+const SEAT = 'EEEE5555FFFF6666AAAA7777BBBB8888CCCC9999';
 const ADMITTED = { ok: true, fingerprint: SEAT, granted: 'herramientas:write', capability: 'Prestamos', admitted: ['herramientas.agregar'], contract: DIGEST };
 
 /** An admission card as the server prints it: bound to a refused call, or — with no refusal — to a seat. */

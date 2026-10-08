@@ -32,9 +32,9 @@ use PHPUnit\Framework\TestCase;
  */
 final class SeatFrontierPanelTest extends TestCase
 {
-    private const HUMAN = 'C1FEA43BAC5F22E7A5F21152B46AB0F97CAFB831';
+    private const HUMAN = 'BBBB2222CCCC3333DDDD4444EEEE5555FFFF6666';
     private const STRANGER = 'D00D000011112222333344445555666677778888';
-    private const SEAT = '95A3AC7B96F8BC6AA7044F2C09082971DEBAAA50';
+    private const SEAT = 'CCCC3333DDDD4444EEEE5555FFFF6666AAAA7777';
     private const PASSKEY = 'passkey:QM1LEWEfsoWiMm';
     private const STRANGER_PASSKEY = 'passkey:ZZ9otherCredential';
     private const SESSION = 'camino-blog';

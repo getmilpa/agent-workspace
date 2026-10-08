@@ -27,7 +27,7 @@ use PHPUnit\Framework\TestCase;
  */
 final class APersonWithdrawsAnAdmissionFromThePanelTest extends TestCase
 {
-    private const SEAT = 'BD93ED040122235995977BA235799583EC8050B5';
+    private const SEAT = 'EEEE5555FFFF6666AAAA7777BBBB8888CCCC9999';
 
     public function testEachAdmissionCarriesTheButtonThatTakesItBackBoundToWhatTheLineSays(): void
     {
