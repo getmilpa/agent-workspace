@@ -27,14 +27,14 @@ final class YourSeatsTest extends TestCase
     public function testEachSeatShowsItsKeyScopesAndWhoEnrolledIt(): void
     {
         $html = (new DecisionsInboxView())->seatsHtml([[
-            'fingerprint' => '95A3AC7B96F8BC6AA7044F2C09082971DEBAAA50',
+            'fingerprint' => 'CCCC3333DDDD4444EEEE5555FFFF6666AAAA7777',
             'label' => 'resident',
             'scopes' => ['agent:run', 'agent:read'],
             'authorized_by' => 'passkey:QM1L',
         ]]);
 
-        self::assertStringContainsString('data-seat-key="95A3AC7B96F8BC6AA7044F2C09082971DEBAAA50"', $html);
-        self::assertStringContainsString('<code>95A3AC7B96F8BC6AA7044F2C09082971DEBAAA50</code>', $html, 'the full key, to compare with gpg --fingerprint');
+        self::assertStringContainsString('data-seat-key="CCCC3333DDDD4444EEEE5555FFFF6666AAAA7777"', $html);
+        self::assertStringContainsString('<code>CCCC3333DDDD4444EEEE5555FFFF6666AAAA7777</code>', $html, 'the full key, to compare with gpg --fingerprint');
         self::assertStringContainsString('agent:run agent:read', $html);
         self::assertStringContainsString('enrolled by passkey:QM1L', $html);
         self::assertStringNotContainsString('milpa-seats-empty', $html);
@@ -60,7 +60,7 @@ final class YourSeatsTest extends TestCase
     public function testASeatedResidentIsNotOfferedASecondSeat(): void
     {
         $html = (new DecisionsInboxView())->seatsHtml([[
-            'fingerprint' => '95A3AC7B96F8BC6AA7044F2C09082971DEBAAA50',
+            'fingerprint' => 'CCCC3333DDDD4444EEEE5555FFFF6666AAAA7777',
             'label' => 'Resident',
             'scopes' => ['agent:run'],
             'authorized_by' => 'passkey:QM1L',

@@ -29,7 +29,7 @@ use PHPUnit\Framework\TestCase;
 final class APersonAdmitsABuiltVerbFromThePanelTest extends TestCase
 {
     private const DIGEST = 'sha256:12b7c568802279593b0f78fc2462543fab5b37a0f108c494305e70bea67bbee7';
-    private const SEAT = 'BD93ED040122235995977BA235799583EC8050B5';
+    private const SEAT = 'EEEE5555FFFF6666AAAA7777BBBB8888CCCC9999';
 
     public function testTheCardShowsEveryVerbTheScopeOpensWhatItDeclaresAndWhereItsStateLives(): void
     {
@@ -76,7 +76,7 @@ final class APersonAdmitsABuiltVerbFromThePanelTest extends TestCase
     {
         $older = ['session' => 'taller-lunes', 'admissions' => [['seq' => 7] + $this->admission()]] + $this->session([]);
         $latest = ['session' => 'taller-martes', 'admissions' => [['seq' => 21] + $this->admission()]] + $this->session([]);
-        $other = ['seat' => 'key:D2A77A0E6562218C52C02D67022F264E481377BD', 'session' => 'taller-b', 'admissions' => [['seq' => 3] + $this->admission()]] + $this->session([]);
+        $other = ['seat' => 'key:0000AAAA1111BBBB2222CCCC3333DDDD4444EEEE', 'session' => 'taller-b', 'admissions' => [['seq' => 3] + $this->admission()]] + $this->session([]);
         $read = ['contract' => 'sha256:' . str_repeat('d', 64), 'permission' => 'herramientas:read', 'scope' => 'herramientas:read', 'seq' => 30] + $this->admission();
 
         $html = (new DecisionsInboxView())->frontierHtml([$older, ['admissions' => [$latest['admissions'][0], $read]] + $latest, $other]);
