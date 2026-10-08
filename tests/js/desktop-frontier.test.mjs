@@ -333,3 +333,54 @@ test('without a passkey a withdrawal says so and posts nothing', async () => {
   assert.equal(calls.length, 0);
   assert.equal(line.querySelector('[data-seat-status]').textContent, 'this browser cannot run the passkey ceremony');
 });
+
+// ── in works or admitted, never both (greenhouse decisions/0590, rule 10) ───────────────────────────────────────────
+
+test('an admission that closed a building permit says whose, from a refusal and with none', async () => {
+  for (const [tree, hook, answer] of [[fromARefusal(), 'data-seat-grant', ADMITTED], [withNoRefusal(), 'data-seat-admit', ADMITTED]]) {
+    const p = page({ tree, catalog: CATALOG, modules: ['desktop-decisions'] });
+    withPasskey(p);
+    stubFetch(p, [response(200, OPTIONS), response(201, { ...answer, closed: [SEAT, 'D2A77A0E6562218C52C02D67022F264E481377BD'] })]);
+    const card = tree.querySelector('li');
+    card.querySelector('[data-seat-ack]').checked = true;
+
+    click(p, card.querySelector(`[${hook}]`));
+    await settle();
+
+    assert.equal(card.querySelector('[data-seat-status]').textContent, 'admitted · herramientas:write of Prestamos — the seat can call it now, and its building permit is closed for BD93ED040122…, D2A77A0E6562…');
+  }
+});
+
+test('an admission that closed nothing says what it said before', async () => {
+  const root = fromARefusal();
+  const p = page({ tree: root, catalog: CATALOG, modules: ['desktop-decisions'] });
+  withPasskey(p);
+  stubFetch(p, [response(200, OPTIONS), response(201, { ...ADMITTED, closed: [] })]);
+  const card = root.querySelector('[data-seat-session]');
+  card.querySelector('[data-seat-ack]').checked = true;
+
+  click(p, card.querySelector('[data-seat-grant]'));
+  await settle();
+
+  assert.equal(card.querySelector('[data-seat-status]').textContent, 'admitted · herramientas:write of Prestamos — the seat can call it now');
+});
+
+test('a grant that reopened the works of an admitted capability says so, and one that suspended nothing does not', async () => {
+  for (const [suspended, said] of [
+    [[{ seat: SEAT, scopes: ['herramientas:write'] }], 'granted · plugins.HelloPlugin:write — the seat can continue. HelloPlugin is in works now: what was admitted is suspended until a person admits it again'],
+    [[], 'granted · plugins.HelloPlugin:write — the seat can continue'],
+  ]) {
+    const root = informedTree();
+    const p = page({ tree: root, catalog: CATALOG, modules: ['desktop-decisions'] });
+    withPasskey(p);
+    stubFetch(p, [response(200, OPTIONS), response(201, { ok: true, granted: 'plugins.HelloPlugin:write', suspended })]);
+    const card = root.querySelector('[data-seat-session]');
+    card.querySelector('[data-seat-ack]').checked = true;
+
+    click(p, card.querySelector('[data-seat-grant]'));
+    await settle();
+
+    assert.equal(card.querySelector('[data-seat-status]').textContent, said);
+  }
+});
+

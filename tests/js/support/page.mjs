@@ -96,6 +96,8 @@ export const CATALOG = {
   'frontier.admitting': 'touch your key to approve this admission…',
   'frontier.admitted': 'admitted · %s of %s — the seat can call it now',
   'frontier.refused_admit': 'nothing was admitted: %s',
+  'frontier.admitted_closed': 'admitted · %s of %s — the seat can call it now, and its building permit is closed for %s',
+  'frontier.granted_works': 'granted · %s — the seat can continue. %s is in works now: what was admitted is suspended until a person admits it again',
   'seats.withdrawing': 'touch your key to approve this withdrawal…',
   'seats.withdrawn_done': "withdrawn · %s of %s — the seat's next call to it is refused",
   'seats.refused_withdraw': 'nothing was withdrawn: %s',
