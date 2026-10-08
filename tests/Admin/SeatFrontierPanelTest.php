@@ -98,12 +98,21 @@ final class SeatFrontierPanelTest extends TestCase
     {
         $data = $this->data();
 
-        self::assertSame([[
+        $seats = $data->seats(self::PASSKEY);
+        self::assertCount(1, $seats, 'the passkey the seat\'s key enrolled answers for it');
+        $identity = ['fingerprint' => true, 'label' => true, 'scopes' => true, 'authorized_by' => true];
+        self::assertSame([
             'fingerprint' => self::SEAT,
             'label' => null,
             'scopes' => ['agent:run', 'agent:read', 'plugins:read'],
             'authorized_by' => 'key:' . self::HUMAN,
-        ]], $data->seats(self::PASSKEY), 'the passkey the seat\'s key enrolled answers for it');
+        ], array_intersect_key($seats[0], $identity));
+        // A runtime that can say what each seat holds says it beside (greenhouse decisions/0590) — which keys depends
+        // on the runtime installed, and this row was pinned whole: it broke the day a newer one was published. Here
+        // the house built nothing, so whatever it says the seat holds is empty.
+        foreach (array_diff_key($seats[0], $identity) as $key => $held) {
+            self::assertSame([], $held, $key);
+        }
         self::assertSame([], $data->seats(self::STRANGER_PASSKEY), 'another line sees no seat');
         self::assertSame([], $data->seats(''), 'nobody signed in, no seat');
     }
