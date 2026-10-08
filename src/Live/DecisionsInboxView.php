@@ -194,6 +194,7 @@ final class DecisionsInboxView
                     . ($call !== '' ? '<p class="decision-card__facts" data-seat-call>' . $this->esc($copy['call']) . ' <code>' . $this->esc($call) . '</code></p>' : '')
                     . ($opens !== '' ? '<p class="decision-card__facts" data-seat-opens>' . $this->esc($opens) . '</p>' : '')
                     . $this->suspendsHtml($refusal, (string) $plugin, $copy)
+                    . $this->standsHtml($refusal, $plugin, $copy)
                     . ($informed
                         ? '<p class="decision-card__facts"><label><input type="checkbox" data-seat-ack> ' . $this->esc(sprintf($copy['ack'], (string) $plugin)) . '</label></p>'
                         : '')
@@ -304,6 +305,24 @@ final class DecisionsInboxView
         return '<p class="decision-card__facts" data-admit-works>'
             . $this->esc(sprintf($copy['admit_works'], $capability, $this->listed(array_map($this->shortKey(...), $holders), $copy)))
             . '</p>';
+    }
+
+    /**
+     * How far the grant reaches, when the house says it does (greenhouse decisions/0602): opened knowingly over
+     * existing work, it stands for the session — the house then writes inside that plugin without asking about each
+     * piece. Said on the card, above the box and the button, because it is part of what the act does. Only the
+     * reach this panel knows is said; a house that sends none is shown the card as it was.
+     *
+     * @param array<string, mixed>  $refusal
+     * @param array<string, string> $copy
+     */
+    private function standsHtml(array $refusal, ?string $plugin, array $copy): string
+    {
+        if ($plugin === null || ($refusal['stands_for'] ?? null) !== 'session') {
+            return '';
+        }
+
+        return '<p class="decision-card__facts" data-seat-stands>' . $this->esc(sprintf($copy['stands_session'], $plugin)) . '</p>';
     }
 
     /**
@@ -642,7 +661,7 @@ final class DecisionsInboxView
     }
 
     /** The keys of the admission card's words, as the catalog names them under `frontier.` (decisions/0590). */
-    public const array ADMISSION_WORDS = ['admit_q', 'admit_asked', 'admit_opens', 'col_verb', 'col_does', 'col_effects', 'col_state', 'col_runs', 'does_reads', 'does_writes', 'does_confirms', 'does_names', 'standing_admitted', 'standing_changed', 'standing_added', 'standing_withdrawn', 'admit_withdrawn', 'admit_works', 'suspends', 'suspends_to', 'and', 'state_none', 'state_entities', 'state_declared', 'runs_reads', 'runs_trial', 'runs_house', 'runs_pre', 'runs_nopre', 'runs_asks', 'runs_refused', 'runs_open', 'words', 'not_opened', 'house_limit', 'digest', 'blocked', 'admit_ack', 'admit'];
+    public const array ADMISSION_WORDS = ['admit_q', 'admit_asked', 'admit_opens', 'col_verb', 'col_does', 'col_effects', 'col_state', 'col_runs', 'does_reads', 'does_writes', 'does_confirms', 'does_names', 'standing_admitted', 'standing_changed', 'standing_added', 'standing_withdrawn', 'admit_withdrawn', 'admit_works', 'suspends', 'suspends_to', 'stands_session', 'and', 'state_none', 'state_entities', 'state_declared', 'runs_reads', 'runs_trial', 'runs_house', 'runs_pre', 'runs_nopre', 'runs_asks', 'runs_refused', 'runs_open', 'words', 'not_opened', 'house_limit', 'digest', 'blocked', 'admit_ack', 'admit'];
 
     /** The keys of what «Your seats» says each seat holds, as the catalog names them under `seats.` (decisions/0597). */
     public const array HOLDING_WORDS = ['admitted', 'admitted_by', 'held_changed', 'held_gone', 'waiting', 'uncovered', 'ran_before', 'withdraw', 'withdraw_hint', 'withdrawn', 'suspended', 'suspended_scope', 'permits', 'closed'];
@@ -710,6 +729,7 @@ final class DecisionsInboxView
         'admit_works' => '%1$s is in works: its building permit is held by %2$s, and while it is no seat uses its verbs. Admitting closes that permit; what you already admitted and did not change stands again.',
         'suspends' => '%1$s is admitted — %2$s. Granting puts it back in works: what was admitted is suspended while this permit stands, and the next admission closes it.',
         'suspends_to' => '%1$s to %2$s',
+        'stands_session' => 'In this session the house will then write inside %s without asking you again about each piece.',
         'and' => 'and',
         'state_none' => 'it keeps none',
         'state_entities' => 'the store of its entities',
