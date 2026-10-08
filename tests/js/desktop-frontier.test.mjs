@@ -340,14 +340,14 @@ test('an admission that closed a building permit says whose, from a refusal and 
   for (const [tree, hook, answer] of [[fromARefusal(), 'data-seat-grant', ADMITTED], [withNoRefusal(), 'data-seat-admit', ADMITTED]]) {
     const p = page({ tree, catalog: CATALOG, modules: ['desktop-decisions'] });
     withPasskey(p);
-    stubFetch(p, [response(200, OPTIONS), response(201, { ...answer, closed: [SEAT, 'D2A77A0E6562218C52C02D67022F264E481377BD'] })]);
+    stubFetch(p, [response(200, OPTIONS), response(201, { ...answer, closed: [SEAT, '1111AAAA2222BBBB3333CCCC4444DDDD5555EEEE'] })]);
     const card = tree.querySelector('li');
     card.querySelector('[data-seat-ack]').checked = true;
 
     click(p, card.querySelector(`[${hook}]`));
     await settle();
 
-    assert.equal(card.querySelector('[data-seat-status]').textContent, 'admitted · herramientas:write of Prestamos — the seat can call it now, and its building permit is closed for BD93ED040122…, D2A77A0E6562…');
+    assert.equal(card.querySelector('[data-seat-status]').textContent, 'admitted · herramientas:write of Prestamos — the seat can call it now, and its building permit is closed for EEEE5555FFFF…, 1111AAAA2222…');
   }
 });
 

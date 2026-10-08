@@ -27,15 +27,15 @@ use PHPUnit\Framework\TestCase;
  */
 final class ThePanelSaysInWorksOrAdmittedTest extends TestCase
 {
-    private const SEAT = 'BD93ED040122235995977BA235799583EC8050B5';
-    private const OTHER = 'D2A77A0E6562218C52C02D67022F264E481377BD';
+    private const SEAT = 'EEEE5555FFFF6666AAAA7777BBBB8888CCCC9999';
+    private const OTHER = '1111AAAA2222BBBB3333CCCC4444DDDD5555EEEE';
 
     public function testAnAdmissionCardSaysWhosePermitAdmittingCloses(): void
     {
         $html = $this->admission(['works' => ['holders' => [self::SEAT, self::OTHER]]]);
 
         self::assertStringContainsString(
-            '<p class="decision-card__facts" data-admit-works>Prestamos is in works: its building permit is held by BD93ED040122… and D2A77A0E6562…, and while it is no seat uses its verbs. Admitting closes that permit; what you already admitted and did not change stands again.</p>',
+            '<p class="decision-card__facts" data-admit-works>Prestamos is in works: its building permit is held by EEEE5555FFFF… and 1111AAAA2222…, and while it is no seat uses its verbs. Admitting closes that permit; what you already admitted and did not change stands again.</p>',
             $html,
         );
         // Where nobody holds it, or the house does not say, the card says nothing of it.
@@ -49,7 +49,7 @@ final class ThePanelSaysInWorksOrAdmittedTest extends TestCase
         $html = $this->authoring(['suspends' => [['seat' => self::SEAT, 'scopes' => ['herramientas:read', 'herramientas:write']], ['seat' => self::OTHER, 'scopes' => ['herramientas:read']]]]);
 
         self::assertStringContainsString(
-            '<p class="decision-card__facts" data-seat-suspends>Prestamos is admitted — herramientas:read, herramientas:write to BD93ED040122…; herramientas:read to D2A77A0E6562…. Granting puts it back in works: what was admitted is suspended while this permit stands, and the next admission closes it.</p>',
+            '<p class="decision-card__facts" data-seat-suspends>Prestamos is admitted — herramientas:read, herramientas:write to EEEE5555FFFF…; herramientas:read to 1111AAAA2222…. Granting puts it back in works: what was admitted is suspended while this permit stands, and the next admission closes it.</p>',
             $html,
         );
         self::assertStringNotContainsString('data-seat-suspends', $this->authoring(['suspends' => []]));
