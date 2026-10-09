@@ -58,12 +58,14 @@
     fill: function (root, opts, at) {
       var conv = conversation();
       var verified = opts.verified !== false;
-      var text = conv ? conv.tip(verified, opts.reasons) : '';
+      var text = conv ? conv.tip(verified, opts.reasons, opts.rehearsed) : '';
       root.setAttribute('data-verified', verified ? '1' : '0');
+      var tried = conv && typeof conv.rehearsed === 'function' ? conv.rehearsed(opts.rehearsed) : null;
+      if (tried) { root.setAttribute('data-rehearsed', String(tried.calls)); }
       var mark = at(root, '[data-result-mark]');
       if (mark) { mark.textContent = verified ? '✓' : '⚠'; }
       var badge = at(root, '[data-result-text]');
-      if (badge && conv) { badge.textContent = conv.label(verified); }
+      if (badge && conv) { badge.textContent = conv.label(verified, opts.rehearsed); }
       var tip = at(root, '[data-result-tip]');
       if (tip) { tip.textContent = text; }
       root.setAttribute('aria-label', conv ? conv.aria(verified, text) : text);

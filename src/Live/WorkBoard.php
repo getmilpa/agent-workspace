@@ -15,6 +15,7 @@ declare(strict_types=1);
 namespace Milpa\AgentWorkspace\Live;
 
 use Milpa\AgentWorkspace\Data\DesktopData;
+use Milpa\AgentWorkspace\Data\Rehearsed;
 use Milpa\AgentWorkspace\Event\RenderEvents;
 use Milpa\AgentWorkspace\I18n\Catalog;
 use Milpa\Interfaces\Event\MilpaEventDispatcherInterface;
@@ -165,6 +166,15 @@ final class WorkBoard
             }
         }
 
+        // WHAT THE SESSION REHEARSED AND DID NOT APPLY, in one line under the verdict whichever it is (greenhouse
+        // decisions/0605, R2 — decided by Rod on 2026-10-09). A builder that tried its own operations closes as one
+        // that tried nothing does; this line is the difference, and it is drawn from the datum alone.
+        $tried = Rehearsed::of($closure['rehearsed'] ?? null);
+        $rehearsed = $tried === null ? '' : '<p class="mui-alert__desc work-closure__rehearsed" data-work-rehearsed="' . $tried['calls'] . '">'
+            . '<strong>' . htmlspecialchars($this->catalog->tr('work.closure.rehearsed'), ENT_QUOTES) . '</strong> '
+            . htmlspecialchars($this->catalog->tr('verdict.rehearsed.why', (string) $tried['calls'], (string) $tried['of_verbs_that_change_state']), ENT_QUOTES)
+            . '</p>';
+
         return '<div class="mui-alert mui-alert--' . ($verified ? 'success' : 'warning') . ' work-closure"'
             . ' role="status" data-work-closure data-verified="' . ($verified ? '1' : '0') . '"'
             . ' data-scope="' . htmlspecialchars($scope, ENT_QUOTES) . '">'
@@ -173,6 +183,7 @@ final class WorkBoard
             . '<p class="mui-alert__title">' . htmlspecialchars($this->catalog->tr($verified ? 'work.closure.verified' : 'work.closure.unverified'), ENT_QUOTES) . '</p>'
             . ($desc !== '' ? '<p class="mui-alert__desc">' . htmlspecialchars($desc, ENT_QUOTES) . '</p>' : '')
             . ($reasons !== '' ? '<ul class="mui-alert__desc work-closure__reasons">' . $reasons . '</ul>' : '')
+            . $rehearsed
             . '</div></div>';
     }
 

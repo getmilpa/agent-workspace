@@ -124,6 +124,8 @@ export const CATALOG = {
   'verdict.disputed.default': 'the completion is not backed by evidence',
   'verdict.aria.verified': 'Verified. %s',
   'verdict.aria.disputed': 'Disputed. %s',
+  'verdict.rehearsed': 'rehearsed, not applied',
+  'verdict.rehearsed.why': 'Calls of operations this session built that the house answered in a rehearsal: %s (%s of an operation that changes state). Nothing of them was applied to the house.',
   'thinking.elapsed': 'thought for %ss',
   'turn.paused': 'The agent is waiting on your decision.',
   'turn.stop_requested': 'stop requested',

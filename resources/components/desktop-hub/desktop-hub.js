@@ -180,11 +180,15 @@
     // the work, why not, and on what. Only a literal `true` is a verification.
     if (env.kind === 'closure') {
       var closure = env.closure || {};
-      say('house.closure', {
+      var verdict = {
         verified: closure.verified === true,
         reasons: (closure.reasons && closure.reasons.length) ? closure.reasons : [],
         scope: closure.scope || '',
-      });
+      };
+      // WHAT WAS REHEARSED AND NOT APPLIED travels with the verdict when the house said it (greenhouse
+      // decisions/0605, R2): as the house said it, untouched — the thread is the one reader of that datum.
+      if (Object.prototype.hasOwnProperty.call(closure, 'rehearsed')) { verdict.rehearsed = closure.rehearsed; }
+      say('house.closure', verdict);
 
       return 'session';
     }
