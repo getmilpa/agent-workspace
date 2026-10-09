@@ -99,6 +99,17 @@
    */
   var HOUSE_VOICE = '[house] ';
 
+  /**
+   * An envelope's position in its session's ledger, or null when it says none. The house pushes each fact as
+   * milpa/agent's projector wrote it, and there the position is `at` — the number `agent:timeline` prints, and the
+   * one a call carries as `seq` in the transcript a load prints (greenhouse decisions/0609, I4).
+   */
+  function position(env) {
+    var at = parseInt(env && env.at, 10);
+
+    return at > 0 ? at : null;
+  }
+
   /** A governed turn's `activity` projection (greenhouse decisions/0190). */
   function activity(env) {
     var detail = env.activity || {};
@@ -128,7 +139,9 @@
     }
     if (state === 'tool') {
       // A tool ran: show it in the conversation and count it into the shared tool_calls signal.
-      say('tool.call', { name: detail.detail || 'tool', result: detail.result || '' });
+      // WHICH call, by its position in the ledger (greenhouse decisions/0609, I4): the thread re-reads its
+      // calls when a turn comes back, and this is how it tells one it shows from one it does not.
+      say('tool.call', { name: detail.detail || 'tool', result: detail.result || '', seq: position(env) });
       signal('session.tool_calls', (parseInt(signal('session.tool_calls'), 10) || 0) + 1);
       // A call that did NOT go through — refused for a scope, or simply failed; the push cannot tell which. A
       // refusal is what a seat's frontier is made of (greenhouse decisions/0493), and whether this one is a

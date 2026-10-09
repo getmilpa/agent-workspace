@@ -40,6 +40,19 @@ final class LiveRegion
     /** The session's figures, re-seeded as signals — a region with no markup of its own. */
     public const string SIGNALS = 'signals';
 
+    /**
+     * The session strip: which session this page drives, and every other one (greenhouse decisions/0609, I4). A
+     * person's first turn OPENS the session, so a strip painted at load said «No session open» over the
+     * conversation that turn had just run (evidence/1175 §6).
+     */
+    public const string SESSION_STRIP = 'session.strip';
+
+    /**
+     * The thread's transcript — a region that is data, like the signals: the page reads from it the calls the
+     * house recorded and it does not show, when a turn that ran on it comes back (greenhouse decisions/0609, I4).
+     */
+    public const string THREAD = 'thread';
+
     /** The attribute `desktop-regions.js` finds a region by. */
     public const string ATTRIBUTE = 'data-live-region';
 
@@ -50,7 +63,7 @@ final class LiveRegion
      */
     public static function all(): array
     {
-        return [self::DECISIONS_PENDING, self::DECISIONS_FRONTIER, self::WORK, self::SIGNALS];
+        return [self::DECISIONS_PENDING, self::DECISIONS_FRONTIER, self::WORK, self::SIGNALS, self::SESSION_STRIP, self::THREAD];
     }
 
     /**

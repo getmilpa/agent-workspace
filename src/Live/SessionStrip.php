@@ -33,6 +33,10 @@ use Milpa\Live\ValueObjects\StateSnapshot;
  *
  * Rendered only in embed mode, by {@see \Milpa\AgentWorkspace\Controllers\ShellController}. The controls keep the
  * ids and the `data-new-session` hook the shell script wires to the SAME handlers as the sidebar's.
+ *
+ * THE ROW IS A {@see LiveRegion} (greenhouse decisions/0609, I4). It is painted from the sessions the ledger holds
+ * when the page loads, and a person's first turn is what opens hers: the page that ran it kept saying «No session
+ * open» above the conversation (evidence/1175 §6). The client re-reads this row when a turn comes back.
  */
 final class SessionStrip
 {
@@ -86,7 +90,9 @@ final class SessionStrip
 
         $context = new ComponentContext(componentId: self::COMPONENT_ID);
         $state = $component->mount($subject->props, $context);
-        $subject->html = $this->markup($state) . $this->envelope($state);
+        // The row is a region a re-read replaces (greenhouse decisions/0609, I4); the envelope was signed for the
+        // page that was served, and stays outside it.
+        $subject->html = LiveRegion::of(LiveRegion::SESSION_STRIP, $this->markup($state)) . $this->envelope($state);
 
         $this->events?->dispatch(self::AFTER_RENDER, [self::SUBJECT_KEY => $subject]);
 

@@ -20,7 +20,10 @@
  *     token figures are the provider's REAL numbers (greenhouse decisions/0192) — absent when the
  *     provider never said, so the seed stands rather than a fabricated zero;
  *   - `session.working` is the turn's own state signal: the send button's glyph, its label and the
- *     topbar badge BIND to it. It is set here and when the hub says the session's state changed.
+ *     topbar badge BIND to it. It is set here and when the hub says the session's state changed;
+ *   - what a turn MOVED and the page shows from when it loaded is re-read from the house when the turn comes
+ *     back (greenhouse decisions/0609, I4): the session strip and the thread's calls. The turn only asks; the
+ *     regions' reader makes the one request and each surface takes its own.
  */
 (function () {
   'use strict';
@@ -68,6 +71,25 @@
       return (read && typeof read.agent === 'string') ? read.agent : '';
     } catch (e) { return ''; }
   })();
+
+  /**
+   * What a turn that ran on this page may have moved under it (greenhouse decisions/0609, I4). Measured
+   * (evidence/1175 §6), on the page a person's first turn ran on: the strip said «No session open» before the
+   * turn — true — and after it, over the conversation; and the thread showed the answer and none of the turn's
+   * refused calls. A page loaded afterwards had both. The strip is painted from the sessions the ledger holds
+   * at load, and that turn is what opens hers; a call reaches a thread over the stream or in the transcript a
+   * load prints, and the page that ran the turn may have had neither.
+   */
+  var STRIP_REGION = 'session.strip';
+  var THREAD_REGION = 'thread';
+  var MOVED_BY_A_TURN = [STRIP_REGION, THREAD_REGION];
+
+  /** Ask the house for what this turn moved. A page that carries neither is asked for nothing. */
+  function repaint() {
+    var d = desk();
+
+    return (d && d.regions && typeof d.regions.reread === 'function') ? d.regions.reread(MOVED_BY_A_TURN) : null;
+  }
 
   /** The last prompt sent, so the answer's Regenerate tool can ask for the same turn again. */
   var last = '';
@@ -240,6 +262,8 @@
       working(false);
       report(result);
       if (result && result.ok) { counters(result); }
+      // AFTER the report: the answer is in the thread, so a call the page lacked is seated above it.
+      repaint();
 
       return d.delivery ? d.delivery.refresh().then(function () { return result; }) : result;
     }).catch(function (err) {

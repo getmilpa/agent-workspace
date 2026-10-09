@@ -17,6 +17,12 @@
  * A surface owns the controls it prints. That is the same rule that put `hidden` in the host's hands
  * and the session in the surface's (greenhouse decisions/0256, decisions/0268).
  *
+ * THE ROW IS RE-READ FROM THE HOUSE (greenhouse decisions/0609, I4; decisions/0563). It is painted from the
+ * sessions the ledger holds when the page loads, and a person's first turn is what OPENS hers — so the page that
+ * ran it said «No session open» over the conversation (evidence/1175 §6). The turn asks for the region when it
+ * comes back; what this module owes it is that the strip which arrives is wired like the one that left, and that
+ * a picker somebody has in hand is not replaced under it.
+ *
  * AND «NEW SESSION» ASKS THE ROUTE, not another surface. The old handler called the AUTH OVERLAY's
  * `open()` — a component the panel does not paint either, so the button was broken twice over. Creating
  * a session is `POST /desktop/sessions`, which answers `{ok, id}`; identity is the door's business, and
@@ -74,20 +80,43 @@
     });
   }
 
-  var buttons = document.querySelectorAll('[data-new-session]');
-  for (var i = 0; i < buttons.length; i++) {
-    buttons[i].addEventListener('click', function (event) {
-      event.preventDefault();
-      newSession();
-    });
-  }
+  /** The region the server prints the row in, and how a surface says a human is acting inside one. */
+  var STRIP_REGION = 'session.strip';
+  var BUSY = 'data-busy';
 
-  var picker = document.getElementById('milpa-embed-session');
-  if (picker) {
+  function regions() { return (live.desktop && live.desktop.regions) || null; }
+
+  /**
+   * Wire the controls of ONE printed strip — the one the page loaded with, and each one a re-read brings: a
+   * swapped button that fires nothing is the defect this module was written to fix, a second time.
+   */
+  function wire(root) {
+    var buttons = root.querySelectorAll('[data-new-session]');
+    for (var i = 0; i < buttons.length; i++) {
+      buttons[i].addEventListener('click', function (event) {
+        event.preventDefault();
+        newSession();
+      });
+    }
+
+    var picker = root.querySelector('#milpa-embed-session');
+    if (!picker) { return; }
     picker.addEventListener('change', function () {
       if (picker.value !== '') { open(picker.value); }
     });
+    // IN SOMEBODY'S HAND: an open picker replaced under it closes on what they were choosing. The regions'
+    // reader puts a region with a busy element off, and reads it when the surface says they are done.
+    picker.addEventListener('focus', function () { picker.setAttribute(BUSY, ''); });
+    picker.addEventListener('blur', function () {
+      picker.removeAttribute(BUSY);
+      var r = regions();
+      if (r && typeof r.resume === 'function') { r.resume(); }
+    });
   }
+
+  wire(document);
+  var reader = regions();
+  if (reader && typeof reader.keep === 'function') { reader.keep(STRIP_REGION, function (shown, printed) { wire(printed); }); }
 
   if (live.desktop) { live.desktop.sessionStrip = { newSession: newSession, open: open }; }
 })();

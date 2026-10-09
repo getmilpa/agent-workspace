@@ -27,6 +27,12 @@
  *
  * The thread is also what CONSUMES `desktop.notice`: the guard says what a door answered and the
  * conversation renders it as a system message. Nothing else couples the guard to the chat.
+ *
+ * AND IT CATCHES UP ON ITS CALLS (greenhouse decisions/0609, I4). A call reaches a thread two ways — the stream
+ * says it, or the transcript a load prints carries it — and the page a turn ran on may have had neither for that
+ * turn: it showed the answer and none of the turn's refused calls (evidence/1175 §6). So the thread READS the
+ * `thread` region when the turn asks for it: from the transcript the house prints now it paints the calls it does
+ * not show, where they happened. Only calls: everything else of a turn this page already said for itself.
  */
 (function () {
   'use strict';
@@ -96,7 +102,7 @@
    * instead of landing once) takes that path instead. An unknown kind lands as a system notice rather
    * than silently not landing.
    */
-  function append(kind, opts) {
+  function append(kind, opts, quiet) {
     var thread = chat();
     var registry = messages() || {};
     var spec = registry[kind] || registry.system;
@@ -112,9 +118,92 @@
     // block open it lands in the thread like any other message: a step with no turn to belong to is still
     // a fact, and a fact nobody can nest is shown, never dropped.
     if (!(NESTED[kind] === true && nest(frag))) { thread.appendChild(frag); }
-    if (root && typeof root.scrollIntoView === 'function') { root.scrollIntoView({ block: 'end' }); }
+    // `quiet`: a call the page caught up on lands ABOVE what the reader is reading, and does not drag them to it.
+    if (quiet !== true && root && typeof root.scrollIntoView === 'function') { root.scrollIntoView({ block: 'end' }); }
 
     return root;
+  }
+
+  /**
+   * WHICH CALLS THIS PAGE SHOWS (greenhouse decisions/0609, I4), by each one's position in the ledger — the name
+   * a call has that is the same in the transcript and on the stream. `unnumbered` counts the calls the stream
+   * brought without one: an envelope is not obliged to carry it, and those still stand for calls of the ledger.
+   */
+  var THREAD_REGION = 'thread';
+  var shown = {};
+  var unnumbered = 0;
+
+  /** A row's or a fact's position in the ledger; 0 when it says none. */
+  function numbered(row) {
+    var seq = parseInt(row && row.seq, 10);
+
+    return seq > 0 ? seq : 0;
+  }
+
+  /**
+   * Put a call the page caught up on where it happened: under the last thing the reader asked, after the steps
+   * already there, above what was answered. One nested in an open turn's block is where it belongs already.
+   */
+  function seat(root) {
+    var thread = chat();
+    if (!thread || !root || root.parentNode !== thread) { return; }
+    var rows = thread.children;
+    var asked = -1;
+    for (var i = 0; i < rows.length; i++) {
+      if (rows[i] !== root && rows[i].classList.contains('msg--user')) { asked = i; }
+    }
+    if (asked === -1) { return; }
+    var at = asked + 1;
+    while (at < rows.length && rows[at] !== root && (rows[at].classList.contains('msg--tool') || rows[at].classList.contains('msg--thinking'))) { at += 1; }
+    if (at < rows.length && rows[at] !== root) { thread.insertBefore(root, rows[at]); }
+  }
+
+  /**
+   * READ the thread's region from the page the house prints now: paint the calls it recorded and this page does
+   * not show. 'stale' when that page carries no transcript, or one whose calls have no position to tell them by —
+   * a call that cannot be told from one already shown is left for a load, never painted on a guess.
+   */
+  function catchUp(page) {
+    var tag = (page && typeof page.getElementById === 'function') ? page.getElementById(TRANSCRIPT_TAG) : null;
+    var rows = null;
+    try { rows = tag ? JSON.parse(tag.textContent || '') : null; } catch (e) { rows = null; }
+    if (!Array.isArray(rows)) { return 'stale'; }
+    var calls = 0;
+    var named = 0;
+    var missing = [];
+    for (var i = 0; i < rows.length; i++) {
+      var row = rows[i] || {};
+      // Only a CALL: the house's row about a refused call carries that call's position too, and is not one.
+      if (row.kind !== 'tool') { continue; }
+      calls += 1;
+      var at = numbered(row);
+      if (at === 0) { continue; }
+      named += 1;
+      if (shown[at] !== true) { missing.push(row); }
+    }
+    // The house has calls and none of them says where it is in the ledger.
+    if (calls > 0 && named === 0) { return 'stale'; }
+    // What the stream brought without a number it brought in order: it stands for the earliest of these.
+    var late = missing.slice(Math.min(unnumbered, missing.length));
+    for (var j = 0; j < missing.length; j++) { shown[numbered(missing[j])] = true; }
+    unnumbered = 0;
+    for (var k = 0; k < late.length; k++) {
+      seat(append('tool', { name: late[k].name || 'tool', result: late[k].result || '' }, true));
+    }
+
+    return 'fresh';
+  }
+
+  /** Register as the reader of the thread's region, ONCE — the turn asks for it by name when it comes back. */
+  var following = false;
+
+  function follow() {
+    var d = desk();
+    if (following || !d || !d.regions || typeof d.regions.reader !== 'function') { return false; }
+    following = true;
+    d.regions.reader(THREAD_REGION, catchUp);
+
+    return true;
   }
 
   /**
@@ -283,7 +372,13 @@
     shell.on('agent.reasoning', function (fact) { reasoning((fact && fact.text) || ''); });
     shell.on('agent.message', function (fact) { endReasoning(); append('agent', { text: (fact && fact.text) || '' }); });
     shell.on('agent.thinking', function (fact) { append('thinking', { text: (fact && fact.text) || '' }); });
-    shell.on('tool.call', function (fact) { append('tool', { name: (fact && fact.name) || 'tool', result: (fact && fact.result) || '' }); });
+    shell.on('tool.call', function (fact) {
+      // The stream is sometimes LATE, not new: the page already caught up on this call when its turn came back.
+      var at = numbered(fact);
+      if (at !== 0 && shown[at] === true) { return; }
+      if (at !== 0) { shown[at] = true; } else { unnumbered += 1; }
+      append('tool', { name: (fact && fact.name) || 'tool', result: (fact && fact.result) || '' });
+    });
     shell.on('task.added', function (fact) { append('task', { title: (fact && fact.title) || '', status: (fact && fact.status) || 'todo' }); });
     shell.on('system.notice', function (fact) { append('system', { text: (fact && fact.text) || '' }); });
     // The turn stopped to ask (greenhouse decisions/0254). It lands INSIDE the turn's block, under the
@@ -345,7 +440,10 @@
             append('agent', { text: row.text || '' });
           }
           break;
-        case 'tool': append('tool', { name: row.name || 'tool', result: row.result || '' }); break;
+        case 'tool':
+          if (numbered(row) !== 0) { shown[numbered(row)] = true; }
+          append('tool', { name: row.name || 'tool', result: row.result || '' });
+          break;
         case 'question': append('ask-grant', parked(row)); break;
         case 'compacted': append('compacted', { through: row.through || 0, summary: row.summary || '' }); break;
         case 'answered':
@@ -402,6 +500,7 @@
       init: function () {
         subscribe();
         listen();
+        follow();
         replay();
       },
       /** The thread's ONE click handler — every message component's actions ride it. */
@@ -429,6 +528,7 @@
   }
 
   subscribe();
+  follow();
   // The replay waits for `init()`: every message module must have registered its prototype fill first,
   // and the factory's init runs after all deferred modules did — a replay at load would paint the first
   // row and lose the rest to fills that were not there yet (measured in the node harness).

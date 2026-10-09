@@ -11,3 +11,8 @@
 .milpa-session-strip { display: flex; align-items: center; gap: var(--space-3); flex: none; padding: var(--space-3) var(--space-8); border-bottom: 1px solid var(--border-subtle); background: var(--surface); font-family: var(--font-mono); font-size: var(--text-xs); }
 .milpa-session-strip__goal { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--text); }
 .milpa-session-strip__pick { flex: none; max-width: 22rem; }
+
+/* The row is a region the page re-reads from the house (greenhouse decisions/0609, I4; decisions/0563): the wrapper
+   is not a box, so the strip keeps its place in the column. One that could not be re-read says so by dimming. */
+.milpa-live-region { display: contents; }
+.milpa-live-region[data-live-stale] > * { opacity: 0.6; }
