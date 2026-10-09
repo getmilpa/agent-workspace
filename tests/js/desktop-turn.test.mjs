@@ -764,3 +764,50 @@ test('a command the house refused with a 409 is reported as a REFUSAL, with the 
   await p.desktop().commands.run({ name: 'goal', args: 'clear' });
   assert.match(told[2], /^agent:goal → HTTP 500 — the operation failed/);
 });
+
+// ── a person's own session, told what it cannot do (greenhouse decisions/0609, path 1, I2) ────────────────────────────
+test('Y2 · a turn of hers that was refused for building tells her so, under the answer — from the DATA of the result', async () => {
+  // The house says it as data: who opened the session, the act that works, and each call of THIS turn that lacked a
+  // permission of a plugin. No sentence is read — the answer below says nothing of permissions.
+  const { p, chat } = composerPage();
+  stubFetch(p, [response(201, { ok: true, answer: 'I could not build it here.', steps: 2,
+    no_frontier: { opened_by: 'person', works: 'seat_a_resident_and_grant',
+      refused: [{ seq: 9, tool: 'make', plugin: 'Blog', permission: 'plugins.Blog:write', call: { what: 'plugin', plugin: 'Blog' } }] } })]);
+
+  await p.desktop().turn.run('build a plugin named Blog');
+
+  const kinds = chat.children.map((m) => (m.classList.contains('msg--no-frontier') ? 'card' : (m.classList.contains('msg--agent') ? 'answer' : 'other')));
+  assert.deepEqual(kinds.filter((k) => k !== 'other'), ['answer', 'card'], 'the answer, and then what her session cannot do');
+  const card = chat.children.find((m) => m.classList.contains('msg--no-frontier'));
+  assert.equal(card.querySelector('[data-no-frontier-option]').textContent, 'Grant plugins.Blog:write');
+  assert.equal(card.querySelector('[data-no-frontier-option]').getAttribute('disabled') !== null, true);
+  assert.equal(card.querySelector('[data-no-frontier-works]').textContent, 'What works today: give a resident a seat, and grant it plugins.Blog:write from Decisions when it asks.');
+});
+
+test('the control: a turn nothing was refused in, and a seat\'s turn that waits on a grant, draw no such card', async () => {
+  const { p, chat } = composerPage();
+  stubFetch(p, [
+    response(201, { ok: true, answer: 'Listo.', steps: 1 }),
+    response(201, { ok: true, answer: 'The leg is waiting for a person to grant «plugins.Blog:write».', awaiting_grant: ['plugins.Blog:write'], steps: 1 }),
+    response(201, { ok: true, answer: 'Listo.', steps: 1, no_frontier: { opened_by: 'person', works: 'seat_a_resident_and_grant', refused: [] } }),
+  ]);
+
+  await p.desktop().turn.run('uno');
+  await p.desktop().turn.run('dos');
+  await p.desktop().turn.run('tres');
+
+  assert.equal(chat.children.filter((m) => m.classList.contains('msg--no-frontier')).length, 0);
+});
+
+test('two calls refused in one turn are two cards, each with its own scope', async () => {
+  const { p, chat } = composerPage();
+  stubFetch(p, [response(201, { ok: true, answer: 'Neither could be built here.', steps: 3, no_frontier: { opened_by: 'person', works: 'seat_a_resident_and_grant', refused: [
+    { seq: 9, tool: 'make', plugin: 'Blog', permission: 'plugins.Blog:write', call: {} },
+    { seq: 12, tool: 'implement', plugin: 'Shop', permission: 'plugins.Shop:write', call: {} },
+  ] } })]);
+
+  await p.desktop().turn.run('build two plugins');
+
+  assert.deepEqual(chat.children.filter((m) => m.classList.contains('msg--no-frontier')).map((m) => m.querySelector('[data-no-frontier-option]').textContent),
+    ['Grant plugins.Blog:write', 'Grant plugins.Shop:write']);
+});

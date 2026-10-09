@@ -1,0 +1,29 @@
+/*!
+ * desktop-no-frontier — a person's own conversation, told what it cannot do (greenhouse decisions/0609, I2).
+ *
+ * (c) Rodrigo Vicente - TeamX Agency — https://teamx.agency <hola@teamx.agency>
+ * @license Apache-2.0
+ *
+ * Declared by the prototype's renderer through DeclaresClientAssets and served at
+ * /desktop/assets/c/desktop-no-frontier.css.
+ *
+ * The option she cannot take, dimmed, with its why (greenhouse decisions/0584). It is the house speaking, not a
+ * participant, and it asks nothing of her here: quiet, bordered so it reads as one thing, and its one button is
+ * disabled — the look of that state is the design system's own.
+ */
+
+.msg--no-frontier {
+  align-self: stretch;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-4);
+  border: 1px dashed var(--border);
+  border-radius: var(--radius-md);
+  color: var(--text-muted);
+  font-size: var(--text-sm);
+}
+
+.msg__no-frontier-title { margin: 0; color: var(--text-secondary); font-weight: 600; }
+.msg__no-frontier-fact { margin: 0; }
+.msg__no-frontier-option { align-self: flex-start; }

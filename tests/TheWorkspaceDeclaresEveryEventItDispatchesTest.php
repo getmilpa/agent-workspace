@@ -74,6 +74,8 @@ final class TheWorkspaceDeclaresEveryEventItDispatchesTest extends TestCase
         // The turn's own contents (greenhouse decisions/0254).
         'desktop.ask_grant.before_render', 'desktop.ask_grant.after_render',
         'desktop.compacted.before_render', 'desktop.compacted.after_render',
+        // What a person's own session cannot do (greenhouse decisions/0609).
+        'desktop.no_frontier.before_render', 'desktop.no_frontier.after_render',
         'desktop.settings.before_render', 'desktop.settings.after_render',
         // 🚨 LOS DOS DEL SUBAGENTS: `declarations()` no los esparcía, así que este censo esperaba 47
         // donde el paquete declara 49 — y la lista esperada estaba corta por exactamente esos dos, que

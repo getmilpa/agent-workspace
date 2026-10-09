@@ -96,6 +96,15 @@ export function prototypes() {
   compacted.appendChild(new El('span', { class: 'msg__compacted-text', 'data-compacted-text': '' }));
   compacted.appendChild(new El('span', { class: 'msg__compacted-line' }));
 
+  // What a person's own session cannot do (greenhouse decisions/0609): as `MessagePrototypes::noFrontier()` prints it —
+  // one button, disabled, carrying no hook but the region it is filled through.
+  const noFrontier = new El('div', { class: 'msg msg--no-frontier', role: 'note' });
+  noFrontier.appendChild(new El('p', { class: 'msg__no-frontier-title', 'data-no-frontier-title': '' }));
+  noFrontier.appendChild(new El('p', { class: 'msg__no-frontier-fact', 'data-no-frontier-why': '' }));
+  noFrontier.appendChild(new El('button', { class: 'mui-btn mui-btn--sm msg__no-frontier-option', 'data-no-frontier-option': '', disabled: true, 'aria-disabled': 'true' }));
+  noFrontier.appendChild(new El('p', { class: 'msg__no-frontier-fact', 'data-no-frontier-blocked': '' }));
+  noFrontier.appendChild(new El('p', { class: 'msg__no-frontier-fact', 'data-no-frontier-works': '' }));
+
   return {
     'milpa-user-msg-proto': user,
     'milpa-agent-msg-proto': agent,
@@ -106,6 +115,7 @@ export function prototypes() {
     'milpa-thinking-proto': thinking,
     'milpa-ask-grant-proto': grant,
     'milpa-compacted-proto': compacted,
+    'milpa-no-frontier-proto': noFrontier,
   };
 }
 

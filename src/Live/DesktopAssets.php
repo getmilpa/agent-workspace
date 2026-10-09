@@ -123,6 +123,9 @@ final class DesktopAssets
         // has none because a separator does nothing.
         'desktop-ask-grant' => ['css', 'js'],
         'desktop-compacted' => ['css'],
+        // What a person's own session cannot do (greenhouse decisions/0609): a notice with a disabled option and no
+        // act of its own, so like the boundary it ships a stylesheet and no module.
+        'desktop-no-frontier' => ['css'],
         // The screens the shell's template used to carry as raw HTML with their behaviour in its inline
         // script (greenhouse decisions/0211, phase D). `desktop-skills` declares a
         // stylesheet and nothing else: they are read-only projections, so they have no module to ship.

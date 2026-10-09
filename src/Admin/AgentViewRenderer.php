@@ -122,6 +122,7 @@ final class AgentViewRenderer implements ComponentRendererInterface, DeclaresCli
         'desktop-result-claim',
         'desktop-ask-grant',
         'desktop-compacted',
+        'desktop-no-frontier',
     ];
 
     /**
@@ -143,6 +144,7 @@ final class AgentViewRenderer implements ComponentRendererInterface, DeclaresCli
         // half, which is exactly the shape this house keeps paying for.
         'desktop-ask-grant' => 'milpa-ask-grant-proto',
         'desktop-compacted' => 'milpa-compacted-proto',
+        'desktop-no-frontier' => 'milpa-no-frontier-proto',
     ];
 
     /**
