@@ -190,7 +190,9 @@
     if (result && result.closure) {
       var verified = result.closure.verified !== false;
       var why = (result.closure.reasons || []).join('; ');
-      if (!conv.verdict(verified, why)) { conv.append('result', { verified: verified, reasons: why }); }
+      // …with what the session rehearsed and did not apply, when the house said it (decisions/0605, R2).
+      var tried = result.closure.rehearsed;
+      if (!conv.verdict(verified, why, tried)) { conv.append('result', { verified: verified, reasons: why, rehearsed: tried }); }
     }
   }
 

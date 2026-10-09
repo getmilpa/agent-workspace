@@ -82,15 +82,48 @@
    */
   function region(root, selector) { return root.matches(selector) ? root : root.querySelector(selector); }
 
-  /** The words a verdict is said in — one owner, two message shapes (the answer's row, the result claim). */
-  function tip(ok, reasons) {
-    return ok !== false
-      ? tr('verdict.backed')
-      : tr('verdict.disputed.why', (reasons ? String(reasons) : tr('verdict.disputed.default')));
+  /**
+   * WHAT A SESSION REHEARSED AND DID NOT APPLY, read from the datum the house puts beside its verdict (greenhouse
+   * decisions/0605, R2 — decided by Rod on 2026-10-09): `{calls, of_verbs_that_change_state, applied: false}`.
+   *
+   * The session that wrote an operation may be handed what its call answered in a rehearsal, and that refusal no
+   * longer holds the closure — so «verified» alone reads the same for a builder that tried its own operations as
+   * for one that tried nothing. ONE reading, for every road a verdict reaches the thread by: the datum as the house
+   * writes it, or nothing. A value that says something was applied is not this datum; a reason that speaks of a
+   * rehearsal is a reason. Null when there is nothing to say.
+   */
+  function rehearsedOf(said) {
+    if (!said || typeof said !== 'object' || said.applied !== false) { return null; }
+    var calls = said.calls;
+    var writes = said.of_verbs_that_change_state;
+    if (typeof calls !== 'number' || typeof writes !== 'number' || calls % 1 !== 0 || writes % 1 !== 0) { return null; }
+
+    return (calls < 1 || writes < 0 || writes > calls) ? null : { calls: calls, writes: writes };
   }
 
-  /** What the verdict's badge says. */
-  function label(ok) { return ok !== false ? tr('verdict.verified') : tr('verdict.disputed'); }
+  /** The line with the datum's two numbers, or '' when the verdict says nothing of a rehearsal. */
+  function rehearsedWhy(said) {
+    var tried = rehearsedOf(said);
+
+    return tried === null ? '' : tr('verdict.rehearsed.why', String(tried.calls), String(tried.writes));
+  }
+
+  /** The words a verdict is said in — one owner, two message shapes (the answer's row, the result claim). */
+  function tip(ok, reasons, rehearsed) {
+    var text = ok !== false
+      ? tr('verdict.backed')
+      : tr('verdict.disputed.why', (reasons ? String(reasons) : tr('verdict.disputed.default')));
+    var tried = rehearsedWhy(rehearsed);
+
+    return tried === '' ? text : text + ' ' + tried;
+  }
+
+  /** What the verdict's badge says — and, beside it, that what the session tried was rehearsed and not applied. */
+  function label(ok, rehearsed) {
+    var word = ok !== false ? tr('verdict.verified') : tr('verdict.disputed');
+
+    return rehearsedOf(rehearsed) === null ? word : word + ' · ' + tr('verdict.rehearsed');
+  }
 
   /** The same judgement for a screen reader: the badge, then the reason. */
   function aria(ok, text) { return tr(ok !== false ? 'verdict.aria.verified' : 'verdict.aria.disputed', text); }
@@ -281,11 +314,11 @@
    *
    * False when there is no answer to ride, so the caller falls back to the standalone result claim.
    */
-  function verdict(ok, reasons) {
+  function verdict(ok, reasons, rehearsed) {
     var spec = (messages() || {}).agent;
     var thread = chat();
 
-    return !!(thread && spec && typeof spec.verdict === 'function' && spec.verdict(thread, ok, reasons) === true);
+    return !!(thread && spec && typeof spec.verdict === 'function' && spec.verdict(thread, ok, reasons, rehearsed) === true);
   }
 
   /** The delegated click: the first message component that owns the target handles it. */
@@ -406,7 +439,7 @@
   function closure(fact) {
     var closed = fact.verified === true;
     var why = Array.isArray(fact.reasons) ? fact.reasons.join('; ') : '';
-    if (!verdict(closed, why)) { append('result', { verified: closed, reasons: why }); }
+    if (!verdict(closed, why, fact.rehearsed)) { append('result', { verified: closed, reasons: why, rehearsed: fact.rehearsed }); }
   }
 
   /**
@@ -518,6 +551,7 @@
       reasoning: reasoning,
       endReasoning: endReasoning,
       verdict: verdict,
+      rehearsed: rehearsedOf,
       click: dispatch,
       echoesQuestion: echoesQuestion,
       tip: tip,

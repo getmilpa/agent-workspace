@@ -156,7 +156,9 @@ final class DesktopData
                         static fn (mixed $reason): bool => \is_string($reason) && $reason !== '',
                     )),
                     'scope' => $this->str($p['scope'] ?? null),
-                ],
+                    // WHAT WAS REHEARSED AND NOT APPLIED rides beside the verdict (greenhouse decisions/0605, R2): the
+                    // thread says it where it says «verified». The datum, read once ({@see Rehearsed}); never a reason.
+                ] + Rehearsed::beside($p['rehearsed'] ?? null),
                 default => null,
             };
             if ($row !== null) {

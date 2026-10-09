@@ -30,7 +30,8 @@ namespace Milpa\AgentWorkspace\Data;
  *   tokens · Σ `model_returned.usage.total_tokens`              context_tokens · the LAST call's `prompt_tokens`
  *   tool_calls · `session.tool_called`                          work · the last `todo_changed` per todo
  *   activity · every event, in order                            started_by · the opening event's principal
- *   closure · the last `session.closure_derived`, until a later user turn reopens the work
+ *   closure · the last `session.closure_derived`, until a later user turn reopens the work — with what the
+ *             session rehearsed and did not apply, when the house said it ({@see Rehearsed})
  *   window · the last `session.window_composed` — the context window the run obeyed, or null
  *   state · ended › waiting (a question is open) › paused (a sequence is parked) › working (a user turn
  *           without a later answer or run termination) › idle
@@ -106,7 +107,7 @@ final class LedgerSession
         /** @var array<string, array{title: string, status: string, origin: string}> $todos */
         $todos = [];
         $activity = [];
-        /** @var array{verified: bool, reasons: list<string>, scope: string, seq: int}|null $closure */
+        /** @var array{verified: bool, reasons: list<string>, scope: string, seq: int, rehearsed?: array{calls: int, of_verbs_that_change_state: int, applied: false}}|null $closure */
         $closure = null;
         $window = null;
 
@@ -151,7 +152,8 @@ final class LedgerSession
                         )),
                         'scope' => self::str($p['scope'] ?? null),
                         'seq' => $seq,
-                    ];
+                        // What was rehearsed and not applied, when the house said it (greenhouse decisions/0605, R2).
+                    ] + Rehearsed::beside($p['rehearsed'] ?? null);
                     break;
                 case 'session.model_called':
                     ++$steps;

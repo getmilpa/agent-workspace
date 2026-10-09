@@ -143,19 +143,23 @@
     /**
      * Stamp the ledger's verdict onto the last answer's tool row; false when there is no answer to ride.
      */
-    verdict: function (thread, ok, reasons) {
+    verdict: function (thread, ok, reasons, rehearsed) {
       var answers = thread.querySelectorAll('.msg--agent');
       var last = answers.length ? answers[answers.length - 1] : null;
       var slot = last ? last.querySelector('[data-agent-verdict]') : null;
       if (!slot) { return false; }
       var conv = conversation();
       var verified = ok !== false;
-      var text = conv ? conv.tip(verified, reasons) : '';
+      var text = conv ? conv.tip(verified, reasons, rehearsed) : '';
       slot.setAttribute('data-verified', verified ? '1' : '0');
+      // What the session rehearsed and did not apply, as the conversation read it from the datum: how many calls —
+      // or nothing, and then no stamp of an earlier verdict stays to say it for this one.
+      var tried = conv && typeof conv.rehearsed === 'function' ? conv.rehearsed(rehearsed) : null;
+      if (tried) { slot.setAttribute('data-rehearsed', String(tried.calls)); } else { slot.removeAttribute('data-rehearsed'); }
       var mark = slot.querySelector('[data-verdict-mark]');
       if (mark) { mark.textContent = verified ? '✓' : '⚠'; }
       var label = slot.querySelector('[data-verdict-label]');
-      if (label && conv) { label.textContent = conv.label(verified); }
+      if (label && conv) { label.textContent = conv.label(verified, rehearsed); }
       var tip = slot.querySelector('[data-verdict-tip]');
       if (tip) { tip.textContent = text; }
       slot.setAttribute('aria-label', conv ? conv.aria(verified, text) : text);

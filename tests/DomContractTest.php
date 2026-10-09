@@ -72,6 +72,7 @@ final class DomContractTest extends TestCase
         'data-busy' => 'desktop-decisions.js stamps it on a card while its ceremony is in flight; desktop-regions.js will not swap a region holding one (greenhouse decisions/0563)',
         'data-withdrawn' => 'desktop-decisions.js stamps it on an «Admitted: …» line once identity:withdraw came back ok (greenhouse decisions/0590, rule 12)',
         'data-live-stale' => 'desktop-regions.js stamps it on a region the house did not print when asked again (greenhouse decisions/0563)',
+        'data-rehearsed' => 'desktop-agent-message.js and desktop-result-claim.js stamp it on a verdict whose datum says the session rehearsed calls and applied nothing: how many (greenhouse decisions/0605, R2)',
     ];
 
     /**

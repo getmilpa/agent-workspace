@@ -200,6 +200,11 @@ final class Catalog
             'verdict.disputed.default' => 'the completion is not backed by evidence',
             'verdict.aria.verified' => 'Verified. %s',
             'verdict.aria.disputed' => 'Disputed. %s',
+            // What a session rehearsed and did not apply, beside the verdict (greenhouse decisions/0605, R2): the
+            // short word that rides the badge, the line with the datum's two numbers, and the board's own heading.
+            'verdict.rehearsed' => 'rehearsed, not applied',
+            'verdict.rehearsed.why' => 'Calls of operations this session built that the house answered in a rehearsal: %s (%s of an operation that changes state). Nothing of them was applied to the house.',
+            'work.closure.rehearsed' => 'Rehearsed, not applied.',
             // The house's closure verdict above the work board (greenhouse decisions/0509 §7): the cards are the
             // session's own claim; this line is the house's.
             'work.closure.verified' => 'Verified by the house',
@@ -628,6 +633,9 @@ final class Catalog
             'verdict.disputed.default' => 'la conclusión no está respaldada por evidencia',
             'verdict.aria.verified' => 'Verificado. %s',
             'verdict.aria.disputed' => 'Disputado. %s',
+            'verdict.rehearsed' => 'ensayado, no aplicado',
+            'verdict.rehearsed.why' => 'Llamadas a operaciones que esta sesión construyó y que la casa contestó en un ensayo: %s (%s de una operación que cambia estado). Nada de ellas se aplicó a la casa.',
+            'work.closure.rehearsed' => 'Ensayado, no aplicado.',
             'work.closure.verified' => 'Verificado por la casa',
             'work.closure.unverified' => 'No verificado por la casa',
             'work.closure.unverified.desc' => 'Las tarjetas de abajo son lo que la sesión dice de sí misma. La casa no ha verificado el trabajo:',
