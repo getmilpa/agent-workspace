@@ -246,6 +246,24 @@
         body.textContent = opts.through ? tr('conversation.compacted.through', String(opts.through)) : tr('conversation.compacted');
       },
     };
+    // WHAT A PERSON'S OWN SESSION CANNOT DO (greenhouse decisions/0609, path 1, I2): the grant it would have needed,
+    // shown as the option she cannot take — the prototype's button is disabled and wired to nothing — with its why,
+    // and the act that works today. Five regions, five texts, no interaction: a plain kind, like the others here.
+    // WHETHER a call is one of these is the house's to say, as data (`no_frontier` in the turn's result and in the
+    // replayed transcript): nothing here reads a refusal's sentence, and nothing here grants.
+    registry['no-frontier'] = {
+      proto: 'milpa-no-frontier-proto',
+      fill: function (root, opts, at) {
+        var permission = opts.permission ? String(opts.permission) : '';
+        var say = function (selector, text) { var el = at(root, selector); if (el) { el.textContent = text; } };
+        say('[data-no-frontier-title]', tr('conversation.no_frontier.title'));
+        say('[data-no-frontier-why]', tr('conversation.no_frontier.why', opts.tool ? String(opts.tool) : '', permission));
+        // No permission was given: none is invented — the label is the verb alone, and the button stays disabled.
+        say('[data-no-frontier-option]', tr('conversation.no_frontier.option', permission).trim());
+        say('[data-no-frontier-blocked]', tr('conversation.no_frontier.blocked'));
+        say('[data-no-frontier-works]', tr('conversation.no_frontier.works', permission));
+      },
+    };
   }
 
   /**
@@ -343,6 +361,9 @@
           }
           break;
         case 'closure': closure(row); break;
+        // What this session was refused and nobody can grant: a person opened it (greenhouse decisions/0609). The
+        // house derived the row; it is painted where the refusal happened.
+        case 'no_frontier': append('no-frontier', row); break;
         // The house's own turn in the session — a grant's notice (greenhouse decisions/0495) — is a notice,
         // never a bubble in the reader's voice: nobody typed it.
         case 'notice': append('system', { text: row.text || '' }); break;

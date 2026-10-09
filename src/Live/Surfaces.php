@@ -128,6 +128,7 @@ final class Surfaces
             ResultClaimComponent::class => fn (DesktopComponents $live, array $props): string => $this->messages()->resultClaim(),
             AskGrantComponent::class => fn (DesktopComponents $live, array $props): string => $this->messages()->askGrant(),
             CompactedComponent::class => fn (DesktopComponents $live, array $props): string => $this->messages()->compacted(),
+            NoFrontierComponent::class => fn (DesktopComponents $live, array $props): string => $this->messages()->noFrontier(),
             // A REGION surface, not a deep screen: no section paints the inbox, the Agent region paints it
             // as a tab — so it is declared with the region, never with the sections (greenhouse decisions/0283).
             // The render request's principal wins over the caller's default: the shell knows who is signed

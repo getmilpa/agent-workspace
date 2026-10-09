@@ -39,6 +39,23 @@ final class DesktopData
     /** Who answers {@see running()} — the runtime's lease, or a test's stand-in with the same static `held()`. */
     private static string $runLease = self::RUN_LEASE;
 
+    /** Named as a string: milpa/app-runtime owns the frontier, and this package does not require it. */
+    public const string FRONTIER = 'Milpa\\AppRuntime\\Agent\\SeatFrontier';
+
+    /**
+     * The class asked what a person's session was refused. Held as a string that is not a literal, so that whether the
+     * runtime installed HERE reads those refusals yet is asked of the class at run time, never decided when this
+     * package is analysed against whichever runtime it was installed with.
+     */
+    private static string $frontier = self::FRONTIER;
+
+    /**
+     * Who answers {@see refusedToAPerson()} — null, the house's own frontier; or a test's stand-in, handed the session.
+     *
+     * @var (\Closure(string): mixed)|null
+     */
+    private static ?\Closure $personFrontier = null;
+
     /** The permission modes a turn carries (greenhouse decisions/0202). */
     private const array MODES = ['ask', 'acknowledge', 'auto'];
 
@@ -79,6 +96,9 @@ final class DesktopData
             $rows[] = $event;
         }
         usort($rows, static fn (array $a, array $b): int => (int) ($a['seq'] ?? 0) <=> (int) ($b['seq'] ?? 0));
+        // WHAT A PERSON'S OWN SESSION WAS REFUSED AND NOBODY CAN GRANT (greenhouse decisions/0609, path 1, I2), by the
+        // seq of the refused call — the house's judgement, read; never this package's reading of a sentence.
+        $unseated = $this->refusedToAPerson($agentSid);
 
         $out = [];
         foreach ($rows as $event) {
@@ -139,9 +159,86 @@ final class DesktopData
             if ($row !== null) {
                 $out[] = $row;
             }
+            // Right under the call it is about: the grant her session would have needed, as the option she cannot
+            // take, and the act that works today.
+            $refused = $unseated[(int) ($event['seq'] ?? 0)] ?? null;
+            if ($refused !== null && ($event['type'] ?? '') === 'session.tool_called') {
+                $out[] = ['kind' => 'no_frontier'] + $refused;
+            }
         }
 
         return $out;
+    }
+
+    /**
+     * What a session a PERSON opened was refused and nobody can grant, keyed by the seq of the refused call (greenhouse
+     * decisions/0609, path 1, I2).
+     *
+     * A person's session runs with her passkey: it is nobody's seat, the frontier only knows seats, and so nothing
+     * of it ever reached Decisions (`seatFrontier()` is empty for it, as decided — decisions/0493). The house now
+     * reads those refusals apart, as rows shaped like a seat's refusal without a seat; this hands them to the thread
+     * so it can tell her, where she is, what her session cannot do. The judgement is app-runtime's
+     * ({@see \Milpa\AppRuntime\Agent\SeatFrontier}), re-made from the recorded call: nothing here parses a refusal's
+     * sentence, and nothing here grants.
+     *
+     * Guarded so an app without the runtime, or with one that does not read them yet, shows none — and a house that
+     * cannot be asked, or answers something that is not such a row, shows none either: the thread is then what it was.
+     *
+     * @return array<int, array{seq: int, tool: string, plugin: ?string, permission: string}>
+     */
+    private function refusedToAPerson(string $agentSid): array
+    {
+        try {
+            $rows = self::$personFrontier !== null ? (self::$personFrontier)($agentSid) : $this->askTheHouseWhatAPersonWasRefused($agentSid);
+        } catch (\Throwable) {
+            return [];
+        }
+        $bySeq = [];
+        foreach (\is_array($rows) ? $rows : [] as $row) {
+            if (\is_array($row) && \is_int($row['seq'] ?? null) && \is_string($row['tool'] ?? null) && $row['tool'] !== ''
+                && \is_string($row['permission'] ?? null) && $row['permission'] !== '') {
+                $bySeq[$row['seq']] = ['seq' => $row['seq'], 'tool' => $row['tool'], 'plugin' => \is_string($row['plugin'] ?? null) ? $row['plugin'] : null, 'permission' => $row['permission']];
+            }
+        }
+
+        return $bySeq;
+    }
+
+    /**
+     * The house's own answer: app-runtime's frontier, over this app's ledger.
+     *
+     * @return mixed what the runtime returns — rows, when it reads them
+     *
+     * @codeCoverageIgnore reads through to app-runtime's frontier; exercised on a booted app, not by the standalone suite
+     */
+    private function askTheHouseWhatAPersonWasRefused(string $agentSid): mixed
+    {
+        // NAMED AS A STRING, as the seats' frontier is: this package does not require the runtime. A runtime that does
+        // not read these refusals yet has no such method, and then there is nothing to show.
+        $class = self::$frontier;
+        if (!class_exists($class) || !method_exists($class, 'refusedToAPerson')
+            || !class_exists(\Milpa\Agent\SessionStore::class) || !class_exists(\Milpa\EventStore\FileEventStore::class)) {
+            return [];
+        }
+        $kernel = $this->container->has(Kernel::class) ? $this->container->get(Kernel::class) : null;
+        $file = $this->ledgerFile();
+        if (!$kernel instanceof Kernel || $file === null || !is_file($file)) {
+            return [];
+        }
+
+        return $class::forRoot($kernel->root(), new \Milpa\Agent\SessionStore(new \Milpa\EventStore\FileEventStore($file)), self::built($kernel))->refusedToAPerson($agentSid);
+    }
+
+    /**
+     * Name who answers what a person's own session was refused — null restores the house's frontier.
+     *
+     * @param (\Closure(string): mixed)|null $reader handed the session, answers the runtime's rows
+     *
+     * @internal a seam for tests: the judgement is the runtime's, and a suite must be able to stand in for it
+     */
+    public static function usePersonFrontier(?\Closure $reader): void
+    {
+        self::$personFrontier = $reader;
     }
 
     /**

@@ -11,7 +11,7 @@
  */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { El, page, settle } from './support/page.mjs';
+import { El, page, settle, stubFetch } from './support/page.mjs';
 import { prototypeTags } from './support/shell.mjs';
 
 /** A page with the thread, its prototypes and every message module the shell declares. */
@@ -497,4 +497,67 @@ test('a replayed verified close stamps ✓, and with no answer to ride it lands 
   assert.equal(thread2.children.length, 1);
   assert.ok(thread2.children[0].classList.contains('msg--result'), 'no answer to ride: the standalone result claim');
   assert.equal(thread2.children[0].getAttribute('data-verified'), '0');
+});
+
+// ── a person's own session, told what it cannot do (greenhouse decisions/0609, path 1, I2) ────────────────────────────
+/** The hooks the page's click delegates ACT on: a card that only informs must carry none of them. */
+const ACTING_HOOKS = ['data-seat-grant', 'data-seat-admit', 'data-seat-withdraw', 'data-seat-give', 'data-agent-answer', 'data-sequence-run',
+  'data-graph-decide', 'data-grant-option', 'data-gate-approve', 'data-agent-regenerate', 'data-new-session'];
+
+/** One refused call of a person's session, as the house hands it: a seat's refusal without a seat. */
+const REFUSED = { seq: 9, tool: 'make', plugin: 'Blog', permission: 'plugins.Blog:write', call: { what: 'plugin', plugin: 'Blog', name: 'Blog' } };
+
+test('Y2 · a replayed thread tells a person what her session cannot do — dimmed, with its why, under the call that was refused', () => {
+  const rows = [
+    { kind: 'user', text: 'Build a plugin named Blog' },
+    { kind: 'tool', name: 'make', result: "Missing required permission 'plugins.Blog:write' for plugin 'Blog'." },
+    { kind: 'no_frontier', ...REFUSED },
+    { kind: 'agent', text: 'I could not build it here.' },
+  ];
+  const html = new El('html');
+  const chat = html.appendChild(new El('section', { id: 'milpa-chat' }));
+  const p = page({ tree: html, elements: { ...prototypeTags(), 'milpa-desktop-transcript': transcriptTag(rows) }, bus: true,
+    modules: ['desktop-conversation', 'desktop-thinking', 'desktop-agent-message', 'desktop-tool-call', 'desktop-result-claim', 'desktop-ask-grant'] });
+  p.desktop().conversation.replay();
+
+  const kinds = chat.children.map((m) => ['msg--user', 'msg--tool', 'msg--no-frontier', 'msg--agent'].find((k) => m.classList.contains(k)) || '?');
+  assert.deepEqual(kinds, ['msg--user', 'msg--tool', 'msg--no-frontier', 'msg--agent'], 'it sits where the refusal happened');
+  const card = chat.children[2];
+  assert.equal(card.querySelector('[data-no-frontier-title]').textContent, 'This conversation cannot build');
+  assert.equal(card.querySelector('[data-no-frontier-why]').textContent,
+    "It runs with a person's passkey, and in this house a seat builds, not a person's session. The call make was refused: it lacks plugins.Blog:write.");
+  assert.equal(card.querySelector('[data-no-frontier-option]').textContent, 'Grant plugins.Blog:write', 'the option she cannot take is SHOWN');
+  assert.equal(card.querySelector('[data-no-frontier-blocked]').textContent, "Nobody can grant this to a person's session — not even the key that founded the house.", 'with its why');
+  assert.equal(card.querySelector('[data-no-frontier-works]').textContent, 'What works today: give a resident a seat, and grant it plugins.Blog:write from Decisions when it asks.');
+});
+
+test('Y5 · the card grants nothing and runs nothing: its one button is disabled and it carries no hook that acts', () => {
+  const { p, chat, conversation } = thread();
+  const fetched = stubFetch(p, []);
+
+  conversation().append('no-frontier', REFUSED);
+
+  const card = chat.children[0];
+  assert.equal(card.classList.contains('msg--no-frontier'), true);
+  const buttons = card.querySelectorAll('button');
+  assert.equal(buttons.length, 1, 'one option, the one she cannot take');
+  assert.equal(buttons[0].getAttribute('disabled') !== null, true);
+  assert.equal(buttons[0].getAttribute('aria-disabled'), 'true');
+  for (const el of [card, ...card.querySelectorAll('*')]) {
+    for (const hook of ACTING_HOOKS) { assert.equal(el.getAttribute(hook), null, `${hook} would arm a click delegate`); }
+  }
+  // A click on it is nobody's: no message component claims it, and nothing is posted.
+  assert.equal(conversation().click({ target: buttons[0] }), false);
+  assert.deepEqual(fetched, []);
+});
+
+test('the card says only what it was given: a call that named no plugin, and an unknown kind of row, paint nothing false', () => {
+  const { chat, conversation } = thread();
+
+  conversation().append('no-frontier', { tool: 'make', permission: 'plugins.Shop:write' });
+  conversation().append('no-frontier', {});
+
+  assert.equal(chat.children[0].querySelector('[data-no-frontier-option]').textContent, 'Grant plugins.Shop:write');
+  assert.equal(chat.children[1].querySelector('[data-no-frontier-option]').textContent, 'Grant', 'no permission was given: none is invented');
+  assert.equal(chat.children[1].querySelector('[data-no-frontier-option]').getAttribute('disabled') !== null, true, 'and it is still disabled');
 });

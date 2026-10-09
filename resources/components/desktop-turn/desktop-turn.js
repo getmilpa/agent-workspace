@@ -156,6 +156,13 @@
     } else if (result && result.error) {
       conv.append('system', { text: result.error });
     }
+    // HER OWN SESSION CANNOT BUILD, AND SHE IS TOLD SO HERE (greenhouse decisions/0609, path 1, I2). A person's
+    // session is nobody's seat: the house refuses the call and has nobody to ask — no card in Decisions, nothing in
+    // this thread (evidence/1175). The house says it as DATA in the turn's result: each call of this turn that lacked
+    // a permission of a plugin. One card apiece, under the answer; it shows the grant she cannot take, disabled, and
+    // the act that works. `awaiting_grant` is a seat's, and is not this.
+    var refused = (result && result.no_frontier && result.no_frontier.refused && result.no_frontier.refused.length) ? result.no_frontier.refused : [];
+    for (var i = 0; i < refused.length; i++) { conv.append('no-frontier', refused[i] || {}); }
     // The closure verdict (greenhouse decisions/0191, evidence/0442): the ledger either backs the answer
     // or disputes it. Only shown when the house actually judged the turn.
     if (result && result.closure) {

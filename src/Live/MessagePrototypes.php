@@ -47,6 +47,8 @@ final class MessagePrototypes
     public const string GRANT_AFTER = 'desktop.ask_grant.after_render';
     public const string COMPACTED_BEFORE = 'desktop.compacted.before_render';
     public const string COMPACTED_AFTER = 'desktop.compacted.after_render';
+    public const string NO_FRONTIER_BEFORE = 'desktop.no_frontier.before_render';
+    public const string NO_FRONTIER_AFTER = 'desktop.no_frontier.after_render';
 
     /** The payload keys each prototype's render events carry their mutable {@see ComposerRender} under. */
     public const string USER_KEY = 'userMessage';
@@ -56,6 +58,7 @@ final class MessagePrototypes
     public const string RESULT_KEY = 'resultClaim';
     public const string GRANT_KEY = 'askGrant';
     public const string COMPACTED_KEY = 'compacted';
+    public const string NO_FRONTIER_KEY = 'noFrontier';
 
     private readonly SignedXhtmlStateTransferCodec $codec;
 
@@ -83,6 +86,7 @@ final class MessagePrototypes
             ...RenderEvents::of(self::class, self::RESULT_BEFORE, self::RESULT_AFTER, self::RESULT_KEY, 'the result-claim prototype'),
             ...RenderEvents::of(self::class, self::GRANT_BEFORE, self::GRANT_AFTER, self::GRANT_KEY, 'the ask-grant prototype'),
             ...RenderEvents::of(self::class, self::COMPACTED_BEFORE, self::COMPACTED_AFTER, self::COMPACTED_KEY, 'the compaction-boundary prototype'),
+            ...RenderEvents::of(self::class, self::NO_FRONTIER_BEFORE, self::NO_FRONTIER_AFTER, self::NO_FRONTIER_KEY, 'the no-frontier prototype'),
         ];
     }
 
@@ -204,6 +208,26 @@ final class MessagePrototypes
     }
 
     /** Mount the component, fire before/after render with a mutable subject, and cap with the signed envelope. */
+    /**
+     * The no-frontier prototype (`desktop-no-frontier`) — what a person's own session cannot do, dimmed, with its why
+     * (greenhouse decisions/0609, I2).
+     *
+     * ITS ONE BUTTON IS DISABLED AND WIRED TO NOTHING. Every act on this page rides a document-level click delegate
+     * keyed on a `data-*` hook, so a hook copied here would arm it: the button carries only the region it is filled
+     * through. The words are the catalog's, filled per instance by the thread.
+     */
+    public function noFrontier(): string
+    {
+        $markup = '<div class="msg msg--no-frontier" data-milpa-component="desktop-no-frontier" data-milpa-component-id="no-frontier" role="note">'
+            . '<p class="msg__no-frontier-title" data-no-frontier-title></p>'
+            . '<p class="msg__no-frontier-fact" data-no-frontier-why></p>'
+            . '<button type="button" class="mui-btn mui-btn--sm msg__no-frontier-option" data-no-frontier-option disabled aria-disabled="true"></button>'
+            . '<p class="msg__no-frontier-fact" data-no-frontier-blocked></p>'
+            . '<p class="msg__no-frontier-fact" data-no-frontier-works></p></div>';
+
+        return $this->wrap(new NoFrontierComponent(), 'no-frontier', $markup, self::NO_FRONTIER_BEFORE, self::NO_FRONTIER_AFTER, self::NO_FRONTIER_KEY);
+    }
+
     private function wrap(ComponentDefinitionInterface $component, string $id, string $markup, string $before, string $after, string $key): string
     {
         $subject = new ComposerRender([]);
