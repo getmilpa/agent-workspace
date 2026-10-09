@@ -3,6 +3,13 @@
 All notable changes to milpa/desktop-app are documented here. This project adheres to
 [Semantic Versioning](https://semver.org/) and [Keep a Changelog](https://keepachangelog.com/).
 
+## [0.93.0](https://github.com/getmilpa/agent-workspace/compare/v0.92.0...v0.93.0) (2026-10-09)
+
+
+### Features
+
+* a person's own conversation is told what it cannot do — dimmed, with its why (greenhouse decisions/0609) ([#139](https://github.com/getmilpa/agent-workspace/issues/139)) ([8851851](https://github.com/getmilpa/agent-workspace/commit/8851851bd44ce55deedf2e5946477b36e0251d80))
+
 ## [0.92.0](https://github.com/getmilpa/agent-workspace/compare/v0.91.1...v0.92.0) (2026-10-08)
 
 
