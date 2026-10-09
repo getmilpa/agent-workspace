@@ -3,6 +3,13 @@
 All notable changes to milpa/desktop-app are documented here. This project adheres to
 [Semantic Versioning](https://semver.org/) and [Keep a Changelog](https://keepachangelog.com/).
 
+## [0.93.1](https://github.com/getmilpa/agent-workspace/compare/v0.93.0...v0.93.1) (2026-10-09)
+
+
+### Bug Fixes
+
+* a turn that ran on a page leaves it saying what a reload would (greenhouse decisions/0609, I4) ([#141](https://github.com/getmilpa/agent-workspace/issues/141)) ([3fa3712](https://github.com/getmilpa/agent-workspace/commit/3fa3712332b7bc6f4ebf69d6d5afefce867d7059))
+
 ## [0.93.0](https://github.com/getmilpa/agent-workspace/compare/v0.92.0...v0.93.0) (2026-10-09)
 
 
