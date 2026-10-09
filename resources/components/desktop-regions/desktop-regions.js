@@ -25,6 +25,9 @@
  *     is shown and marks it `data-live-stale`; it never blanks what somebody was reading;
  *   - `signals` is a region too: the session's own figures (turns, tools, context) are re-seeded from the
  *     fresh page. Where the human is standing — the tab, the open panel, the draft — is never re-read.
+ *   - a surface may READ a region that is data instead of having it swapped (`reader()`): the thread takes from
+ *     the fresh page's transcript the calls it does not show (greenhouse decisions/0609, I4). A reader is asked
+ *     for by name and is never part of the poll.
  *
  * With no hub the transport says `offline`, and the regions are re-read on a slow poll: the notice the
  * shell shows promises one. When the hub comes back the poll stops and the page catches up once.
@@ -63,6 +66,7 @@
   var reading = null;
   var deferred = {};
   var keepers = {};
+  var readers = {};
 
   function marked(root, name) { return root.querySelectorAll('[' + MARK + '="' + name + '"]'); }
 
@@ -101,6 +105,10 @@
   /** Put the fresh page's copy of one region where the shown one is. */
   function swap(name, page) {
     if (name === SIGNALS) { return reseed(page); }
+    if (readers[name]) {
+      // One reader that throws costs its own region, never the others read from the same page.
+      try { return readers[name](page) === 'fresh' ? 'fresh' : 'stale'; } catch (e) { return 'stale'; }
+    }
     var here = marked(document, name);
     var there = marked(page, name);
     if (here.length === 0) { return 'absent'; }
@@ -130,7 +138,7 @@
     var asked = [];
     wanted = {};
     for (var i = 0; i < names.length; i++) {
-      if (names[i] !== SIGNALS && marked(document, names[i]).length === 0) { out[names[i]] = 'absent'; } else { asked.push(names[i]); }
+      if (names[i] !== SIGNALS && !readers[names[i]] && marked(document, names[i]).length === 0) { out[names[i]] = 'absent'; } else { asked.push(names[i]); }
     }
     if (asked.length === 0) { return Promise.resolve(out); }
 
@@ -147,7 +155,7 @@
         return out;
       })
       .catch(function () {
-        for (var j = 0; j < asked.length; j++) { out[asked[j]] = asked[j] === SIGNALS ? 'stale' : stale(asked[j]); }
+        for (var j = 0; j < asked.length; j++) { out[asked[j]] = (asked[j] === SIGNALS || readers[asked[j]]) ? 'stale' : stale(asked[j]); }
 
         return out;
       });
@@ -187,6 +195,15 @@
     if (typeof fn === 'function') { (keepers[name] = keepers[name] || []).push(fn); }
   }
 
+  /**
+   * Let a surface READ a region that is data: `fn` is handed the fresh page and says 'fresh' when it took what it
+   * needed. It shares the one request with every region asked for in the same tick. It is not in `all()`: a poll
+   * re-reads what the page shows, and a reader decides for itself when what it holds may have moved.
+   */
+  function reader(name, fn) {
+    if (typeof fn === 'function') { readers[String(name)] = fn; }
+  }
+
   // ── with no hub, a poll; when the hub returns, one catch-up ─────────────────────────────────────
   var timer = null;
   var away = false;
@@ -207,7 +224,7 @@
     }, POLL_MS);
   }
 
-  desk().regions = { reread: reread, resume: resume, keep: keep, all: all };
+  desk().regions = { reread: reread, resume: resume, keep: keep, reader: reader, all: all };
 
   var bus = window.MilpaShell;
   if (bus && typeof bus.onStatus === 'function') { bus.onStatus(connection); }

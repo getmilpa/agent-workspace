@@ -91,6 +91,7 @@ final class ClientCopyTest extends TestCase
         'run.ended' => 'a bus fact type (the last ring of every run)',
         'decisions.pending' => 'a region name (LiveRegion::DECISIONS_PENDING), re-read from the house',
         'decisions.frontier' => 'a region name (LiveRegion::DECISIONS_FRONTIER), re-read from the house',
+        'session.strip' => 'a region name (LiveRegion::SESSION_STRIP), re-read from the house when a turn comes back',
         'conn.state' => 'a signal the bus alone writes and the status bar binds — the page seeds no value',
         'conn.label' => 'idem: the connection has no state until the transport says one',
         'milpa.theme' => "the localStorage key the viewer's own theme preference is remembered under",

@@ -112,7 +112,10 @@ final class DesktopData
                     str_starts_with($this->str($p['content'] ?? null), LedgerSession::HOUSE_VOICE) => ['kind' => 'notice', 'text' => $this->str($p['content'] ?? null)],
                     default => ['kind' => 'user', 'text' => $this->str($p['content'] ?? null)],
                 },
-                'session.tool_called' => ['kind' => 'tool', 'name' => $this->str($p['tool'] ?? null) ?: 'tool', 'result' => $this->str($p['result'] ?? null)],
+                // A CALL CARRIES ITS OWN POSITION IN THE LEDGER (greenhouse decisions/0609, I4): the page that ran a
+                // turn re-reads this transcript when the turn comes back, and paints the calls it does not show.
+                // Without a name of its own a call could only be painted twice, or not at all.
+                'session.tool_called' => ['kind' => 'tool', 'name' => $this->str($p['tool'] ?? null) ?: 'tool', 'result' => $this->str($p['result'] ?? null), 'seq' => (int) ($event['seq'] ?? 0)],
                 // The parked question carries its OPTIONS and its why (greenhouse decisions/0254): a
                 // reloaded thread renders the request with the same buttons a live one has, so a question
                 // raised before the reload is still answerable from where it was asked.

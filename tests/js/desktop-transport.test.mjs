@@ -96,7 +96,8 @@ test("a governed turn's projection is translated into the facts the shell alread
   sameShape(facts[0][1], { state: 'working' });
   sameShape(facts[1][1], { text: 'weighing…' });
   sameShape(facts[2][1], { text: 'done' });
-  sameShape(facts[3][1], { name: 'fs:read', result: '{}' });
+  // The call says WHICH call it is, by the envelope's position in the ledger; this envelope carried none (greenhouse decisions/0609, I4).
+  sameShape(facts[3][1], { name: 'fs:read', result: '{}', seq: null });
   sameShape(facts[4][1], { state: 'idle' });
   assert.equal(p.signal('session.tool_calls'), 3, 'a tool that ran is counted into the shared signal');
 });
