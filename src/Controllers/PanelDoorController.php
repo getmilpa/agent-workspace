@@ -258,7 +258,7 @@ final class PanelDoorController
 
     /**
      * Mark a 403 from an agent:run door with `needs_scope`, so the composer can tell the person — in its own catalog,
-     * in her locale — what she lacks (agent:run) and how to get it: enable milpa/agent-workspace and enroll with the
+     * in their locale — what they lack (agent:run) and how to get it: enable milpa/agent-workspace and enroll with the
      * one-time link it prints (t-0092, greenhouse decisions/0609). The JUDGE still decides; this keeps its status and
      * its sentence under `error` for a client that does not read the mark, and adds authority to nothing
      * (greenhouse decisions/0614 F5).

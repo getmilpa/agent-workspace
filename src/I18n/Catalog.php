@@ -93,7 +93,7 @@ final class Catalog
             'guard.forbidden.reason' => 'Not allowed here (%s)',
             // t-0092 (greenhouse decisions/0609, 0614 F5): a person signed in with the panel's one-time link
             // (milpa/admin) holds no agent:run, so the composer cannot drive the agent. Say what is missing and
-            // how to get it — WITHOUT widening the link she used; point her at the one that already carries it.
+            // how to get it — WITHOUT widening the link they used; point them at the one that already carries it.
             'guard.scope_denied.agent_run' => 'You are signed in, but this identity cannot drive the agent — it was enrolled without agent:run. Enable the workspace (`capabilities:enable milpa/agent-workspace --sign`), then sign in again with the one-time link it prints: that link carries agent:run. No grant you already hold is widened.',
             'guard.failed' => 'The request failed (HTTP %s)',
             'guard.unreachable' => 'The app could not be reached',
