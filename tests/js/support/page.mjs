@@ -112,6 +112,7 @@ export const CATALOG = {
   'settings.model.endpoint.refused': 'The endpoint was not saved: %s',
   'guard.forbidden': 'Not allowed here',
   'guard.forbidden.reason': 'Not allowed here (%s)',
+  'guard.scope_denied.agent_run': 'You are signed in, but this identity cannot drive the agent — it was enrolled without agent:run. Enable the workspace (`capabilities:enable milpa/agent-workspace --sign`), then sign in again with the one-time link it prints: that link carries agent:run. No grant you already hold is widened.',
   'guard.failed': 'The request failed (HTTP %s)',
   'guard.unreachable': 'The app could not be reached',
   'settings.saved': 'Saved',

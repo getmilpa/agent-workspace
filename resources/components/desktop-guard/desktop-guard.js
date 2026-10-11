@@ -138,7 +138,13 @@
     err.body = body;
     err.told = false;
     if (r.status === 403) {
-      notice('error', (typeof body.error === 'string' && body.error !== '') ? tr('guard.forbidden.reason', body.error) : tr('guard.forbidden'));
+      // A scope the door NAMED (t-0092, greenhouse decisions/0609, 0614 F5): say the catalog's own sentence — what
+      // this identity lacks (agent:run) and how to get it — instead of the judge's bare developer code. The door
+      // marks only agent:run; every other 403 keeps the forbidden wrapper over whatever the door said.
+      var sentence = body.needs_scope === 'agent:run'
+        ? tr('guard.scope_denied.agent_run')
+        : ((typeof body.error === 'string' && body.error !== '') ? tr('guard.forbidden.reason', body.error) : tr('guard.forbidden'));
+      notice('error', sentence);
       err.told = true;
     }
     return Promise.reject(err);
