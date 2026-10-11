@@ -110,10 +110,10 @@ final class DeclaredScreensTest extends TestCase
         self::assertStringContainsString('>Guardado</span>', $html, 'the badge seed speaks the declared locale');
 
         // With nothing configured THE FIELD IS EMPTY. It used to be pre-filled with
-        // `http://llama.local:11438` — a host that had stopped resolving — and a form pre-filled with a
+        // the address of a lab machine — a host that had stopped resolving — and a form pre-filled with a
         // dead address is worse than an empty one: it reads as «this is what you are talking to», and
         // saving without touching it would DECLARE it (greenhouse decisions/0266).
-        self::assertStringNotContainsString('llama.local', (new SettingsScreen('secret'))->render(), 'no surface names a host the reader never chose');
+        self::assertDoesNotMatchRegularExpression('~value="https?://~', (new SettingsScreen('secret'))->render(), 'no surface names a host the reader never chose');
 
         unlink($dir . '/settings.json');
         rmdir($dir);

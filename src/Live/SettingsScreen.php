@@ -169,7 +169,7 @@ final class SettingsScreen
      * So the value comes from {@see DesktopData::model()} — which is `AgentEndpoint::baseUrl()`, what
      * every turn actually resolves — and the field writes there through `config:set`, never here.
      *
-     * EMPTY IS AN ANSWER. The default it once fell back to was `http://llama.local:11438`, a host that
+     * EMPTY IS AN ANSWER. The default it once fell back to was the address of a lab machine, a host that
      * stopped resolving when that machine moved to Tailscale (greenhouse decisions/0266). A form
      * pre-filled with a dead address reads as «this is what you are talking to», and saving the form
      * without touching it would DECLARE it. An empty field asks the question.

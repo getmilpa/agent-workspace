@@ -173,7 +173,7 @@ final class DesktopDataTest extends TestCase
      * It declared `agent.base_url` — snake_case, a key `AgentKeys` DOES NOT DECLARE; the authority
      * reads `agent.baseUrl` — and asserted the source returned it. So it proved that a surface read
      * a key nobody can set, which is why every real house fell through to the environment and, with
-     * no environment, to a hardcoded `http://llama.local:11438` that had stopped resolving
+     * no environment, to the hardcoded address of a lab machine that had stopped resolving
      * (greenhouse decisions/0266).
      *
      * The source asks {@see AgentEndpoint} now: one precedence, resolved once, in the class that

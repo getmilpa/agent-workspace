@@ -178,7 +178,7 @@ final class Catalog
             'auth.identity.verified_hint' => 'Requires an external mechanism.',
             'auth.provider' => 'Model provider',
             // WHAT A SURFACE SAYS WHEN NOBODY DECLARED A MODEL. Not a default name: this package
-            // printed `qwen3.8-27b` in five places and `http://llama.local:11438` in two, so every
+            // printed `qwen3.8-27b` in five places and a lab machine's address in two, so every
             // one of them asserted a model it had never asked — on a host that stopped resolving
             // when that machine moved (greenhouse decisions/0266). «I do not know» is the only true
             // answer a surface has when the authority has nothing to give it.
