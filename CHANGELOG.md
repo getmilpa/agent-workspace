@@ -3,6 +3,13 @@
 All notable changes to milpa/desktop-app are documented here. This project adheres to
 [Semantic Versioning](https://semver.org/) and [Keep a Changelog](https://keepachangelog.com/).
 
+## [0.94.1](https://github.com/getmilpa/agent-workspace/compare/v0.94.0...v0.94.1) (2026-10-11)
+
+
+### Bug Fixes
+
+* the docblocks say what left without spelling a lab machine's name (greenhouse evidence/1144) ([#145](https://github.com/getmilpa/agent-workspace/issues/145)) ([86669c2](https://github.com/getmilpa/agent-workspace/commit/86669c20ad0eeb83dc96c350bb3c65b8a94529aa))
+
 ## [0.94.0](https://github.com/getmilpa/agent-workspace/compare/v0.93.1...v0.94.0) (2026-10-09)
 
 
