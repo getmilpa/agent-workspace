@@ -91,6 +91,10 @@ final class Catalog
             'settings.save_failed' => 'Not saved (HTTP %s)',
             'guard.forbidden' => 'Not allowed here',
             'guard.forbidden.reason' => 'Not allowed here (%s)',
+            // t-0092 (greenhouse decisions/0609, 0614 F5): a person signed in with the panel's one-time link
+            // (milpa/admin) holds no agent:run, so the composer cannot drive the agent. Say what is missing and
+            // how to get it — WITHOUT widening the link they used; point them at the one that already carries it.
+            'guard.scope_denied.agent_run' => 'You are signed in, but this identity cannot drive the agent — it was enrolled without agent:run. Enable the workspace (`capabilities:enable milpa/agent-workspace --sign`), then sign in again with the one-time link it prints: that link carries agent:run. No grant you already hold is widened.',
             'guard.failed' => 'The request failed (HTTP %s)',
             'guard.unreachable' => 'The app could not be reached',
             'enroll.none' => 'No passkey door in this app',
@@ -543,6 +547,7 @@ final class Catalog
             'settings.save_failed' => 'No se guardó (HTTP %s)',
             'guard.forbidden' => 'No permitido aquí',
             'guard.forbidden.reason' => 'No permitido aquí (%s)',
+            'guard.scope_denied.agent_run' => 'Tienes la sesión iniciada, pero esta identidad no puede manejar el agente — se inscribió sin agent:run. Habilita el workspace (`capabilities:enable milpa/agent-workspace --sign`) y vuelve a iniciar sesión con la liga de un solo uso que imprime: esa liga trae agent:run. No se ensancha ningún permiso que ya tengas.',
             'guard.failed' => 'La petición falló (HTTP %s)',
             'guard.unreachable' => 'No se pudo alcanzar la app',
             'enroll.none' => 'Esta app no tiene puerta de passkey',

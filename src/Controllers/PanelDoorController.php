@@ -256,6 +256,26 @@ final class PanelDoorController
             )));
     }
 
+    /**
+     * Mark a 403 from an agent:run door with `needs_scope`, so the composer can tell the person — in its own catalog,
+     * in their locale — what they lack (agent:run) and how to get it: enable milpa/agent-workspace and enroll with the
+     * one-time link it prints (t-0092, greenhouse decisions/0609). The JUDGE still decides; this keeps its status and
+     * its sentence under `error` for a client that does not read the mark, and adds authority to nothing
+     * (greenhouse decisions/0614 F5).
+     */
+    private static function namesTheScopeOnTheRefusal(ResponseInterface $response): ResponseInterface
+    {
+        $decoded = json_decode((string) $response->getBody(), true);
+        $body = \is_array($decoded) ? $decoded : ['ok' => false, 'error' => (string) $response->getBody()];
+        $body['needs_scope'] = 'agent:run';
+
+        $psr17 = new Psr17Factory();
+
+        return $psr17->createResponse(403)
+            ->withHeader('Content-Type', 'application/json')
+            ->withBody($psr17->createStream((string) json_encode($body, \JSON_UNESCAPED_SLASHES | \JSON_UNESCAPED_UNICODE)));
+    }
+
     private function door(string $name, ServerRequestInterface $request): ResponseInterface
     {
         $operation = $this->operation($name);
@@ -269,12 +289,18 @@ final class PanelDoorController
             return self::unjudged($name);
         }
 
-        return self::project(
+        $response = self::project(
             $this->container,
             $operation,
             $request,
             \sprintf('This app wired no policy to judge who may run %s over HTTP, so the panel cannot run it.', $name),
         );
+
+        // t-0092 (greenhouse decisions/0609, 0614 F5): when the judge refuses a door that needs agent:run, name the
+        // scope on its 403 so the composer can say — from its own catalog — what the person lacks and how to get it.
+        return \in_array('agent:run', $operation->scopes, true) && $response->getStatusCode() === 403
+            ? self::namesTheScopeOnTheRefusal($response)
+            : $response;
     }
 
     private function operation(string $name): ?Operation

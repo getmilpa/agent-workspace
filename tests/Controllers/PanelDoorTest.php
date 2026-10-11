@@ -179,6 +179,30 @@ final class PanelDoorTest extends TestCase
         self::assertFalse($ran, 'the operation never ran');
     }
 
+    public function testTheTurnDoorNamesAgentRunSoTheComposerCanSayHowToDriveTheAgent(): void
+    {
+        // t-0092 (greenhouse decisions/0609, path: the composer): a person who enrolled with the panel's one-time
+        // link (milpa/admin, no agent:run) writes in the composer, and the turn door is refused. The door MARKS that
+        // refusal `needs_scope: agent:run`, so the composer can say — from its own catalog — what is missing and how
+        // to get it. The judge still decides (the 403 is its answer); the door only names the scope on it, widening
+        // nothing (greenhouse decisions/0614 F5).
+        $container = new DIContainer();
+        $container->registerService(OperationHttpPolicy::class, self::judge());
+        $door = new PanelDoorController($container, static fn (string $name): ?Operation => self::needing('agent:run', $name));
+
+        $answer = $door->turn(self::request());
+
+        self::assertSame(403, $answer->getStatusCode());
+        $body = json_decode((string) $answer->getBody(), true);
+        self::assertIsArray($body);
+        self::assertSame('agent:run', $body['needs_scope'] ?? null, 'the refusal names the scope the composer must explain');
+
+        // A door whose operation needs a DIFFERENT scope is NOT marked: the composer explains agent:run, nothing else.
+        $other = new PanelDoorController($container, static fn (string $name): ?Operation => self::needing('agent:answer', $name));
+        $plain = json_decode((string) $other->answer(self::request())->getBody(), true);
+        self::assertArrayNotHasKey('needs_scope', \is_array($plain) ? $plain : [], 'only an agent:run door names the scope');
+    }
+
     /** @param list<string> $providers the operation providers the app declares; the inbox's two when unsaid */
     private function kernel(array $providers = ['Milpa\\AppRuntime\\Operations\\SessionOperations', 'Milpa\\AppRuntime\\Operations\\SequenceOperations']): Kernel
     {
@@ -216,6 +240,19 @@ final class PanelDoorTest extends TestCase
             handler: static fn (): array => ['ok' => false],
             mutating: true,
             scopes: [$name],
+            surfaces: ['cli', 'http'],
+        );
+    }
+
+    /** The operation its owner declares needing exactly `$scope` — offered over HTTP, so the door projects it. */
+    private static function needing(string $scope, string $name): Operation
+    {
+        return new Operation(
+            name: $name,
+            description: 'A scoped, mutating operation offered over HTTP',
+            handler: static fn (): array => ['ok' => false],
+            mutating: true,
+            scopes: [$scope],
             surfaces: ['cli', 'http'],
         );
     }

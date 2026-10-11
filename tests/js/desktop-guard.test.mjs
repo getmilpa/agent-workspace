@@ -126,6 +126,22 @@ test('a 403 is told once as a desktop.notice and rejected as told', async () => 
   assert.equal(seen.length, 1);
 });
 
+test('a 403 the door marked needs_scope agent:run says, from the catalog, how to drive the agent (t-0092)', async () => {
+  // A person who enrolled with the panel's link (milpa/admin, no agent:run) is signed in but cannot drive the agent.
+  // The door marked the refusal `needs_scope: agent:run`, so the composer says the catalog's own sentence — what is
+  // missing and how to get it — not the judge's bare developer code (greenhouse decisions/0609, 0614 F5).
+  const p = page();
+  const err = await p.desktop().guarded(response(403, { error: '[MILPA_SCOPE_DENIED] …agent:run…', needs_scope: 'agent:run' })).then(() => null, (e) => e);
+
+  assert.equal(err.status, 403);
+  assert.equal(err.told, true);
+  const said = p.sandbox.MilpaLive.signal('desktop.notice').text;
+  assert.equal(said, p.desktop().tr('guard.scope_denied.agent_run'), 'the composer says the catalog sentence');
+  assert.notEqual(said, 'Not allowed here ([MILPA_SCOPE_DENIED] …agent:run…)', 'not the bare forbidden wrapper over the raw code');
+  assert.match(said, /agent:run/, 'it names the scope that is missing');
+  assert.match(said, /milpa\/agent-workspace/, 'and how to get it — enabling the workspace');
+});
+
 test('any other non-2xx rejects with its status and is told by failed()', async () => {
   const p = page();
   const seen = [];
