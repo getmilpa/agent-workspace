@@ -28,13 +28,14 @@ use PHPUnit\Framework\TestCase;
  * two».
  *
  * This package arrived after that rule and made SEVEN: `qwen3.8-27b` hardcoded in five places and
- * `http://llama.local:11438` in two, the latter a host that stopped resolving when that machine moved
+ * a lab machine's address in two, the latter a host that stopped resolving when that machine moved
  * to Tailscale. Every one of them asserted a model it had never asked (decisions/0266).
  *
  * 🚨 THIS CHECK READS CODE AND NOT COMMENTS, and that is not fussiness. Twice in one day a ban over
  * whole files went wrong in both directions: a comment naming a removed value made an assertion PASS
  * while the code did the opposite, and a comment explaining a removal made a good assertion FAIL.
- * The docblocks in these files quote the very strings this bans, because they say why they left.
+ * The docblocks in these files say what this bans, because they say why it left: the model and the
+ * key by name, the host as what it was — a lab machine's address, which no public file spells.
  */
 final class NoSurfaceResolvesTheModelTest extends TestCase
 {
@@ -63,7 +64,7 @@ final class NoSurfaceResolvesTheModelTest extends TestCase
         $code = self::withoutComments((string) file_get_contents(\dirname(__DIR__) . '/' . $file));
 
         self::assertStringNotContainsString('qwen3', $code, "$file names a model");
-        self::assertStringNotContainsString('llama.local', $code, "$file names a host");
+        self::assertDoesNotMatchRegularExpression('~https?://~', $code, "$file names a host");
         self::assertStringNotContainsString('11438', $code, "$file names a port");
         // The key that never existed: `AgentKeys` declares `agent.baseUrl`, and this package read
         // `agent.base_url` — so it never once saw the value the turn uses.
@@ -84,7 +85,8 @@ final class NoSurfaceResolvesTheModelTest extends TestCase
             $prose .= (string) file_get_contents(\dirname(__DIR__) . '/' . $file);
         }
 
-        self::assertStringContainsString('llama.local', $prose, 'the docblocks say what left');
+        self::assertStringContainsString('qwen3', $prose, 'the docblocks say what left');
+        self::assertStringContainsString('a lab machine', $prose, 'and where it pointed, without spelling it');
         self::assertStringContainsString('agent.base_url', $prose);
         self::assertNotSame(
             $prose,

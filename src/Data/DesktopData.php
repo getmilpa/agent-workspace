@@ -889,7 +889,7 @@ final class DesktopData
      *
      * It read `agent.base_url` — a key `AgentKeys` does not declare; the authority reads
      * `agent.baseUrl` — so it never once saw the value the TURN uses. It fell through to the
-     * environment, and from there to `'http://llama.local:11438'`, a host that stopped resolving
+     * environment, and from there to the hardcoded address of a lab machine, a host that stopped resolving
      * when that machine moved to Tailscale. And it hardcoded `'qwen3.8-27b'` as the model, so every
      * surface reading it printed a model name whether or not anything was listening.
      *
@@ -904,7 +904,7 @@ final class DesktopData
      *
      * `model` and `endpoint` are `null` when nobody declared one. NOT a default: a surface that
      * names a host the reader never chose sends them to fix a machine that was never theirs, which
-     * is how `llama.local` survived in this file long after it stopped existing.
+     * is how a lab machine's name survived in this file long after it stopped existing.
      *
      * IT TOUCHES NOTHING ON THE WIRE. Whether the provider answers is the `agent:model` operation's
      * question, not this method's — asking costs a round trip that a paint must not pay, measured at
