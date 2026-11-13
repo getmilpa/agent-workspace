@@ -234,7 +234,9 @@
       // A run paused on a PROMOTION is answered where its code is read (greenhouse decisions/0628): agent-written
       // code lands in the live house with its yes, and this card shows none of it — so it offers no answer.
       if (read.pending_operation === 'sandbox:promote') {
-        status.textContent += ' — ' + tr('decisions.lands.open');
+        // A sequence's session is not one the panel opens: the terminal is where its code is read and answered,
+        // in the sentence the server printed on the card with the command the house reaches.
+        status.textContent = tr('decisions.paused_on_promotion', read.pending_operation) + ' — ' + (card.getAttribute('data-sequence-terminal') || '');
         showAnswers(card, false);
         return;
       }

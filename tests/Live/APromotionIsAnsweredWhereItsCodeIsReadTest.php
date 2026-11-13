@@ -93,7 +93,10 @@ final class APromotionIsAnsweredWhereItsCodeIsReadTest extends TestCase
         $html = (new DecisionsInboxView())->sequencesHtml([$paused]);
 
         self::assertStringNotContainsString('data-agent-answer', $html, 'no approve where the code is not shown (H1)');
-        self::assertStringContainsString('Read the code in its session', $html);
+        self::assertStringContainsString('paused on sandbox:promote — Its code is not shown here', $html, 'and no «answer below»');
+        self::assertStringContainsString('agent:show --session=sequence:promote-probe', $html, 'where it IS read: a sequence\'s session is not one the panel opens (M1)');
+        self::assertStringContainsString('agent:answer --session=sequence:promote-probe', $html);
+        self::assertStringContainsString('data-sequence-terminal="', $html, 'the sentence the page says when a Run pauses live');
         self::assertStringContainsString('data-sequence-run', $html, 'the run itself is still offered');
     }
 
@@ -102,6 +105,18 @@ final class APromotionIsAnsweredWhereItsCodeIsReadTest extends TestCase
         $paused = ['name' => 'deploy', 'steps' => ['config:set'], 'session' => 'sequence:deploy', 'paused' => true, 'pending_operation' => 'config:set'];
 
         self::assertStringContainsString('data-agent-answer="yes"', (new DecisionsInboxView())->sequencesHtml([$paused]));
+    }
+
+    public function testTheInboxCardOfASequencesPromotionNamesTheTerminal(): void
+    {
+        $row = ['session' => 'sequence:promote-probe', 'goal' => 'g', 'question' => 'Promote?', 'operation' => 'sandbox:promote', 'reason' => 'permission', 'sequence' => 'promote-probe']
+            + DesktopData::whatItLands(['lands' => [['path' => 'src/F.php', 'status' => 'added']], 'digest' => self::DIGEST]);
+
+        $html = (new DecisionsInboxView())->html([$row]);
+
+        self::assertStringContainsString('agent:show --session=sequence:promote-probe', $html);
+        self::assertStringNotContainsString('Read the code in its session', $html, 'not a session the panel can open');
+        self::assertStringNotContainsString('data-agent-answer', $html);
     }
 
     public function testAPromotionWithoutItsFilesIsStillNotApprovedFromTheInbox(): void

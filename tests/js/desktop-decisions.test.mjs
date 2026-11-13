@@ -20,6 +20,7 @@ const COPY = {
   'decisions.running': 'running…',
   'decisions.paused_on': 'paused on %s — answer below',
   'decisions.lands.open': 'Read the code in its session, then answer there: it is not shown here.',
+  'decisions.paused_on_promotion': 'paused on %s',
   'decisions.applied': 'applied · %s of %s steps ran',
   'decisions.denied': 'denied · %s',
   'decisions.failed': 'did not finish · %s',
@@ -36,7 +37,7 @@ const COPY = {
 function tree() {
   const root = new El('html');
   const list = root.appendChild(new El('ol', { id: 'milpa-sequences-list' }));
-  const card = list.appendChild(new El('li', { class: 'decision-card sequence-card', 'data-sequence': 'deploy', 'data-sequence-session': 'sequence:deploy' }));
+  const card = list.appendChild(new El('li', { class: 'decision-card sequence-card', 'data-sequence': 'deploy', 'data-sequence-session': 'sequence:deploy', 'data-sequence-terminal': 'Its code is not shown here: read it, and answer, in the terminal — php bin/coa agent:show --session=sequence:deploy, then php bin/coa agent:answer --session=sequence:deploy --answer=… --sign, and run it again.' }));
   card.appendChild(new El('p', { class: 'decision-card__facts', 'data-sequence-status': '' }));
   const options = card.appendChild(new El('p', { class: 'decision-card__options' }));
   options.appendChild(new El('button', { 'data-sequence-run': '', text: 'Run' }));
@@ -88,9 +89,28 @@ test('a run paused on a PROMOTION offers no answer on the card — its code is r
   click(p, card.querySelector('[data-sequence-run]'));
   await settle();
 
-  assert.match(card.querySelector('[data-sequence-status]').textContent, /Read the code in its session/);
+  const said = card.querySelector('[data-sequence-status]').textContent;
+  assert.equal(said, 'paused on sandbox:promote — Its code is not shown here: read it, and answer, in the terminal — php bin/coa agent:show --session=sequence:deploy, then php bin/coa agent:answer --session=sequence:deploy --answer=… --sign, and run it again.', 'where it is read and answered, as commands — and no «answer below»');
   assert.equal(card.querySelector('[data-agent-answer="yes"]').getAttribute('hidden'), '', 'no approve where the code is not shown');
   assert.equal(card.getAttribute('data-sequence-paused'), '', 'and the card still says it is parked');
+});
+
+test('answers a previous pause SHOWED are hidden again when the run pauses on a promotion', async () => {
+  const root = tree();
+  const p = page({ tree: root, catalog: COPY, modules: ['desktop-decisions'] });
+  stubFetch(p, [
+    response(428, { requires_confirmation: true, confirm_token: 'tok-1' }), response(201, PAUSED),
+    response(428, { requires_confirmation: true, confirm_token: 'tok-2' }), response(201, { ...PAUSED, pending_operation: 'sandbox:promote' }),
+  ]);
+  const card = root.querySelector('[data-sequence="deploy"]');
+
+  click(p, card.querySelector('[data-sequence-run]'));
+  await settle();
+  assert.equal(card.querySelector('[data-agent-answer="yes"]').getAttribute('hidden'), null, 'the control: an ordinary pause shows the answers');
+  click(p, card.querySelector('[data-sequence-run]'));
+  await settle();
+
+  assert.equal(card.querySelector('[data-agent-answer="yes"]').getAttribute('hidden'), '', 'a promotion hides them again');
 });
 
 test('an approval posts agent:answer and then RESUMES the run through the gate', async () => {

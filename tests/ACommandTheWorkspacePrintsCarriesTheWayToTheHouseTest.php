@@ -163,7 +163,7 @@ final class ACommandTheWorkspacePrintsCarriesTheWayToTheHouseTest extends TestCa
         preg_match_all('/^\s*\'([a-z_.]+)\' => .*php bin\/coa /m', $catalog, $found);
         $keys = array_values(array_unique($found[1]));
         sort($keys);
-        self::assertSame(['conn.degraded.command', 'settings.write.no_policy_command'], $keys, 'the catalog values that carry a command to type');
+        self::assertSame(['conn.degraded.command', 'decisions.lands.terminal', 'settings.write.no_policy_command'], $keys, 'the catalog values that carry a command to type');
 
         $offenders = [];
         foreach (self::phpFiles($src) as $file) {

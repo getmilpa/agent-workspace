@@ -78,6 +78,7 @@ export const CATALOG = {
   'command.goal.cleared': 'goal cleared',
   'decisions.paused_on': 'paused on %s — answer below',
   'decisions.lands.open': 'Read the code in its session, then answer there: it is not shown here.',
+  'decisions.paused_on_promotion': 'paused on %s',
   'decisions.applied': 'applied · %s of %s steps ran',
   'decisions.denied': 'denied · %s',
   'decisions.failed': 'did not finish · %s',

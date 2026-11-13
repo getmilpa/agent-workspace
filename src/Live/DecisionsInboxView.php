@@ -83,7 +83,7 @@ final class DecisionsInboxView
             $lands = \is_array($d['lands'] ?? null) ? $d['lands'] : (self::promotes($d['operation']) ? [] : null);
             $answerHere = $lands === null
                 ? '<p class="decision-card__options">' . $this->answers($copy) . '</p>'
-                : $this->lands($lands, (string) ($d['digest'] ?? ''), $copy);
+                : $this->lands($lands, (string) ($d['digest'] ?? ''), $copy, $d['session']);
 
             $cards .= '<li class="decision-card" data-decision-session="' . $this->esc($d['session']) . '"'
                 . ' data-decision-sequence="' . $this->esc((string) ($d['sequence'] ?? '')) . '">'
@@ -128,13 +128,19 @@ final class DecisionsInboxView
             // independent review of the Desktop's half, H1). Approve here resumed the run and landed agent-written
             // code nobody had seen; the card says where to read it instead, and offers no answer of its own.
             $promotes = self::promotes($seq['pending_operation']);
-            $status = $seq['paused']
-                ? sprintf($copy['paused_on'], $seq['pending_operation'] !== '' ? $seq['pending_operation'] : '?')
-                    . ($promotes ? ' — ' . $copy['lands_open'] : '')
-                : '';
+            // A sequence's session is not one the panel opens, so the place its code is read, and its answer given,
+            // is the terminal — said as the commands to type (the second independent review of this half, M1).
+            $status = match (true) {
+                ! $seq['paused'] => '',
+                $promotes => sprintf($copy['paused_on_promotion'], $seq['pending_operation']) . ' — ' . sprintf($copy['lands_terminal'], $seq['session'], $seq['session']),
+                default => sprintf($copy['paused_on'], $seq['pending_operation'] !== '' ? $seq['pending_operation'] : '?'),
+            };
 
             $cards .= '<li class="decision-card sequence-card" data-sequence="' . $this->esc($seq['name']) . '"'
                 . ' data-sequence-session="' . $this->esc($seq['session']) . '"'
+                // The sentence a run paused on a promotion says, whole, for the page to say when a Run pauses live:
+                // the client has no way to reach the house's command, and must not build one of its own.
+                . ' data-sequence-terminal="' . $this->esc(sprintf($copy['lands_terminal'], $seq['session'], $seq['session'])) . '"'
                 . ($seq['paused'] ? ' data-sequence-paused' : '') . '>'
                 . '<p class="decision-card__goal">' . $this->esc($seq['name']) . '</p>'
                 . '<p class="decision-card__q">' . $this->esc(implode(' → ', $seq['steps'])) . '</p>'
@@ -770,6 +776,9 @@ final class DecisionsInboxView
         'lands' => 'It would land these files in the house:',
         'lands_digest' => 'The yes covers exactly these changes: %s.',
         'lands_open' => 'Read the code in its session, then answer there: it is not shown here.',
+        // No command is typed here bare: the caller hands the sentence the house reached (HouseCli).
+        'lands_terminal' => 'Its code is not shown here: read it, and answer, in the terminal — agent:show --session=%s, then agent:answer --session=%s --answer=… --sign, and run it again.',
+        'paused_on_promotion' => 'paused on %s',
         'lands_status_added' => 'new file',
         'lands_status_modified' => 'changed',
         'lands_status_deleted' => 'deleted',
@@ -798,7 +807,7 @@ final class DecisionsInboxView
      * @param list<array{path: string, status: string}> $lands
      * @param array<string, string>                     $copy
      */
-    private function lands(array $lands, string $digest, array $copy): string
+    private function lands(array $lands, string $digest, array $copy, string $session): string
     {
         $items = '';
         foreach ($lands as $file) {
@@ -809,7 +818,7 @@ final class DecisionsInboxView
         return '<p class="decision-card__facts">' . $this->esc($copy['lands']) . '</p>'
             . '<ul class="decision-card__lands">' . $items . '</ul>'
             . ($digest !== '' ? '<p class="decision-card__facts">' . $this->esc(sprintf($copy['lands_digest'], $digest)) . '</p>' : '')
-            . '<p class="decision-card__facts">' . $this->esc($copy['lands_open']) . '</p>';
+            . '<p class="decision-card__facts">' . $this->esc(str_starts_with($session, 'sequence:') ? sprintf($copy['lands_terminal'], $session, $session) : $copy['lands_open']) . '</p>';
     }
 
     /**
