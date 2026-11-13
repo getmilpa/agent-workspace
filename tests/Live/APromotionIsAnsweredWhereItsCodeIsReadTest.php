@@ -50,6 +50,7 @@ final class APromotionIsAnsweredWhereItsCodeIsReadTest extends TestCase
         self::assertStringContainsString('Read the code in its session', $html);
         self::assertStringNotContainsString('data-agent-answer', $html, 'no approve where the code is not shown');
         self::assertStringContainsString('href="?session=s-1"', $html, 'the way to where it is shown');
+        self::assertStringContainsString('decision-card__open', $html, 'the control: a session the panel opens keeps its link');
     }
 
     public function testTheControlAQuestionThatIsNotAPromotionKeepsItsButtons(): void
@@ -116,7 +117,7 @@ final class APromotionIsAnsweredWhereItsCodeIsReadTest extends TestCase
 
         self::assertStringContainsString('read it with agent:show and answer it with agent:answer in the terminal', $html);
         self::assertStringNotContainsString('Read the code in its session', $html, 'not a session the panel can open');
-        self::assertStringNotContainsString('href="?session=sequence:', $html, 'and no link to a page that does not open');
+        self::assertStringNotContainsString('decision-card__open', $html, 'and no link to a page that does not open');
         self::assertStringNotContainsString('data-agent-answer', $html);
     }
 
