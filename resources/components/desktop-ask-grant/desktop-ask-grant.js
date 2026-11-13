@@ -296,10 +296,80 @@
       }
     }
 
+    landed(box, read);
+
     // A claim whose shape this surface does not know: show it whole rather than show nothing.
     if (painted === 0 && !read.operation) {
       var pre = box.querySelector('[data-claim-raw]');
       if (pre) { pre.textContent = why; pre.hidden = false; }
+    }
+  }
+
+  /**
+   * Paint WHAT A PROMOTION LANDS, before the buttons (greenhouse decisions/0628).
+   *
+   * Code an agent wrote boots in the live house with its secrets once it is promoted, so the gate asks a person
+   * — in every mode — and its claim carries the changed files as the house shows them (already masked), the
+   * digest the yes covers, and what the house recorded of the trial's own run. A surface that offered the
+   * buttons without these asked for a yes to something nobody could see. Everything is set as TEXT: what a
+   * file says is data, never markup.
+   */
+  /** What a file's status is called in the reader's language; a status this surface does not know is shown as it came. */
+  function statusOf(status) {
+    var known = { added: 'claim.lands.status.added', modified: 'claim.lands.status.modified', deleted: 'claim.lands.status.deleted' };
+    var key = known[String(status || '')];
+
+    return key ? tr(key) : String(status || '');
+  }
+
+  function landed(box, read) {
+    var region = box.querySelector('[data-claim-lands]');
+    if (!region) { return; }
+    var lands = Array.isArray(read.lands) ? read.lands : null;
+    region.hidden = lands === null;
+    if (lands === null) { return; }
+
+    var title = region.querySelector('[data-claim-lands-title]');
+    if (title) { title.textContent = tr('claim.lands'); }
+    var digest = region.querySelector('[data-claim-digest]');
+    if (digest) { digest.textContent = typeof read.digest === 'string' ? tr('claim.lands.digest', read.digest) : ''; }
+
+    var files = region.querySelector('[data-claim-files]');
+    var fileRow = files ? files.querySelector('[data-claim-file]') : null;
+    if (files && fileRow) {
+      for (var i = 0; i < lands.length; i++) {
+        var one = lands[i] || {};
+        var node = fileRow.cloneNode(true);
+        node.hidden = false;
+        var path = node.querySelector('[data-claim-file-path]');
+        var status = node.querySelector('[data-claim-file-status]');
+        var shown = node.querySelector('[data-claim-file-shown]');
+        if (path) { path.textContent = String(one.path || ''); }
+        if (status) { status.textContent = statusOf(one.status); }
+        if (shown) { shown.textContent = typeof one.shown === 'string' ? one.shown : ''; }
+        files.appendChild(node);
+      }
+    }
+
+    var judgedTitle = region.querySelector('[data-claim-judged-title]');
+    var rows = region.querySelector('[data-claim-judged-rows]');
+    var judgedRow = rows ? rows.querySelector('[data-claim-judged]') : null;
+    var judged = (read.judged && typeof read.judged === 'object') ? read.judged : null;
+    if (judgedTitle) { judgedTitle.textContent = judged ? tr('claim.judged') : ''; }
+    if (!judged || !rows || !judgedRow) { return; }
+    var sections = Object.keys(judged);
+    for (var s = 0; s < sections.length; s++) {
+      var part = judged[sections[s]];
+      if (part === null || typeof part !== 'object') {
+        // `nothing` and any plain fact: said as it came, under the catalog's name when it has one.
+        row(rows, judgedRow, 'judged', [word('judged', sections[s]), String(part)]);
+        continue;
+      }
+      var keys = Object.keys(part);
+      for (var k = 0; k < keys.length; k++) {
+        var value = part[keys[k]];
+        row(rows, judgedRow, 'judged', [word('judged', sections[s] + '.' + keys[k]), typeof value === 'string' ? value : JSON.stringify(value)]);
+      }
     }
   }
 
