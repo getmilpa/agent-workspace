@@ -94,9 +94,9 @@ final class APromotionIsAnsweredWhereItsCodeIsReadTest extends TestCase
 
         self::assertStringNotContainsString('data-agent-answer', $html, 'no approve where the code is not shown (H1)');
         self::assertStringContainsString('paused on sandbox:promote — Its code is not shown here', $html, 'and no «answer below»');
-        self::assertStringContainsString('agent:show --session=sequence:promote-probe', $html, 'where it IS read: a sequence\'s session is not one the panel opens (M1)');
-        self::assertStringContainsString('agent:answer --session=sequence:promote-probe', $html);
-        self::assertStringContainsString('data-sequence-terminal="', $html, 'the sentence the page says when a Run pauses live');
+        self::assertStringContainsString('read it with agent:show and answer it with agent:answer in the terminal', $html, 'where it IS read: a sequence\'s session is not one the panel opens');
+        self::assertStringContainsString('A yes lands the code; any other answer discards the trial.', $html, 'and what each answer does');
+        self::assertStringNotContainsString('--answer=', $html, 'no line to paste: a pasted placeholder answered no');
         self::assertStringContainsString('data-sequence-run', $html, 'the run itself is still offered');
     }
 
@@ -114,8 +114,9 @@ final class APromotionIsAnsweredWhereItsCodeIsReadTest extends TestCase
 
         $html = (new DecisionsInboxView())->html([$row]);
 
-        self::assertStringContainsString('agent:show --session=sequence:promote-probe', $html);
+        self::assertStringContainsString('read it with agent:show and answer it with agent:answer in the terminal', $html);
         self::assertStringNotContainsString('Read the code in its session', $html, 'not a session the panel can open');
+        self::assertStringNotContainsString('href="?session=sequence:', $html, 'and no link to a page that does not open');
         self::assertStringNotContainsString('data-agent-answer', $html);
     }
 

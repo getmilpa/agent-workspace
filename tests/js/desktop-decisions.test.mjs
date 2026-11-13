@@ -21,6 +21,7 @@ const COPY = {
   'decisions.paused_on': 'paused on %s — answer below',
   'decisions.lands.open': 'Read the code in its session, then answer there: it is not shown here.',
   'decisions.paused_on_promotion': 'paused on %s',
+  'decisions.lands.terminal': "Its code is not shown here, and a sequence's session does not open in the panel: read it with agent:show and answer it with agent:answer in the terminal, then run it again. A yes lands the code; any other answer discards the trial.",
   'decisions.applied': 'applied · %s of %s steps ran',
   'decisions.denied': 'denied · %s',
   'decisions.failed': 'did not finish · %s',
@@ -37,7 +38,7 @@ const COPY = {
 function tree() {
   const root = new El('html');
   const list = root.appendChild(new El('ol', { id: 'milpa-sequences-list' }));
-  const card = list.appendChild(new El('li', { class: 'decision-card sequence-card', 'data-sequence': 'deploy', 'data-sequence-session': 'sequence:deploy', 'data-sequence-terminal': 'Its code is not shown here: read it, and answer, in the terminal — php bin/coa agent:show --session=sequence:deploy, then php bin/coa agent:answer --session=sequence:deploy --answer=… --sign, and run it again.' }));
+  const card = list.appendChild(new El('li', { class: 'decision-card sequence-card', 'data-sequence': 'deploy', 'data-sequence-session': 'sequence:deploy' }));
   card.appendChild(new El('p', { class: 'decision-card__facts', 'data-sequence-status': '' }));
   const options = card.appendChild(new El('p', { class: 'decision-card__options' }));
   options.appendChild(new El('button', { 'data-sequence-run': '', text: 'Run' }));
@@ -90,7 +91,7 @@ test('a run paused on a PROMOTION offers no answer on the card — its code is r
   await settle();
 
   const said = card.querySelector('[data-sequence-status]').textContent;
-  assert.equal(said, 'paused on sandbox:promote — Its code is not shown here: read it, and answer, in the terminal — php bin/coa agent:show --session=sequence:deploy, then php bin/coa agent:answer --session=sequence:deploy --answer=… --sign, and run it again.', 'where it is read and answered, as commands — and no «answer below»');
+  assert.equal(said, "paused on sandbox:promote — " + COPY['decisions.lands.terminal'], 'where it is read and answered, and what each answer does — and no «answer below»');
   assert.equal(card.querySelector('[data-agent-answer="yes"]').getAttribute('hidden'), '', 'no approve where the code is not shown');
   assert.equal(card.getAttribute('data-sequence-paused'), '', 'and the card still says it is parked');
 });

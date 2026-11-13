@@ -79,6 +79,7 @@ export const CATALOG = {
   'decisions.paused_on': 'paused on %s — answer below',
   'decisions.lands.open': 'Read the code in its session, then answer there: it is not shown here.',
   'decisions.paused_on_promotion': 'paused on %s',
+  'decisions.lands.terminal': "Its code is not shown here, and a sequence's session does not open in the panel: read it with agent:show and answer it with agent:answer in the terminal, then run it again. A yes lands the code; any other answer discards the trial.",
   'decisions.applied': 'applied · %s of %s steps ran',
   'decisions.denied': 'denied · %s',
   'decisions.failed': 'did not finish · %s',

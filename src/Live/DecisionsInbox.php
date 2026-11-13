@@ -16,7 +16,6 @@ namespace Milpa\AgentWorkspace\Live;
 
 use Milpa\AgentWorkspace\Data\DesktopData;
 use Milpa\AgentWorkspace\Event\RenderEvents;
-use Milpa\AgentWorkspace\HouseCli;
 use Milpa\AgentWorkspace\I18n\Catalog;
 use Milpa\Interfaces\Event\MilpaEventDispatcherInterface;
 use Milpa\Live\Security\SignedXhtmlStateTransferCodec;
@@ -113,7 +112,7 @@ final class DecisionsInbox
             'lands' => $this->plain('decisions.lands'),
             'lands_digest' => $this->plain('decisions.lands.digest'),
             'lands_open' => $this->plain('decisions.lands.open'),
-            'lands_terminal' => HouseCli::reached($this->plain('decisions.lands.terminal')),
+            'lands_terminal' => $this->plain('decisions.lands.terminal'),
             'paused_on_promotion' => $this->plain('decisions.paused_on_promotion'),
             'lands_status_added' => $this->plain('claim.lands.status.added'),
             'lands_status_modified' => $this->plain('claim.lands.status.modified'),
