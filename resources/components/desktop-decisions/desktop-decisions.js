@@ -231,6 +231,13 @@
     if (read.paused) {
       status.textContent = tr('decisions.paused_on', read.pending_operation || '?') + (read.pending_reason ? ' — ' + String(read.pending_reason) : '');
       card.setAttribute('data-sequence-paused', '');
+      // A run paused on a PROMOTION is answered where its code is read (greenhouse decisions/0628): agent-written
+      // code lands in the live house with its yes, and this card shows none of it — so it offers no answer.
+      if (read.pending_operation === 'sandbox:promote') {
+        status.textContent += ' — ' + tr('decisions.lands.open');
+        showAnswers(card, false);
+        return;
+      }
       showAnswers(card, true);
       return;
     }

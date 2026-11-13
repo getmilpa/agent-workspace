@@ -65,11 +65,85 @@ final class APromotionIsAnsweredWhereItsCodeIsReadTest extends TestCase
 
     public function testTheConversationsRequestPrintsTheRegionTheCodeIsShownIn(): void
     {
-        $html = (new MessagePrototypes('secret'))->askGrant();
+        // Read as a DOCUMENT, not as a string: the module fills these by their nesting, so the nesting is the contract
+        // (the first independent review of this half, L1 — a substring check passed a prototype that showed no code).
+        $doc = new \DOMDocument();
+        @$doc->loadHTML('<?xml encoding="utf-8"?>' . (new MessagePrototypes('secret'))->askGrant());
+        $xpath = new \DOMXPath($doc);
+        $one = static fn (string $query): int => $xpath->query($query)?->length ?? 0;
 
-        foreach (['data-claim-lands', 'data-claim-digest', 'data-claim-file', 'data-claim-file-path', 'data-claim-file-status', 'data-claim-file-shown', 'data-claim-judged'] as $hook) {
-            self::assertStringContainsString($hook, $html, "the server prints {$hook} for the module to fill");
+        self::assertSame(1, $one('//*[@data-grant-claim]//*[@data-claim-lands]'), 'the region sits inside the claim');
+        self::assertSame(1, $one('//*[@data-claim-lands]/*[@data-claim-lands-title]'));
+        self::assertSame(1, $one('//*[@data-claim-lands]/*[@data-claim-digest]'));
+        self::assertSame(1, $one('//*[@data-claim-lands]//*[@data-claim-files]/*[@data-claim-file]'), 'one file row, the template');
+        foreach (['data-claim-file-path', 'data-claim-file-status'] as $hook) {
+            self::assertSame(1, $one("//*[@data-claim-file]//*[@{$hook}]"), "{$hook} inside the file row");
         }
-        self::assertLessThan(strpos($html, 'data-grant-options'), strpos($html, 'data-claim-lands'), 'the code comes before the buttons');
+        self::assertSame(1, $one('//*[@data-claim-file]//pre[@data-claim-file-shown]'), 'the code, in a block of its own, inside the file row');
+        self::assertSame(1, $one('//*[@data-claim-lands]//*[@data-claim-judged-rows]/*[@data-claim-judged]'));
+        self::assertSame(1, $one('//*[@data-claim-judged]/*[@data-claim-judged-name]'));
+        self::assertSame(1, $one('//*[@data-claim-judged]/*[@data-claim-judged-value]'));
+        self::assertSame(1, $one('//*[@data-claim-lands]/following::*[@data-grant-options]'), 'the code comes before the buttons');
+    }
+
+    public function testASequencePausedOnAPromotionOffersNoAnswerOnItsCard(): void
+    {
+        $paused = ['name' => 'promote-probe', 'steps' => ['sandbox:promote'], 'session' => 'sequence:promote-probe', 'paused' => true, 'pending_operation' => 'sandbox:promote'];
+
+        $html = (new DecisionsInboxView())->sequencesHtml([$paused]);
+
+        self::assertStringNotContainsString('data-agent-answer', $html, 'no approve where the code is not shown (H1)');
+        self::assertStringContainsString('Read the code in its session', $html);
+        self::assertStringContainsString('data-sequence-run', $html, 'the run itself is still offered');
+    }
+
+    public function testTheControlASequencePausedOnAnotherStepKeepsItsAnswers(): void
+    {
+        $paused = ['name' => 'deploy', 'steps' => ['config:set'], 'session' => 'sequence:deploy', 'paused' => true, 'pending_operation' => 'config:set'];
+
+        self::assertStringContainsString('data-agent-answer="yes"', (new DecisionsInboxView())->sequencesHtml([$paused]));
+    }
+
+    public function testAPromotionWithoutItsFilesIsStillNotApprovedFromTheInbox(): void
+    {
+        $row = ['session' => 's-3', 'goal' => 'g', 'question' => 'Promote?', 'operation' => 'sandbox:promote', 'reason' => 'permission'];
+
+        $html = (new DecisionsInboxView())->html([$row]);
+
+        self::assertStringNotContainsString('data-agent-answer', $html);
+        self::assertStringContainsString('Read the code in its session', $html);
+    }
+
+    /**
+     * THE INBOX AS THE HOUSE RENDERS IT, from a real ledger (the first independent review of this half, L2): the row
+     * the data seam reads carries the promotion's files, and the card says it in the house's words.
+     */
+    public function testTheInboxReadFromALedgerSendsAPromotionToItsSession(): void
+    {
+        $root = sys_get_temp_dir() . '/milpa-inbox-lands-' . bin2hex(random_bytes(6));
+        mkdir($root . '/var', 0o700, true);
+        try {
+            $store = new \Milpa\Agent\SessionStore(new \Milpa\EventStore\FileEventStore($root . '/var/agent-sessions.jsonl'));
+            $store->start('s-ledger', 'build a feed');
+            $store->ask('s-ledger', new \Milpa\Agent\PendingQuestion('perm:sandbox:promote', 'The agent wants to promote trial «w1»…', ['yes', 'no'], (string) json_encode([
+                'operation' => 'sandbox:promote',
+                'arguments' => ['workspace' => 'w1'],
+                'digest' => self::DIGEST,
+                'lands' => [['path' => 'plugins/Blog/Feed.php', 'status' => 'added', 'sha256' => null, 'shown' => "+<?php\n"]],
+            ]), reason: 'permission'));
+            $kernel = \Milpa\Runtime\Kernel::boot(['root' => $root, 'plugins' => []]);
+            $kernel->container()->registerService(\Milpa\Runtime\Kernel::class, $kernel);
+            $codec = new \Milpa\Live\Security\SignedXhtmlStateTransferCodec(new \Milpa\Live\Transport\XhtmlStateTransferCodec(), new \Milpa\Live\Security\HmacStateSigner('inbox-lands-secret-0123456789'), null);
+
+            foreach (['en' => 'Read the code in its session', 'es' => 'Lee el código en su sesión'] as $locale => $said) {
+                $html = (new \Milpa\AgentWorkspace\Live\DecisionsInbox($codec, new DesktopData($kernel->container()), null, new \Milpa\AgentWorkspace\I18n\Catalog($locale)))->render(false);
+
+                self::assertStringContainsString('<code>plugins/Blog/Feed.php</code>', $html, $locale);
+                self::assertStringContainsString($said, $html, $locale);
+                self::assertStringNotContainsString('data-agent-answer="yes"', $html, $locale);
+            }
+        } finally {
+            exec('rm -rf ' . escapeshellarg($root));
+        }
     }
 }

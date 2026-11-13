@@ -80,7 +80,7 @@ final class DecisionsInboxView
             // live house with its secrets, and its yes covers those exact bytes — so this card lists the files and
             // sends the reader to the session, whose request shows the code before its buttons. It offers no
             // approve here: a yes to code nobody could see is the thing 0628 exists to end.
-            $lands = \is_array($d['lands'] ?? null) ? $d['lands'] : null;
+            $lands = \is_array($d['lands'] ?? null) ? $d['lands'] : (self::promotes($d['operation']) ? [] : null);
             $answerHere = $lands === null
                 ? '<p class="decision-card__options">' . $this->answers($copy) . '</p>'
                 : $this->lands($lands, (string) ($d['digest'] ?? ''), $copy);
@@ -124,8 +124,13 @@ final class DecisionsInboxView
 
         foreach ($sequences as $seq) {
             $open = $seq['pending_operation'] !== '';
+            // A RUN PAUSED ON A PROMOTION IS ANSWERED WHERE ITS CODE IS READ (greenhouse decisions/0628; the first
+            // independent review of the Desktop's half, H1). Approve here resumed the run and landed agent-written
+            // code nobody had seen; the card says where to read it instead, and offers no answer of its own.
+            $promotes = self::promotes($seq['pending_operation']);
             $status = $seq['paused']
                 ? sprintf($copy['paused_on'], $seq['pending_operation'] !== '' ? $seq['pending_operation'] : '?')
+                    . ($promotes ? ' — ' . $copy['lands_open'] : '')
                 : '';
 
             $cards .= '<li class="decision-card sequence-card" data-sequence="' . $this->esc($seq['name']) . '"'
@@ -136,7 +141,7 @@ final class DecisionsInboxView
                 . '<p class="decision-card__facts" data-sequence-status>' . $this->esc($status) . '</p>'
                 . '<p class="decision-card__options">'
                 . '<button type="button" class="mui-btn mui-btn--sm mui-btn--primary" data-sequence-run>' . $this->esc($copy['run']) . '</button>'
-                . $this->answers($copy, !$open)
+                . ($promotes ? '' : $this->answers($copy, !$open))
                 . '</p>'
                 . '</li>';
         }
@@ -776,6 +781,15 @@ final class DecisionsInboxView
         'graph_yours' => 'You started this run, so you cannot approve it: somebody else answers.',
         'graph_needs' => '%1$s leads to %2$s, which needs %3$s — you do not hold it.',
     ];
+
+    /**
+     * Whether an operation lands what an agent wrote in the live house: its yes is given where the code is shown,
+     * never on a card that shows none (greenhouse decisions/0628).
+     */
+    public static function promotes(string $operation): bool
+    {
+        return $operation === 'sandbox:promote';
+    }
 
     /**
      * What a promotion's card says in place of its buttons: the files it lands, the digest its yes covers, and where

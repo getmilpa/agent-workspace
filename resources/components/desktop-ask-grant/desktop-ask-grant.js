@@ -322,6 +322,13 @@
     return key ? tr(key) : String(status || '');
   }
 
+  /** A recorded value in the reader's words: a yes or a no is the catalog's, text is itself, the rest as data. */
+  function said(value) {
+    if (typeof value === 'boolean') { return tr(value ? 'claim.judged.yes' : 'claim.judged.no'); }
+
+    return typeof value === 'string' ? value : JSON.stringify(value);
+  }
+
   function landed(box, read) {
     var region = box.querySelector('[data-claim-lands]');
     if (!region) { return; }
@@ -368,7 +375,7 @@
       var keys = Object.keys(part);
       for (var k = 0; k < keys.length; k++) {
         var value = part[keys[k]];
-        row(rows, judgedRow, 'judged', [word('judged', sections[s] + '.' + keys[k]), typeof value === 'string' ? value : JSON.stringify(value)]);
+        row(rows, judgedRow, 'judged', [word('judged', sections[s] + '.' + keys[k]), said(value)]);
       }
     }
   }

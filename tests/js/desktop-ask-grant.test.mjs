@@ -279,7 +279,7 @@ test('G2 · what the house recorded of the trial is shown beside the code', () =
 
   assert.equal(region.querySelector('[data-claim-judged-title]').textContent, 'What the house recorded of the trial');
   assert.deepEqual(rows.map((r) => r.querySelector('[data-claim-judged-name]').textContent), ['the trial ran', 'it exited with', 'made by', 'it said it worked', 'it said it verified']);
-  assert.deepEqual(rows.map((r) => r.querySelector('[data-claim-judged-value]').textContent), ['make', '0', 'make', 'true', 'GET /feed answered 200']);
+  assert.deepEqual(rows.map((r) => r.querySelector('[data-claim-judged-value]').textContent), ['make', '0', 'make', 'yes', 'GET /feed answered 200']);
 });
 
 test('G3 · what a file says is TEXT, never markup', () => {
