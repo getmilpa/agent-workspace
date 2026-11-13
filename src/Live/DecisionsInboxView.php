@@ -34,14 +34,14 @@ final class DecisionsInboxView
      * `agent:answer`, the same operation a terminal calls — and when the session is parked on a SEQUENCE
      * the card names it, so an approval can resume the run without leaving the page.
      *
-     * @param list<array{session: string, goal: string, question: string, operation: string, reason: string, sequence?: string}> $pending
-     * @param array<string, string>                                                                                              $copy    the caller's words for the answers, by key
-     * @param list<array<string, mixed>>                                                                                         $graphs
-     *                                                                                                                                    Decisions DECLARED GRAPHS are waiting on. They render differently on purpose: an agent's parked
-     *                                                                                                                                    question is answered in the conversation of its own session, so its card is a link there; a graph's
-     *                                                                                                                                    is answered HERE, so its card carries its options as buttons — and those options are the cases of
-     *                                                                                                                                    the enum its routes were declared with, which is why the buttons cannot drift from the machine.
-     *                                                                                                                                    It carries no approver: `graph:decide` reads who answers from the passkey session (decisions/0528).
+     * @param list<array{session: string, goal: string, question: string, operation: string, reason: string, sequence?: string, lands?: list<array{path: string, status: string}>, digest?: string}> $pending
+     * @param array<string, string>                                                                                                                                                                  $copy    the caller's words for the answers, by key
+     * @param list<array<string, mixed>>                                                                                                                                                             $graphs
+     *                                                                                                                                                                                                        Decisions DECLARED GRAPHS are waiting on. They render differently on purpose: an agent's parked
+     *                                                                                                                                                                                                        question is answered in the conversation of its own session, so its card is a link there; a graph's
+     *                                                                                                                                                                                                        is answered HERE, so its card carries its options as buttons — and those options are the cases of
+     *                                                                                                                                                                                                        the enum its routes were declared with, which is why the buttons cannot drift from the machine.
+     *                                                                                                                                                                                                        It carries no approver: `graph:decide` reads who answers from the passkey session (decisions/0528).
      */
     public function html(
         array $pending,
@@ -76,14 +76,24 @@ final class DecisionsInboxView
             }
             $factLine = $facts === [] ? '' : '<p class="decision-card__facts">' . implode(' · ', $facts) . '</p>';
 
+            // A PROMOTION IS ANSWERED WHERE ITS CODE CAN BE READ (greenhouse decisions/0628). What it lands boots in the
+            // live house with its secrets, and its yes covers those exact bytes — so this card lists the files and
+            // sends the reader to the session, whose request shows the code before its buttons. It offers no
+            // approve here: a yes to code nobody could see is the thing 0628 exists to end.
+            $lands = \is_array($d['lands'] ?? null) ? $d['lands'] : (self::promotes($d['operation']) ? [] : null);
+            $answerHere = $lands === null
+                ? '<p class="decision-card__options">' . $this->answers($copy) . '</p>'
+                : $this->lands($lands, (string) ($d['digest'] ?? ''), $copy, $d['session']);
+
             $cards .= '<li class="decision-card" data-decision-session="' . $this->esc($d['session']) . '"'
                 . ' data-decision-sequence="' . $this->esc((string) ($d['sequence'] ?? '')) . '">'
                 . ($goal !== '' ? '<p class="decision-card__goal">' . $goal . '</p>' : '')
                 . '<p class="decision-card__q">' . $this->esc($d['question']) . '</p>'
                 . $factLine
                 . '<p class="decision-card__facts" data-decision-status></p>'
-                . '<p class="decision-card__options">' . $this->answers($copy) . '</p>'
-                . '<a class="mui-btn mui-btn--sm decision-card__open" href="?session=' . rawurlencode($d['session']) . '">Open session</a>'
+                . $answerHere
+                // A sequence's session does not open in the panel, so it gets no link that leads to «unavailable».
+                . (str_starts_with($d['session'], 'sequence:') ? '' : '<a class="mui-btn mui-btn--sm decision-card__open" href="?session=' . rawurlencode($d['session']) . '">Open session</a>')
                 . '</li>';
         }
 
@@ -115,9 +125,18 @@ final class DecisionsInboxView
 
         foreach ($sequences as $seq) {
             $open = $seq['pending_operation'] !== '';
-            $status = $seq['paused']
-                ? sprintf($copy['paused_on'], $seq['pending_operation'] !== '' ? $seq['pending_operation'] : '?')
-                : '';
+            // A RUN PAUSED ON A PROMOTION IS ANSWERED WHERE ITS CODE IS READ (greenhouse decisions/0628; the first
+            // independent review of the Desktop's half, H1). Approve here resumed the run and landed agent-written
+            // code nobody had seen; the card says where to read it instead, and offers no answer of its own.
+            $promotes = self::promotes($seq['pending_operation']);
+            // A sequence's session is not one the panel opens, so the place its code is read, and its answer given,
+            // is the terminal: named, with what each answer does (the second and third independent reviews of this
+            // half, M1). No command is printed to paste — a pasted placeholder answered «no» and discarded the trial.
+            $status = match (true) {
+                ! $seq['paused'] => '',
+                $promotes => sprintf($copy['paused_on_promotion'], $seq['pending_operation']) . ' — ' . $copy['lands_terminal'],
+                default => sprintf($copy['paused_on'], $seq['pending_operation'] !== '' ? $seq['pending_operation'] : '?'),
+            };
 
             $cards .= '<li class="decision-card sequence-card" data-sequence="' . $this->esc($seq['name']) . '"'
                 . ' data-sequence-session="' . $this->esc($seq['session']) . '"'
@@ -127,7 +146,7 @@ final class DecisionsInboxView
                 . '<p class="decision-card__facts" data-sequence-status>' . $this->esc($status) . '</p>'
                 . '<p class="decision-card__options">'
                 . '<button type="button" class="mui-btn mui-btn--sm mui-btn--primary" data-sequence-run>' . $this->esc($copy['run']) . '</button>'
-                . $this->answers($copy, !$open)
+                . ($promotes ? '' : $this->answers($copy, !$open))
                 . '</p>'
                 . '</li>';
         }
@@ -753,6 +772,14 @@ final class DecisionsInboxView
 
     /** The English a caller with no catalog reads. */
     private const array COPY = [
+        'lands' => 'It would land these files in the house:',
+        'lands_digest' => 'The yes covers exactly these changes: %s.',
+        'lands_open' => 'Read the code in its session, then answer there: it is not shown here.',
+        'lands_terminal' => 'Its code is not shown here, and a sequence\'s session does not open in the panel: read it with agent:show and answer it with agent:answer in the terminal, then run it again. A yes lands the code; any other answer discards the trial.',
+        'paused_on_promotion' => 'paused on %s',
+        'lands_status_added' => 'new file',
+        'lands_status_modified' => 'changed',
+        'lands_status_deleted' => 'deleted',
         'run' => 'Run',
         'approve' => 'Approve',
         'deny' => 'Deny',
@@ -761,6 +788,36 @@ final class DecisionsInboxView
         'graph_yours' => 'You started this run, so you cannot approve it: somebody else answers.',
         'graph_needs' => '%1$s leads to %2$s, which needs %3$s — you do not hold it.',
     ];
+
+    /**
+     * Whether an operation lands what an agent wrote in the live house: its yes is given where the code is shown,
+     * never on a card that shows none (greenhouse decisions/0628).
+     */
+    public static function promotes(string $operation): bool
+    {
+        return $operation === 'sandbox:promote';
+    }
+
+    /**
+     * What a promotion's card says in place of its buttons: the files it lands, the digest its yes covers, and where
+     * the code is read (greenhouse decisions/0628).
+     *
+     * @param list<array{path: string, status: string}> $lands
+     * @param array<string, string>                     $copy
+     */
+    private function lands(array $lands, string $digest, array $copy, string $session): string
+    {
+        $items = '';
+        foreach ($lands as $file) {
+            $status = $copy['lands_status_' . $file['status']] ?? $file['status'];
+            $items .= '<li><code>' . $this->esc($file['path']) . '</code> ' . $this->esc($status) . '</li>';
+        }
+
+        return '<p class="decision-card__facts">' . $this->esc($copy['lands']) . '</p>'
+            . '<ul class="decision-card__lands">' . $items . '</ul>'
+            . ($digest !== '' ? '<p class="decision-card__facts">' . $this->esc(sprintf($copy['lands_digest'], $digest)) . '</p>' : '')
+            . '<p class="decision-card__facts">' . $this->esc(str_starts_with($session, 'sequence:') ? $copy['lands_terminal'] : $copy['lands_open']) . '</p>';
+    }
 
     /**
      * A graph card's options, and the reasons under them — painted FOR WHOEVER IS LOOKING (greenhouse decisions/0584).

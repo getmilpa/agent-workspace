@@ -80,6 +80,18 @@
 .msg__claim-raw { margin: 0; max-height: 9rem; overflow: auto; font-family: var(--font-mono); font-size: var(--text-2xs); color: var(--text-muted); white-space: pre-wrap; overflow-wrap: anywhere; }
 .msg__claim-raw[hidden], .msg__claim[hidden] { display: none; }
 
+/* WHAT A PROMOTION LANDS (greenhouse decisions/0628): the code, before the buttons. Each file scrolls inside
+   itself, so a long one never pushes the answer off the screen nor blows the thread's width. */
+.msg__lands { display: flex; flex-direction: column; gap: var(--space-2, .5rem); margin-top: var(--space-2, .5rem); }
+.msg__lands[hidden], .msg__lands-file[hidden] { display: none; }
+.msg__lands-title { margin: 0; font-size: var(--text-xs); font-weight: 600; }
+.msg__lands-title:empty { display: none; }
+.msg__lands-digest { margin: 0; font-size: var(--text-2xs); color: var(--text-muted); overflow-wrap: anywhere; }
+.msg__lands-files { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--space-2, .5rem); }
+.msg__lands-path { margin: 0; font-size: var(--text-2xs); overflow-wrap: anywhere; }
+.msg__lands-status { color: var(--text-muted); }
+.msg__lands-shown { margin: 0; max-height: 18rem; overflow: auto; font-family: var(--font-mono); font-size: var(--text-2xs); white-space: pre; background: var(--surface-sunken, transparent); border: 1px solid var(--border); border-radius: var(--radius-sm, 4px); padding: var(--space-2, .5rem); }
+
 .msg__grant-status { margin: 0; font-size: var(--text-2xs); color: var(--text-muted); min-height: 1em; }
 .msg__grant-status:empty { display: none; }
 

@@ -19,6 +19,9 @@ const COPY = {
   ...CATALOG,
   'decisions.running': 'running…',
   'decisions.paused_on': 'paused on %s — answer below',
+  'decisions.lands.open': 'Read the code in its session, then answer there: it is not shown here.',
+  'decisions.paused_on_promotion': 'paused on %s',
+  'decisions.lands.terminal': "Its code is not shown here, and a sequence's session does not open in the panel: read it with agent:show and answer it with agent:answer in the terminal, then run it again. A yes lands the code; any other answer discards the trial.",
   'decisions.applied': 'applied · %s of %s steps ran',
   'decisions.denied': 'denied · %s',
   'decisions.failed': 'did not finish · %s',
@@ -76,6 +79,39 @@ test('a run walks the confirm gate and a pause shows the answers', async () => {
   assert.equal(card.querySelector('[data-sequence-status]').textContent, 'paused on config:set — answer below — El agente quiere correr «config:set».');
   assert.equal(card.getAttribute('data-sequence-paused'), '', 'the card says it is parked');
   assert.equal(card.querySelector('[data-agent-answer="yes"]').getAttribute('hidden'), null, 'the answers appeared');
+});
+
+test('a run paused on a PROMOTION offers no answer on the card — its code is read in its session (0628)', async () => {
+  const root = tree();
+  const p = page({ tree: root, catalog: COPY, modules: ['desktop-decisions'] });
+  stubFetch(p, [response(428, { requires_confirmation: true, confirm_token: 'tok-1' }), response(201, { ...PAUSED, pending_operation: 'sandbox:promote', pending_reason: 'The agent wants to promote trial «w1»…' })]);
+  const card = root.querySelector('[data-sequence="deploy"]');
+
+  click(p, card.querySelector('[data-sequence-run]'));
+  await settle();
+
+  const said = card.querySelector('[data-sequence-status]').textContent;
+  assert.equal(said, "paused on sandbox:promote — " + COPY['decisions.lands.terminal'], 'where it is read and answered, and what each answer does — and no «answer below»');
+  assert.equal(card.querySelector('[data-agent-answer="yes"]').getAttribute('hidden'), '', 'no approve where the code is not shown');
+  assert.equal(card.getAttribute('data-sequence-paused'), '', 'and the card still says it is parked');
+});
+
+test('answers a previous pause SHOWED are hidden again when the run pauses on a promotion', async () => {
+  const root = tree();
+  const p = page({ tree: root, catalog: COPY, modules: ['desktop-decisions'] });
+  stubFetch(p, [
+    response(428, { requires_confirmation: true, confirm_token: 'tok-1' }), response(201, PAUSED),
+    response(428, { requires_confirmation: true, confirm_token: 'tok-2' }), response(201, { ...PAUSED, pending_operation: 'sandbox:promote' }),
+  ]);
+  const card = root.querySelector('[data-sequence="deploy"]');
+
+  click(p, card.querySelector('[data-sequence-run]'));
+  await settle();
+  assert.equal(card.querySelector('[data-agent-answer="yes"]').getAttribute('hidden'), null, 'the control: an ordinary pause shows the answers');
+  click(p, card.querySelector('[data-sequence-run]'));
+  await settle();
+
+  assert.equal(card.querySelector('[data-agent-answer="yes"]').getAttribute('hidden'), '', 'a promotion hides them again');
 });
 
 test('an approval posts agent:answer and then RESUMES the run through the gate', async () => {

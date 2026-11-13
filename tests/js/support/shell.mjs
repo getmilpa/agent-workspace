@@ -87,6 +87,22 @@ export function prototypes() {
   axisRow.appendChild(new El('span', { 'data-claim-axis-name': '' }));
   axisRow.appendChild(new El('span', { 'data-claim-axis-value': '' }));
   claim.appendChild(new El('pre', { class: 'msg__claim-raw', 'data-claim-raw': '', hidden: true }));
+  // What a promotion lands (greenhouse decisions/0628), as `MessagePrototypes::askGrant()` prints it: the file
+  // and judged rows are templates the fill clones.
+  const lands = claim.appendChild(new El('div', { class: 'msg__lands', 'data-claim-lands': '', hidden: true }));
+  lands.appendChild(new El('p', { class: 'msg__lands-title', 'data-claim-lands-title': '' }));
+  lands.appendChild(new El('p', { class: 'msg__lands-digest', 'data-claim-digest': '' }));
+  const files = lands.appendChild(new El('ul', { class: 'msg__lands-files', 'data-claim-files': '' }));
+  const fileRow = files.appendChild(new El('li', { class: 'msg__lands-file', 'data-claim-file': '', hidden: true }));
+  const filePath = fileRow.appendChild(new El('p', { class: 'msg__lands-path' }));
+  filePath.appendChild(new El('code', { 'data-claim-file-path': '' }));
+  filePath.appendChild(new El('span', { class: 'msg__lands-status', 'data-claim-file-status': '' }));
+  fileRow.appendChild(new El('pre', { class: 'msg__lands-shown', 'data-claim-file-shown': '' }));
+  lands.appendChild(new El('p', { class: 'msg__lands-title', 'data-claim-judged-title': '' }));
+  const judged = lands.appendChild(new El('ul', { class: 'msg__claim-axes', 'data-claim-judged-rows': '' }));
+  const judgedRow = judged.appendChild(new El('li', { class: 'msg__claim-axis', 'data-claim-judged': '', hidden: true }));
+  judgedRow.appendChild(new El('span', { 'data-claim-judged-name': '' }));
+  judgedRow.appendChild(new El('span', { 'data-claim-judged-value': '' }));
   const grantOptions = grant.appendChild(new El('div', { class: 'msg__grant-options', 'data-grant-options': '' }));
   grantOptions.appendChild(new El('button', { class: 'mui-btn msg__grant-option', 'data-grant-option': '', hidden: true }));
   grant.appendChild(new El('p', { class: 'msg__grant-status', 'data-grant-status': '' }));

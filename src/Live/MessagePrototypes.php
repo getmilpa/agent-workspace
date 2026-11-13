@@ -187,6 +187,24 @@ final class MessagePrototypes
             // al menos es cierto». It scrolls inside itself so an unparseable claim never blows the
             // thread's width, which is what the raw dump was doing.
             . '<pre class="msg__claim-raw" data-claim-raw hidden></pre>'
+            // WHAT A PROMOTION LANDS, before the buttons (greenhouse decisions/0628). Code an agent wrote boots in
+            // the live house with its secrets once promoted, so a person says yes to these bytes having SEEN
+            // them: each changed file as the house shows it — already masked — and what the house recorded of
+            // the trial's own run. The `[data-claim-file]` and `[data-claim-judged]` rows are templates.
+            . '<div class="msg__lands" data-claim-lands hidden>'
+            . '<p class="msg__lands-title" data-claim-lands-title></p>'
+            . '<p class="msg__lands-digest" data-claim-digest></p>'
+            . '<ul class="msg__lands-files" data-claim-files>'
+            . '<li class="msg__lands-file" data-claim-file hidden>'
+            . '<p class="msg__lands-path"><code data-claim-file-path></code> <span class="msg__lands-status" data-claim-file-status></span></p>'
+            . '<pre class="msg__lands-shown" data-claim-file-shown></pre></li>'
+            . '</ul>'
+            . '<p class="msg__lands-title" data-claim-judged-title></p>'
+            . '<ul class="msg__claim-axes" data-claim-judged-rows>'
+            . '<li class="msg__claim-axis" data-claim-judged hidden><span class="msg__claim-axis-name" data-claim-judged-name></span>'
+            . '<span class="msg__claim-axis-value" data-claim-judged-value></span></li>'
+            . '</ul>'
+            . '</div>'
             . '</div>'
             . '<div class="msg__grant-options" data-grant-options role="group">'
             . '<button type="button" class="mui-btn msg__grant-option" data-grant-option hidden></button>'

@@ -79,7 +79,7 @@ final class CatalogTest extends TestCase
             // every acta call it that in both languages.
             'context.model.endpoint',
             // The negative answer is spelled the same in both catalogs.
-            'evidence.no',
+            'evidence.no', 'claim.judged.no',
         ];
         foreach (array_keys($en->all()) as $key) {
             if (!\in_array($key, $sameInBoth, true)) {

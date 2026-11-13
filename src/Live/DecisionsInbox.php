@@ -109,6 +109,14 @@ final class DecisionsInbox
             'graph_door' => $this->plain('decisions.graph.door'),
             'graph_yours' => $this->plain('decisions.graph.yours'),
             'graph_needs' => $this->plain('decisions.graph.needs'),
+            'lands' => $this->plain('decisions.lands'),
+            'lands_digest' => $this->plain('decisions.lands.digest'),
+            'lands_open' => $this->plain('decisions.lands.open'),
+            'lands_terminal' => $this->plain('decisions.lands.terminal'),
+            'paused_on_promotion' => $this->plain('decisions.paused_on_promotion'),
+            'lands_status_added' => $this->plain('claim.lands.status.added'),
+            'lands_status_modified' => $this->plain('claim.lands.status.modified'),
+            'lands_status_deleted' => $this->plain('claim.lands.status.deleted'),
         ];
         /** @var list<array{session: string, goal: string, seat: string, refusals: list<array{seq: int, tool: string, plugin: ?string, permission: string}>}> $frontier */
         $frontier = \is_array($props['frontier'] ?? null) ? $props['frontier'] : [];

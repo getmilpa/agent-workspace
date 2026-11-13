@@ -237,6 +237,80 @@ test('F5 · with no claim region at all the why is still SAID, as text', () => {
   assert.equal(chat.children[0].querySelector('[data-grant-why]').textContent, 'publicar es irreversible');
 });
 
+// ── what a promotion lands, seen before the buttons (greenhouse decisions/0628) ─────────────────────
+
+const PROMOTION = JSON.stringify({
+  operation: 'sandbox:promote',
+  arguments: { workspace: 'wab31ff8973a851da' },
+  base: { authority: 'ordinary', subject: 'executable' },
+  digest: 'diff:' + 'a'.repeat(64),
+  lands: [
+    { path: 'plugins/Blog/Controllers/Feed.php', status: 'added', sha256: 'b'.repeat(64), shown: "+<?php\n+return file_get_contents('[secret]');\n" },
+    { path: 'config/app.php', status: 'modified', sha256: 'c'.repeat(64), shown: "@@ line 4 @@\n-'debug' => false,\n+'debug' => true,\n" },
+    { path: 'old.php', status: 'deleted', sha256: null, shown: 'deleted' },
+  ],
+  judged: { trial_run: { operation: 'make', exit: 0 }, producer: { tool: 'make', ok: true, verified: 'GET /feed answered 200' } },
+});
+
+test('G1 · a promotion question shows each file it lands, with the code, before the buttons', () => {
+  const { chat, conv } = thread();
+  conv.append('ask-grant', { ...QUESTION, why: PROMOTION });
+  const bubble = chat.children[0];
+  const region = bubble.querySelector('[data-claim-lands]');
+
+  assert.equal(region.hidden, false, 'the code is shown');
+  assert.equal(region.querySelector('[data-claim-lands-title]').textContent, 'What this promotion lands in the house');
+  const files = region.querySelectorAll('[data-claim-file]').filter((r) => r.hidden !== true);
+  assert.deepEqual(files.map((r) => r.querySelector('[data-claim-file-path]').textContent), ['plugins/Blog/Controllers/Feed.php', 'config/app.php', 'old.php']);
+  assert.deepEqual(files.map((r) => r.querySelector('[data-claim-file-status]').textContent), ['new file', 'changed', 'deleted']);
+  assert.equal(files[0].querySelector('[data-claim-file-shown]').textContent, "+<?php\n+return file_get_contents('[secret]');\n", 'the code exactly as the house showed it — already masked');
+  assert.equal(files[1].querySelector('[data-claim-file-shown]').textContent, "@@ line 4 @@\n-'debug' => false,\n+'debug' => true,\n");
+  assert.match(region.querySelector('[data-claim-digest]').textContent, /diff:a{64}/, 'the bytes the yes covers are named');
+  // The region sits inside the claim, and the claim comes before the options: the code is read first.
+  const order = bubble.children.map((c) => (c.attrs['data-grant-claim'] !== undefined ? 'claim' : c.attrs['data-grant-options'] !== undefined ? 'options' : ''));
+  assert.ok(order.indexOf('claim') < order.indexOf('options'), 'what lands is shown before the buttons that decide it');
+});
+
+test('G2 · what the house recorded of the trial is shown beside the code', () => {
+  const { chat, conv } = thread();
+  conv.append('ask-grant', { ...QUESTION, why: PROMOTION });
+  const region = chat.children[0].querySelector('[data-claim-lands]');
+  const rows = region.querySelectorAll('[data-claim-judged]').filter((r) => r.hidden !== true);
+
+  assert.equal(region.querySelector('[data-claim-judged-title]').textContent, 'What the house recorded of the trial');
+  assert.deepEqual(rows.map((r) => r.querySelector('[data-claim-judged-name]').textContent), ['the trial ran', 'it exited with', 'made by', 'it said it worked', 'it said it verified']);
+  assert.deepEqual(rows.map((r) => r.querySelector('[data-claim-judged-value]').textContent), ['make', '0', 'make', 'yes', 'GET /feed answered 200']);
+});
+
+test('G3 · what a file says is TEXT, never markup', () => {
+  const { chat, conv } = thread();
+  const hostile = JSON.parse(PROMOTION);
+  hostile.lands = [{ path: '<b>x</b>.php', status: 'added', sha256: null, shown: '+<script>alert(1)</script>' }];
+  conv.append('ask-grant', { ...QUESTION, why: JSON.stringify(hostile) });
+  const file = chat.children[0].querySelectorAll('[data-claim-file]').filter((r) => r.hidden !== true)[0];
+
+  assert.equal(file.querySelector('[data-claim-file-shown]').textContent, '+<script>alert(1)</script>');
+  assert.equal(file.querySelector('[data-claim-file-shown]').children.length, 0, 'nothing was parsed into elements');
+  assert.equal(file.querySelector('[data-claim-file-path]').textContent, '<b>x</b>.php');
+});
+
+test('G4 · the CONTROL: a claim that is not a promotion shows no code region', () => {
+  const { chat, conv } = thread();
+  conv.append('ask-grant', { ...QUESTION, why: CLAIM });
+
+  assert.equal(chat.children[0].querySelector('[data-claim-lands]').hidden, true);
+});
+
+test('G5 · nothing recorded of the trial is said, not left blank', () => {
+  const { chat, conv } = thread();
+  const none = JSON.parse(PROMOTION);
+  none.judged = { nothing: "the session holds no record of this trial's run" };
+  conv.append('ask-grant', { ...QUESTION, why: JSON.stringify(none) });
+  const rows = chat.children[0].querySelectorAll('[data-claim-judged]').filter((r) => r.hidden !== true);
+
+  assert.deepEqual(rows.map((r) => [r.querySelector('[data-claim-judged-name]').textContent, r.querySelector('[data-claim-judged-value]').textContent]), [['nothing recorded', "the session holds no record of this trial's run"]]);
+});
+
 test('F6 · a decision taken ANYWHERE closes this request, and says who took it', async () => {
   // Rod, looking at a panel whose gate was still live after someone answered from elsewhere: «no se
   // ve/actualiza lo que presionó el humano, debe aparecer disabled o desaparecer cuando la acción ya

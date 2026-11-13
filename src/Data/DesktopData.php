@@ -497,7 +497,10 @@ final class DesktopData
      * a governed sequence pauses at the step that needs consent, and the card that answers it can then
      * resume the run — the same `sequence:run` a terminal would call again.
      *
-     * @return list<array{session: string, goal: string, question: string, operation: string, reason: string, sequence: string}>
+     * A PROMOTION'S ROW SAYS WHAT IT LANDS (greenhouse decisions/0628): the files, and the digest its yes covers —
+     * read from the question's own claim, so the card can say that the code is read in the session before answering.
+     *
+     * @return list<array{session: string, goal: string, question: string, operation: string, reason: string, sequence: string, lands?: list<array{path: string, status: string}>, digest?: string}>
      *
      * @codeCoverageIgnore reads through to the agent SessionStore; exercised by integration on a booted app
      *                     (greenhouse evidence/0509), not by the standalone unit suite
@@ -527,6 +530,7 @@ final class DesktopData
             }
             $q = $session->question;
             $operation = '';
+            $decoded = null;
             if (is_string($q->why) && $q->why !== '') {
                 $decoded = json_decode($q->why, true);
                 if (is_array($decoded) && is_string($decoded['operation'] ?? null)) {
@@ -540,7 +544,7 @@ final class DesktopData
                 'operation' => $operation,
                 'reason' => is_string($q->reason) ? $q->reason : '',
                 'sequence' => $session->pausedSequence !== null ? $session->pausedSequence->sequenceId : '',
-            ];
+            ] + self::whatItLands(is_array($decoded) ? $decoded : []);
         }
 
         return $out;
@@ -1359,6 +1363,29 @@ final class DesktopData
         $decoded = $raw === '' ? null : json_decode($raw, true);
 
         return is_array($decoded) ? $decoded : [];
+    }
+
+    /**
+     * The files a promotion's claim says it lands, and the digest its yes covers, or nothing when the claim is not
+     * a promotion's (greenhouse decisions/0628).
+     *
+     * @param array<mixed> $claim
+     *
+     * @return array{lands?: list<array{path: string, status: string}>, digest?: string}
+     */
+    public static function whatItLands(array $claim): array
+    {
+        if (! \is_array($claim['lands'] ?? null)) {
+            return [];
+        }
+        $lands = [];
+        foreach ($claim['lands'] as $file) {
+            if (\is_array($file) && \is_string($file['path'] ?? null)) {
+                $lands[] = ['path' => $file['path'], 'status' => \is_string($file['status'] ?? null) ? $file['status'] : ''];
+            }
+        }
+
+        return ['lands' => $lands, 'digest' => \is_string($claim['digest'] ?? null) ? $claim['digest'] : ''];
     }
 
     private function str(mixed $value): string
