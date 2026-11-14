@@ -52,7 +52,7 @@ test('F5 · an option posts the answer to agent:answer\'s own door, and the bubb
 
   assert.equal(calls.length, 1, 'one call, to the operation\'s door');
   assert.equal(calls[0].url, '/workspace/answer');
-  assert.deepEqual(JSON.parse(calls[0].init.body), { session: 'desk-1', answer: 'yes' }, 'the session the turn owns, and the option the agent proposed');
+  assert.deepEqual(JSON.parse(calls[0].init.body), { session: 'desk-1', answer: 'yes', question: 'q-1' }, 'the session the turn owns, the option the agent proposed, and the question this bubble showed (0633)');
   assert.equal(grant.getAttribute('data-grant-state'), 'answered');
   assert.equal(grant.querySelector('[data-grant-status]').textContent, 'You answered «yes».');
   const chosen = grant.querySelectorAll('[data-grant-option]').find((b) => b.textContent === 'yes');
@@ -292,6 +292,43 @@ test('G3 · what a file says is TEXT, never markup', () => {
   assert.equal(file.querySelector('[data-claim-file-shown]').textContent, '+<script>alert(1)</script>');
   assert.equal(file.querySelector('[data-claim-file-shown]').children.length, 0, 'nothing was parsed into elements');
   assert.equal(file.querySelector('[data-claim-file-path]').textContent, '<b>x</b>.php');
+});
+
+test('G6 · an answer to a promotion names the question and the digest this bubble showed (0633)', async () => {
+  const { p, chat, view, conv } = thread();
+  const calls = stubFetch(p, [response(200, { ok: true })]);
+  conv.append('ask-grant', { ...QUESTION, id: 'perm:sandbox:promote', why: PROMOTION });
+
+  choose(view, chat.children[0], 'no');
+  await settle();
+
+  assert.deepEqual(JSON.parse(calls[0].init.body), { session: 'desk-1', answer: 'no', question: 'perm:sandbox:promote', digest: 'diff:' + 'a'.repeat(64) });
+});
+
+test('G6c · the confirmed retry names the question and the digest too (0633)', async () => {
+  const { p, chat, view, conv } = thread();
+  const calls = stubFetch(p, [response(428, { confirm_token: 'tok-9' }), response(200, { ok: true })]);
+  conv.append('ask-grant', { ...QUESTION, id: 'perm:sandbox:promote', why: PROMOTION });
+
+  choose(view, chat.children[0], 'yes');
+  await settle();
+
+  assert.equal(calls[1].init.headers['Confirm-Token'], 'tok-9');
+  assert.deepEqual(JSON.parse(calls[1].init.body), { session: 'desk-1', answer: 'yes', question: 'perm:sandbox:promote', digest: 'diff:' + 'a'.repeat(64) });
+});
+
+test('G6b · two bubbles, two digests: each answer names its own', async () => {
+  const { p, chat, view, conv } = thread();
+  const calls = stubFetch(p, [response(200, { ok: true })]);
+  const older = JSON.parse(PROMOTION);
+  older.digest = 'diff:' + 'b'.repeat(64);
+  conv.append('ask-grant', { ...QUESTION, id: 'perm:sandbox:promote', why: JSON.stringify(older) });
+  conv.append('ask-grant', { ...QUESTION, id: 'perm:sandbox:promote', why: PROMOTION });
+
+  choose(view, chat.children[0], 'yes');
+  await settle();
+
+  assert.equal(JSON.parse(calls[0].init.body).digest, 'diff:' + 'b'.repeat(64), 'the older bubble names the bytes IT showed — the house refuses it if those are not the ones waiting');
 });
 
 test('G4 · the CONTROL: a claim that is not a promotion shows no code region', () => {

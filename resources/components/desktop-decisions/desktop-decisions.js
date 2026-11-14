@@ -231,6 +231,10 @@
     if (read.paused) {
       status.textContent = tr('decisions.paused_on', read.pending_operation || '?') + (read.pending_reason ? ' — ' + String(read.pending_reason) : '');
       card.setAttribute('data-sequence-paused', '');
+      // The question this run paused on, as the run names it (greenhouse decisions/0633): the card's answers name it. A
+      // runtime from before names none, and the card's answer names none either — never the one it was printed with.
+      var waiting = typeof read.pending_question_id === 'string' ? read.pending_question_id : '';
+      card.setAttribute(card.hasAttribute('data-decision-question') ? 'data-decision-question' : 'data-sequence-question', waiting);
       // A run paused on a PROMOTION is answered where its code is read (greenhouse decisions/0628): agent-written
       // code lands in the live house with its yes, and this card shows none of it — so it offers no answer.
       if (read.pending_operation === 'sandbox:promote') {
@@ -287,7 +291,13 @@
     status.textContent = tr('decisions.answering');
 
     // Through the confirm gate: answering is irreversible, and the house asks before it records it.
-    return busy(card, confirmed(ANSWER_ROUTE, { session: session, answer: answer })
+    // THE ANSWER NAMES THE QUESTION THIS CARD SHOWED (greenhouse decisions/0633): a card left open while another question
+    // came to wait is refused instead of answering it. A card a live Run paused carries none, and answers as before.
+    var body = { session: session, answer: answer };
+    var shown = card.getAttribute('data-decision-question') || card.getAttribute('data-sequence-question') || '';
+    if (shown !== '') { body.question = shown; }
+
+    return busy(card, confirmed(ANSWER_ROUTE, body)
       .then(function (read) {
         if (read && read.ok === false) { throw new Error(read.error || 'refused'); }
         if (!affirmative(answer)) {

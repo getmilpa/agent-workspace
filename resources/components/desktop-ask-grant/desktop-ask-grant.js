@@ -172,6 +172,19 @@
    * consent answers 428 with a one-use token, and the second call carries it in `Confirm-Token`. A 401
    * or a 403 is still the guard's, and `guarded` takes it to the door.
    */
+  /** What each bubble showed, kept beside it: the digest its claim named. Never a `data-*` the server did not print. */
+  var shown = typeof WeakMap === 'function' ? new WeakMap() : null;
+
+  /** The answer's body with the question and the digest this bubble showed, when it showed them. */
+  function shownWith(body, root) {
+    var id = root.getAttribute('data-grant-id') || '';
+    if (id !== '') { body.question = id; }
+    var digest = shown ? shown.get(root) : null;
+    if (typeof digest === 'string' && digest !== '') { body.digest = digest; }
+
+    return body;
+  }
+
   function answer(root, chosen) {
     var d = desk();
     var sid = session();
@@ -180,7 +193,10 @@
       var headers = { 'Content-Type': 'application/json' };
       if (token) { headers['Confirm-Token'] = token; }
 
-      return fetch(ANSWER_ROUTE, { method: 'POST', headers: headers, body: JSON.stringify({ session: sid, answer: chosen }) });
+      // THE ANSWER NAMES WHAT THIS BUBBLE SHOWED (greenhouse decisions/0633): the question it was raised for, and the
+      // digest of the changes it painted. A house where another question — or other bytes — waits by now refuses
+      // instead of answering it; a house from before the binding ignores both, and answers as it always did.
+      return fetch(ANSWER_ROUTE, { method: 'POST', headers: headers, body: JSON.stringify(shownWith({ session: sid, answer: chosen }, root)) });
     };
     // The answer's own answer is read below, so the house's «no» passes as one (greenhouse decisions/0583).
     var flow = (d && d.answeredFlow) ? d.answeredFlow : function (r) { return r; };
@@ -254,6 +270,7 @@
 
     var read = null;
     try { read = JSON.parse(why); } catch (e) { read = null; }
+    if (shown && read !== null && typeof read === 'object' && typeof read.digest === 'string') { shown.set(root, read.digest); }
     // No claim region — an older prototype, or one a plugin re-rendered — falls back to saying it as
     // text. Losing the why entirely because its NICER rendering is missing would be worse than plain.
     if (read === null || typeof read !== 'object' || !box) {
