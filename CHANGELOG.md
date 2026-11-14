@@ -3,6 +3,18 @@
 All notable changes to milpa/desktop-app are documented here. This project adheres to
 [Semantic Versioning](https://semver.org/) and [Keep a Changelog](https://keepachangelog.com/).
 
+## [0.96.0](https://github.com/getmilpa/agent-workspace/compare/v0.95.0...v0.96.0) (2026-11-14)
+
+
+### Features
+
+* **desktop:** a person sees what a promotion lands before answering it (greenhouse decisions/0628) ([#152](https://github.com/getmilpa/agent-workspace/issues/152)) ([960c05b](https://github.com/getmilpa/agent-workspace/commit/960c05b40755b0316cbef74cd82add24d3670612))
+
+
+### Bug Fixes
+
+* **desktop:** an answer names the question it was shown, and a promotion's digest (greenhouse decisions/0633) ([#154](https://github.com/getmilpa/agent-workspace/issues/154)) ([9be312a](https://github.com/getmilpa/agent-workspace/commit/9be312a36df186e7074a1bf9a7db0eefa0f373ac))
+
 ## [0.95.0](https://github.com/getmilpa/agent-workspace/compare/v0.94.0...v0.95.0) (2026-10-11)
 
 
