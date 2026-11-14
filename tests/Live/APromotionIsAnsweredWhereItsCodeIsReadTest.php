@@ -103,9 +103,19 @@ final class APromotionIsAnsweredWhereItsCodeIsReadTest extends TestCase
 
     public function testTheControlASequencePausedOnAnotherStepKeepsItsAnswers(): void
     {
-        $paused = ['name' => 'deploy', 'steps' => ['config:set'], 'session' => 'sequence:deploy', 'paused' => true, 'pending_operation' => 'config:set'];
+        $paused = ['name' => 'deploy', 'steps' => ['config:set'], 'session' => 'sequence:deploy', 'paused' => true, 'pending_operation' => 'config:set', 'pending_question_id' => 'perm:config:set'];
 
-        self::assertStringContainsString('data-agent-answer="yes"', (new DecisionsInboxView())->sequencesHtml([$paused]));
+        $html = (new DecisionsInboxView())->sequencesHtml([$paused]);
+
+        self::assertStringContainsString('data-agent-answer="yes"', $html);
+        self::assertStringContainsString('data-sequence-question="perm:config:set"', $html, 'the card names the question its answers are for (0633)');
+    }
+
+    public function testAnInboxCardNamesTheQuestionItShows(): void
+    {
+        $row = ['session' => 's-9', 'goal' => 'g', 'question' => 'May I?', 'operation' => 'config:set', 'reason' => 'permission', 'question_id' => 'perm:config:set'];
+
+        self::assertStringContainsString('data-decision-question="perm:config:set"', (new DecisionsInboxView())->html([$row]));
     }
 
     public function testTheInboxCardOfASequencesPromotionNamesTheTerminal(): void
@@ -156,6 +166,7 @@ final class APromotionIsAnsweredWhereItsCodeIsReadTest extends TestCase
                 $html = (new \Milpa\AgentWorkspace\Live\DecisionsInbox($codec, new DesktopData($kernel->container()), null, new \Milpa\AgentWorkspace\I18n\Catalog($locale)))->render(false);
 
                 self::assertStringContainsString('<code>plugins/Blog/Feed.php</code>', $html, $locale);
+                self::assertStringContainsString('data-decision-question="perm:sandbox:promote"', $html, 'the data seam carries the question id');
                 self::assertStringContainsString($said, $html, $locale);
                 self::assertStringNotContainsString('data-agent-answer="yes"', $html, $locale);
             }

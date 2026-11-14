@@ -305,6 +305,18 @@ test('G6 · an answer to a promotion names the question and the digest this bubb
   assert.deepEqual(JSON.parse(calls[0].init.body), { session: 'desk-1', answer: 'no', question: 'perm:sandbox:promote', digest: 'diff:' + 'a'.repeat(64) });
 });
 
+test('G6c · the confirmed retry names the question and the digest too (0633)', async () => {
+  const { p, chat, view, conv } = thread();
+  const calls = stubFetch(p, [response(428, { confirm_token: 'tok-9' }), response(200, { ok: true })]);
+  conv.append('ask-grant', { ...QUESTION, id: 'perm:sandbox:promote', why: PROMOTION });
+
+  choose(view, chat.children[0], 'yes');
+  await settle();
+
+  assert.equal(calls[1].init.headers['Confirm-Token'], 'tok-9');
+  assert.deepEqual(JSON.parse(calls[1].init.body), { session: 'desk-1', answer: 'yes', question: 'perm:sandbox:promote', digest: 'diff:' + 'a'.repeat(64) });
+});
+
 test('G6b · two bubbles, two digests: each answer names its own', async () => {
   const { p, chat, view, conv } = thread();
   const calls = stubFetch(p, [response(200, { ok: true })]);

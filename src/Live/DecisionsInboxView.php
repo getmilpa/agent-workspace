@@ -34,14 +34,14 @@ final class DecisionsInboxView
      * `agent:answer`, the same operation a terminal calls — and when the session is parked on a SEQUENCE
      * the card names it, so an approval can resume the run without leaving the page.
      *
-     * @param list<array{session: string, goal: string, question: string, operation: string, reason: string, sequence?: string, lands?: list<array{path: string, status: string}>, digest?: string}> $pending
-     * @param array<string, string>                                                                                                                                                                  $copy    the caller's words for the answers, by key
-     * @param list<array<string, mixed>>                                                                                                                                                             $graphs
-     *                                                                                                                                                                                                        Decisions DECLARED GRAPHS are waiting on. They render differently on purpose: an agent's parked
-     *                                                                                                                                                                                                        question is answered in the conversation of its own session, so its card is a link there; a graph's
-     *                                                                                                                                                                                                        is answered HERE, so its card carries its options as buttons — and those options are the cases of
-     *                                                                                                                                                                                                        the enum its routes were declared with, which is why the buttons cannot drift from the machine.
-     *                                                                                                                                                                                                        It carries no approver: `graph:decide` reads who answers from the passkey session (decisions/0528).
+     * @param list<array{session: string, goal: string, question: string, operation: string, reason: string, sequence?: string, question_id?: string, lands?: list<array{path: string, status: string}>, digest?: string}> $pending
+     * @param array<string, string>                                                                                                                                                                                        $copy    the caller's words for the answers, by key
+     * @param list<array<string, mixed>>                                                                                                                                                                                   $graphs
+     *                                                                                                                                                                                                                              Decisions DECLARED GRAPHS are waiting on. They render differently on purpose: an agent's parked
+     *                                                                                                                                                                                                                              question is answered in the conversation of its own session, so its card is a link there; a graph's
+     *                                                                                                                                                                                                                              is answered HERE, so its card carries its options as buttons — and those options are the cases of
+     *                                                                                                                                                                                                                              the enum its routes were declared with, which is why the buttons cannot drift from the machine.
+     *                                                                                                                                                                                                                              It carries no approver: `graph:decide` reads who answers from the passkey session (decisions/0528).
      */
     public function html(
         array $pending,
@@ -86,7 +86,8 @@ final class DecisionsInboxView
                 : $this->lands($lands, (string) ($d['digest'] ?? ''), $copy, $d['session']);
 
             $cards .= '<li class="decision-card" data-decision-session="' . $this->esc($d['session']) . '"'
-                . ' data-decision-sequence="' . $this->esc((string) ($d['sequence'] ?? '')) . '">'
+                . ' data-decision-sequence="' . $this->esc((string) ($d['sequence'] ?? '')) . '"'
+                . ' data-decision-question="' . $this->esc((string) ($d['question_id'] ?? '')) . '">'
                 . ($goal !== '' ? '<p class="decision-card__goal">' . $goal . '</p>' : '')
                 . '<p class="decision-card__q">' . $this->esc($d['question']) . '</p>'
                 . $factLine
@@ -115,8 +116,8 @@ final class DecisionsInboxView
      * way the inbox does. The answer buttons are printed on every card and hidden until a run parks — the
      * module toggles them, it never invents them.
      *
-     * @param list<array{name: string, steps: list<string>, session: string, paused: bool, pending_operation: string}> $sequences
-     * @param array<string, string>                                                                                    $copy      the caller's words, by key
+     * @param list<array{name: string, steps: list<string>, session: string, paused: bool, pending_operation: string, pending_question_id?: string}> $sequences
+     * @param array<string, string>                                                                                                                  $copy      the caller's words, by key
      */
     public function sequencesHtml(array $sequences, string $empty = 'This app declares no sequences.', array $copy = []): string
     {
@@ -140,6 +141,7 @@ final class DecisionsInboxView
 
             $cards .= '<li class="decision-card sequence-card" data-sequence="' . $this->esc($seq['name']) . '"'
                 . ' data-sequence-session="' . $this->esc($seq['session']) . '"'
+                . ' data-sequence-question="' . $this->esc((string) ($seq['pending_question_id'] ?? '')) . '"'
                 . ($seq['paused'] ? ' data-sequence-paused' : '') . '>'
                 . '<p class="decision-card__goal">' . $this->esc($seq['name']) . '</p>'
                 . '<p class="decision-card__q">' . $this->esc(implode(' → ', $seq['steps'])) . '</p>'

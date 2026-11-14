@@ -38,7 +38,7 @@ const COPY = {
 function tree() {
   const root = new El('html');
   const list = root.appendChild(new El('ol', { id: 'milpa-sequences-list' }));
-  const card = list.appendChild(new El('li', { class: 'decision-card sequence-card', 'data-sequence': 'deploy', 'data-sequence-session': 'sequence:deploy' }));
+  const card = list.appendChild(new El('li', { class: 'decision-card sequence-card', 'data-sequence': 'deploy', 'data-sequence-session': 'sequence:deploy', 'data-sequence-question': '' }));
   card.appendChild(new El('p', { class: 'decision-card__facts', 'data-sequence-status': '' }));
   const options = card.appendChild(new El('p', { class: 'decision-card__options' }));
   options.appendChild(new El('button', { 'data-sequence-run': '', text: 'Run' }));
@@ -46,7 +46,7 @@ function tree() {
   options.appendChild(new El('button', { 'data-agent-answer': 'no', hidden: '', text: 'Deny' }));
 
   const inbox = root.appendChild(new El('ol', { id: 'milpa-decisions-list' }));
-  const parked = inbox.appendChild(new El('li', { class: 'decision-card', 'data-decision-session': 'sequence:rollout', 'data-decision-sequence': 'rollout' }));
+  const parked = inbox.appendChild(new El('li', { class: 'decision-card', 'data-decision-session': 'sequence:rollout', 'data-decision-sequence': 'rollout', 'data-decision-question': 'perm:config:set' }));
   parked.appendChild(new El('p', { class: 'decision-card__facts', 'data-decision-status': '' }));
   const answers = parked.appendChild(new El('p', { class: 'decision-card__options' }));
   answers.appendChild(new El('button', { 'data-agent-answer': 'yes', text: 'Approve' }));
@@ -114,6 +114,34 @@ test('answers a previous pause SHOWED are hidden again when the run pauses on a 
   assert.equal(card.querySelector('[data-agent-answer="yes"]').getAttribute('hidden'), '', 'a promotion hides them again');
 });
 
+test('an inbox card names the question it showed (0633): a card left open answers no other', async () => {
+  const root = tree();
+  const p = page({ tree: root, catalog: COPY, modules: ['desktop-decisions'] });
+  const calls = stubFetch(p, [response(428, { requires_confirmation: true, confirm_token: 't' }), response(201, { ok: true })]);
+  const parked = root.querySelector('[data-decision-session="sequence:rollout"]');
+
+  click(p, parked.querySelector('[data-agent-answer="no"]'));
+  await settle();
+
+  assert.deepEqual(JSON.parse(calls[0].init.body), { session: 'sequence:rollout', answer: 'no', question: 'perm:config:set' });
+  assert.deepEqual(JSON.parse(calls[1].init.body), { session: 'sequence:rollout', answer: 'no', question: 'perm:config:set' }, 'the confirmed retry names it too');
+});
+
+test('a card a live Run paused names no stale question', async () => {
+  const root = tree();
+  const card = root.querySelector('[data-sequence="deploy"]');
+  card.setAttribute('data-sequence-question', 'perm:old:question');
+  const p = page({ tree: root, catalog: COPY, modules: ['desktop-decisions'] });
+  const calls = stubFetch(p, [response(428, { requires_confirmation: true, confirm_token: 't' }), response(201, PAUSED), response(428, { requires_confirmation: true, confirm_token: 't2' }), response(201, { ok: true })]);
+
+  click(p, card.querySelector('[data-sequence-run]'));
+  await settle();
+  click(p, card.querySelector('[data-agent-answer="no"]'));
+  await settle();
+
+  assert.equal(JSON.parse(calls[2].init.body).question, undefined, 'the question the card was printed with is not the one this run paused on');
+});
+
 test('an approval posts agent:answer and then RESUMES the run through the gate', async () => {
   const root = tree();
   const p = page({ tree: root, catalog: COPY, modules: ['desktop-decisions'] });
@@ -163,7 +191,7 @@ test('the inbox card of a session parked on a sequence approves and resumes the 
   await settle();
 
   assert.equal(calls.length, 3);
-  assert.deepEqual(JSON.parse(calls[0].init.body), { session: 'sequence:rollout', answer: 'yes' });
+  assert.deepEqual(JSON.parse(calls[0].init.body), { session: 'sequence:rollout', answer: 'yes', question: 'perm:config:set' });
   assert.deepEqual(JSON.parse(calls[1].init.body), { sequence: 'rollout', session: 'sequence:rollout' });
   assert.equal(card.querySelector('[data-decision-status]').textContent, 'applied · 2 of 2 steps ran');
 });
@@ -180,7 +208,7 @@ test('a card an older panel rendered still carries «sí», and its approval sti
   await settle();
 
   assert.equal(calls.length, 3, 'the older yes resumes the run like the new one');
-  assert.deepEqual(JSON.parse(calls[0].init.body), { session: 'sequence:rollout', answer: 'sí' }, 'the card posts what it carries; the house reads it');
+  assert.deepEqual(JSON.parse(calls[0].init.body), { session: 'sequence:rollout', answer: 'sí', question: 'perm:config:set' }, 'the card posts what it carries; the house reads it');
   assert.equal(card.querySelector('[data-decision-status]').textContent, 'applied · 2 of 2 steps ran');
 });
 

@@ -500,7 +500,7 @@ final class DesktopData
      * A PROMOTION'S ROW SAYS WHAT IT LANDS (greenhouse decisions/0628): the files, and the digest its yes covers —
      * read from the question's own claim, so the card can say that the code is read in the session before answering.
      *
-     * @return list<array{session: string, goal: string, question: string, operation: string, reason: string, sequence: string, lands?: list<array{path: string, status: string}>, digest?: string}>
+     * @return list<array{session: string, goal: string, question: string, operation: string, reason: string, sequence: string, question_id: string, lands?: list<array{path: string, status: string}>, digest?: string}>
      *
      * @codeCoverageIgnore reads through to the agent SessionStore; exercised by integration on a booted app
      *                     (greenhouse evidence/0509), not by the standalone unit suite
@@ -544,6 +544,8 @@ final class DesktopData
                 'operation' => $operation,
                 'reason' => is_string($q->reason) ? $q->reason : '',
                 'sequence' => $session->pausedSequence !== null ? $session->pausedSequence->sequenceId : '',
+                // Which question the card shows, so its answer names it (greenhouse decisions/0633).
+                'question_id' => $q->id,
             ] + self::whatItLands(is_array($decoded) ? $decoded : []);
         }
 
@@ -644,7 +646,7 @@ final class DesktopData
      *
      * Guarded so an app without the runtime's sequences, or without the agent store, degrades to none.
      *
-     * @return list<array{name: string, steps: list<string>, session: string, paused: bool, pending_operation: string}>
+     * @return list<array{name: string, steps: list<string>, session: string, paused: bool, pending_operation: string, pending_question_id: string}>
      *
      * @codeCoverageIgnore reads through to app-runtime's DeclaredSequences and the agent SessionStore;
      *                     exercised by integration on a booted app (greenhouse evidence/0561), not by the
@@ -664,6 +666,7 @@ final class DesktopData
         // Which sessions are parked on a sequence, and at which operation — read from the same ledger the
         // inbox reads. A session id here is the one `sequence:run` derives: `sequence:<name>`.
         $parked = [];
+        $parkedOn = [];
         $file = $kernel->root() . '/var/agent-sessions.jsonl';
         if (class_exists(\Milpa\Agent\SessionStore::class) && class_exists(\Milpa\EventStore\FileEventStore::class) && is_file($file)) {
             $store = new \Milpa\Agent\SessionStore(new \Milpa\EventStore\FileEventStore($file));
@@ -680,6 +683,7 @@ final class DesktopData
                     }
                 }
                 $parked[$session->id] = $operation;
+                $parkedOn[$session->id] = $session->question->id ?? '';
             }
         }
 
@@ -696,6 +700,7 @@ final class DesktopData
                 'session' => $sessionId,
                 'paused' => \array_key_exists($sessionId, $parked),
                 'pending_operation' => $parked[$sessionId] ?? '',
+                'pending_question_id' => $parkedOn[$sessionId] ?? '',
             ];
         }
 
