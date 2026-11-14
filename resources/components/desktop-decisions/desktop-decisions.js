@@ -231,8 +231,10 @@
     if (read.paused) {
       status.textContent = tr('decisions.paused_on', read.pending_operation || '?') + (read.pending_reason ? ' — ' + String(read.pending_reason) : '');
       card.setAttribute('data-sequence-paused', '');
-      // The question this card was printed with is not the one this run paused on; the run's answer names none.
-      card.setAttribute('data-sequence-question', '');
+      // The question this run paused on, as the run names it (greenhouse decisions/0633): the card's answers name it. A
+      // runtime from before names none, and the card's answer names none either — never the one it was printed with.
+      var waiting = typeof read.pending_question_id === 'string' ? read.pending_question_id : '';
+      card.setAttribute(card.hasAttribute('data-decision-question') ? 'data-decision-question' : 'data-sequence-question', waiting);
       // A run paused on a PROMOTION is answered where its code is read (greenhouse decisions/0628): agent-written
       // code lands in the live house with its yes, and this card shows none of it — so it offers no answer.
       if (read.pending_operation === 'sandbox:promote') {

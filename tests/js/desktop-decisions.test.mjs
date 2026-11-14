@@ -127,6 +127,39 @@ test('an inbox card names the question it showed (0633): a card left open answer
   assert.deepEqual(JSON.parse(calls[1].init.body), { session: 'sequence:rollout', answer: 'no', question: 'perm:config:set' }, 'the confirmed retry names it too');
 });
 
+test('a card a live Run paused names the question the run paused on (0633)', async () => {
+  const root = tree();
+  const card = root.querySelector('[data-sequence="deploy"]');
+  card.setAttribute('data-sequence-question', 'perm:old:question');
+  const p = page({ tree: root, catalog: COPY, modules: ['desktop-decisions'] });
+  const calls = stubFetch(p, [response(428, { requires_confirmation: true, confirm_token: 't' }), response(201, { ...PAUSED, pending_question_id: 'perm:config:set' }), response(428, { requires_confirmation: true, confirm_token: 't2' }), response(201, { ok: true })]);
+
+  click(p, card.querySelector('[data-sequence-run]'));
+  await settle();
+  click(p, card.querySelector('[data-agent-answer="no"]'));
+  await settle();
+
+  assert.equal(JSON.parse(calls[2].init.body).question, 'perm:config:set', 'the run named it, and the answer names it');
+});
+
+test('an inbox card that resumed its run names the question it paused on next', async () => {
+  const root = tree();
+  const p = page({ tree: root, catalog: COPY, modules: ['desktop-decisions'] });
+  const calls = stubFetch(p, [
+    response(428, { requires_confirmation: true, confirm_token: 'a' }), response(201, { ok: true }),
+    response(428, { requires_confirmation: true, confirm_token: 'b' }), response(201, { ...PAUSED, pending_operation: 'agent:mode', pending_question_id: 'perm:agent:mode' }),
+    response(428, { requires_confirmation: true, confirm_token: 'c' }), response(201, { ok: true }),
+  ]);
+  const parked = root.querySelector('[data-decision-session="sequence:rollout"]');
+
+  click(p, parked.querySelector('[data-agent-answer="yes"]'));
+  await settle();
+  click(p, parked.querySelector('[data-agent-answer="no"]'));
+  await settle();
+
+  assert.equal(JSON.parse(calls[4].init.body).question, 'perm:agent:mode', 'the card paints the new pause and names it — not the question it was printed with');
+});
+
 test('a card a live Run paused names no stale question', async () => {
   const root = tree();
   const card = root.querySelector('[data-sequence="deploy"]');
